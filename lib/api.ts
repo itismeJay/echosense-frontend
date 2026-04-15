@@ -1,7 +1,7 @@
 import type { Alert, LogsStats } from "./types";
 import { MOCK_ALERTS, MOCK_LOGS, MOCK_STATS } from "./mockData";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 let _isMockMode = false;
 
@@ -10,7 +10,7 @@ export function getIsMockMode(): boolean {
 }
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_URL}${path}`, {
     cache: "no-store",
     signal: AbortSignal.timeout(2000),
     ...options,
