@@ -16,3 +16,10 @@ export interface LogsStats {
   medium_severity: number;
   low_severity: number;
 }
+
+export interface Settings {
+  confidence_threshold: number;
+  duration_threshold: number;
+  notifications: boolean;
+  location: string;
+}

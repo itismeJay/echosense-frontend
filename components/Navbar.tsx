@@ -18,7 +18,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ onMenuOpen }: NavbarProps) {
-  const { online } = useAlerts();
+  const { online, loading } = useAlerts();
   const pathname = usePathname();
 
   return (
@@ -61,17 +61,21 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
         {/* Live status pill */}
         <div
           className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-            online
-              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-              : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+            loading
+              ? "bg-gray-500/10 border-gray-500/20 text-gray-500 dark:text-gray-400"
+              : online
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
           }`}
         >
-          {online ? (
+          {loading ? (
+            <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+          ) : online ? (
             <Wifi className="w-3 h-3 animate-pulse" />
           ) : (
             <WifiOff className="w-3 h-3" />
           )}
-          {online ? "Live" : "Offline"}
+          {loading ? "Connecting..." : online ? "Live" : "Offline"}
         </div>
 
         <ThemeToggle />
