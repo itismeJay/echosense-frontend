@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Radio, Wifi, WifiOff, Menu, LayoutDashboard, FileClock, BarChart3, Settings } from "lucide-react";
+import { Radio, Wifi, WifiOff, Menu, LayoutDashboard, FileClock, BarChart3, Settings, LogOut } from "lucide-react";
 import { useAlerts } from "@/lib/AlertsProvider";
 import ThemeToggle from "./ThemeToggle";
+import { logout, useCurrentUser } from "@/lib/auth";
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -20,6 +21,7 @@ interface NavbarProps {
 export default function Navbar({ onMenuOpen }: NavbarProps) {
   const { online, loading } = useAlerts();
   const pathname = usePathname();
+  const user = useCurrentUser();
 
   return (
     <header className="sticky top-0 z-40 h-14 flex items-center justify-between px-4 md:px-6 bg-white/70 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-white/[0.06] shrink-0">
@@ -79,6 +81,22 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
         </div>
 
         <ThemeToggle />
+
+        {/* User email + logout */}
+        {user && (
+          <>
+            <span className="hidden sm:block text-xs text-gray-400 dark:text-gray-500 font-mono truncate max-w-[140px]">
+              {user.email}
+            </span>
+            <button
+              onClick={logout}
+              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </>
+        )}
 
         {/* Mobile hamburger */}
         <button

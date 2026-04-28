@@ -10,7 +10,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen relative">
+    <div className="flex flex-col h-screen overflow-hidden relative">
       {/* Ambient mesh gradient */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/[0.06] dark:bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
@@ -22,11 +22,13 @@ function AppShell({ children }: { children: React.ReactNode }) {
         Flash overlay — uses `key` to remount the element each time flashKey increments,
         which re-triggers the CSS animation without any setState-in-effect pattern.
       */}
-      <div
-        key={flashKey}
-        className="absolute inset-0 pointer-events-none alert-flashing z-50"
-        aria-hidden="true"
-      />
+      {flashKey > 0 && (
+        <div
+          key={flashKey}
+          className="absolute inset-0 pointer-events-none alert-flashing z-50"
+          aria-hidden="true"
+        />
+      )}
 
       <Navbar onMenuOpen={() => setMobileOpen(true)} />
 

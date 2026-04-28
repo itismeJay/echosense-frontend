@@ -146,7 +146,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex bg-white/60 dark:bg-white/[0.03] backdrop-blur-xl border-r border-gray-200/60 dark:border-white/[0.06] min-h-full sticky top-0 h-[calc(100vh-3.5rem)] overflow-y-auto shrink-0">
+      <aside className="hidden md:flex bg-white/60 dark:bg-white/[0.03] backdrop-blur-xl border-r border-gray-200/60 dark:border-white/[0.06] overflow-y-auto shrink-0">
         <NavContent
           collapsed={collapsed}
           pathname={pathname}
