@@ -11,14 +11,18 @@ import {
   ChevronLeft,
   X,
   Cpu,
+  Users,
 } from "lucide-react";
+import { useAuth } from "@/lib/AuthProvider";
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/logs",      icon: FileClock,        label: "Logs"      },
   { href: "/analytics", icon: BarChart3,         label: "Analytics" },
   { href: "/settings",  icon: Settings,          label: "Settings"  },
 ];
+
+const ADMIN_NAV_ITEM = { href: "/users", icon: Users, label: "Users" };
 
 // Extracted OUTSIDE Sidebar to avoid "component defined during render" lint rule
 interface NavContentProps {
@@ -27,6 +31,7 @@ interface NavContentProps {
   showCollapseToggle: boolean;
   onToggleCollapsed: () => void;
   onLinkClick?: () => void;
+  navItems: typeof BASE_NAV_ITEMS;
 }
 
 function NavContent({
@@ -35,6 +40,7 @@ function NavContent({
   showCollapseToggle,
   onToggleCollapsed,
   onLinkClick,
+  navItems,
 }: NavContentProps) {
   return (
     <div
@@ -44,7 +50,7 @@ function NavContent({
     >
       {/* Nav items */}
       <nav className="flex-1 px-2 pt-3 space-y-0.5">
-        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
+        {navItems.map(({ href, icon: Icon, label }) => {
           const active = pathname === href;
           return (
             <Link
@@ -125,6 +131,10 @@ interface SidebarProps {
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const { user } = useAuth();
+  const navItems = user?.role === "admin"
+    ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM]
+    : BASE_NAV_ITEMS;
 
   // Read localStorage after mount — use setTimeout to avoid setState-in-effect lint
   useEffect(() => {
@@ -152,6 +162,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           pathname={pathname}
           showCollapseToggle
           onToggleCollapsed={handleToggleCollapsed}
+          navItems={navItems}
         />
       </aside>
 
@@ -181,6 +192,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               showCollapseToggle={false}
               onToggleCollapsed={handleToggleCollapsed}
               onLinkClick={onMobileClose}
+              navItems={navItems}
             />
           </aside>
         </div>

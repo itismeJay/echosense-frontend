@@ -2,16 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Radio, Wifi, WifiOff, Menu, LayoutDashboard, FileClock, BarChart3, Settings } from "lucide-react";
+import { Radio, Wifi, WifiOff, Menu, LayoutDashboard, FileClock, BarChart3, Settings, Users } from "lucide-react";
 import { useAlerts } from "@/lib/AlertsProvider";
+import { useAuth } from "@/lib/AuthProvider";
 import ThemeToggle from "./ThemeToggle";
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/logs",      icon: FileClock,        label: "Logs"      },
   { href: "/analytics", icon: BarChart3,         label: "Analytics" },
   { href: "/settings",  icon: Settings,          label: "Settings"  },
 ];
+
+const ADMIN_NAV_ITEM = { href: "/users", icon: Users, label: "Users" };
 
 interface NavbarProps {
   onMenuOpen: () => void;
@@ -20,6 +23,10 @@ interface NavbarProps {
 export default function Navbar({ onMenuOpen }: NavbarProps) {
   const { online, loading } = useAlerts();
   const pathname = usePathname();
+  const { user } = useAuth();
+  const navItems = user?.role === "admin"
+    ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM]
+    : BASE_NAV_ITEMS;
 
   return (
     <header className="sticky top-0 z-40 h-14 flex items-center justify-between px-4 md:px-6 bg-white/70 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-white/[0.06] shrink-0">
@@ -35,7 +42,7 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
 
       {/* Center: nav links (desktop only) */}
       <nav className="hidden md:flex items-center gap-1">
-        {NAV_ITEMS.map(({ href, label }) => {
+        {navItems.map(({ href, label }) => {
           const active = pathname === href;
           return (
             <Link

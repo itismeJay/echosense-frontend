@@ -1,9 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import AlertsProvider, { useAlerts } from "@/lib/AlertsProvider";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/lib/AuthProvider";
+
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { token, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !token) {
+      router.replace("/login");
+    }
+  }, [token, loading, router]);
+
+  if (loading || !token) return null;
+  return <>{children}</>;
+}
 
 function AppShell({ children }: { children: React.ReactNode }) {
   const { flashKey } = useAlerts();
@@ -44,8 +60,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AlertsProvider>
-      <AppShell>{children}</AppShell>
-    </AlertsProvider>
+    <AuthGuard>
+      <AlertsProvider>
+        <AppShell>{children}</AppShell>
+      </AlertsProvider>
+    </AuthGuard>
   );
 }

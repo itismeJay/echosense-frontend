@@ -1,5 +1,17 @@
 export type Severity = "high" | "medium" | "low";
 
+export interface User {
+  id: string;
+  email: string;
+  role: "admin" | "user";
+}
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: "bearer";
+  user: User;
+}
+
 export interface Alert {
   id: number;
   severity: Severity;
