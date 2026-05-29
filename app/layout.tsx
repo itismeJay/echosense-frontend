@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ToasterClient from "@/components/ToasterClient";
 import { Providers } from "@/lib/theme-provider";
-import AuthProvider from "@/lib/AuthProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,10 +35,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}
       >
         <Providers>
-          <AuthProvider>
-            {children}
-            <ToasterClient />
-          </AuthProvider>
+          {children}
+          <ToasterClient />
         </Providers>
       </body>
     </html>

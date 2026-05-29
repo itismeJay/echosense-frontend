@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { UserPlus, X, Loader2, Users, WifiOff } from "lucide-react";
-import { useAuth } from "@/lib/AuthProvider";
+import { useCurrentUser } from "@/lib/auth";
 import { getUsers, registerUser, ApiError } from "@/lib/api";
 import type { User } from "@/lib/types";
 
@@ -21,20 +21,20 @@ const ROLE_BADGE: Record<string, string> = {
 };
 
 export default function UsersPage() {
-  const { token, user: currentUser } = useAuth();
+  const currentUser = useCurrentUser();
   const router = useRouter();
 
-  const [users, setUsers]       = useState<User[]>([]);
-  const [fetching, setFetching] = useState(true);
+  const [users, setUsers]           = useState<User[]>([]);
+  const [fetching, setFetching]     = useState(true);
   const [fetchError, setFetchError] = useState(false);
 
-  const [showModal, setShowModal] = useState(false);
-  const [email, setEmail]         = useState("");
-  const [password, setPassword]   = useState("");
-  const [role, setRole]           = useState<"user" | "admin">("user");
+  const [showModal, setShowModal]   = useState(false);
+  const [email, setEmail]           = useState("");
+  const [password, setPassword]     = useState("");
+  const [role, setRole]             = useState<"user" | "admin">("user");
   const [submitting, setSubmitting] = useState(false);
 
-  // Redirect non-admins
+  // Redirect non-admins — middleware already blocks unauthenticated users
   useEffect(() => {
     if (currentUser && currentUser.role !== "admin") {
       router.replace("/dashboard");
@@ -42,17 +42,16 @@ export default function UsersPage() {
   }, [currentUser, router]);
 
   const fetchUsers = useCallback(async () => {
-    if (!token) return;
     setFetching(true);
     setFetchError(false);
     try {
-      setUsers(await getUsers(token));
+      setUsers(await getUsers());
     } catch {
       setFetchError(true);
     } finally {
       setFetching(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     void fetchUsers();
@@ -69,10 +68,9 @@ export default function UsersPage() {
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
-    if (!token) return;
     setSubmitting(true);
     try {
-      await registerUser(token, { email, password, role });
+      await registerUser({ email, password, role });
       closeModal();
       await fetchUsers();
       toast.success("User created successfully", TOAST_SUCCESS);
@@ -123,7 +121,6 @@ export default function UsersPage() {
       {/* Table card */}
       <div className={CARD}>
         {fetching ? (
-          // Loading skeleton
           <div className="p-2">
             <div className="animate-pulse">
               <div className="flex gap-4 px-4 py-3 border-b border-gray-100 dark:border-white/10">
@@ -205,20 +202,17 @@ export default function UsersPage() {
       {/* Add User Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closeModal}
           />
 
-          {/* Dialog */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.2 }}
             className="relative z-10 w-full max-w-md bg-white/90 dark:bg-gray-950/95 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-2xl p-6"
           >
-            {/* Close button */}
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"

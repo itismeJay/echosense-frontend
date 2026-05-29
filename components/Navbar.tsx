@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Radio, Wifi, WifiOff, Menu, LayoutDashboard, FileClock, BarChart3, Settings, Users } from "lucide-react";
+import {
+  Radio, Wifi, WifiOff, Menu,
+  LayoutDashboard, FileClock, BarChart3, Settings, Users, LogOut,
+} from "lucide-react";
 import { useAlerts } from "@/lib/AlertsProvider";
-import { useAuth } from "@/lib/AuthProvider";
 import ThemeToggle from "./ThemeToggle";
+import { logout, useCurrentUser } from "@/lib/auth";
 
 const BASE_NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -23,7 +26,7 @@ interface NavbarProps {
 export default function Navbar({ onMenuOpen }: NavbarProps) {
   const { online, loading } = useAlerts();
   const pathname = usePathname();
-  const { user } = useAuth();
+  const user = useCurrentUser();
   const navItems = user?.role === "admin"
     ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM]
     : BASE_NAV_ITEMS;
@@ -63,7 +66,7 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
         })}
       </nav>
 
-      {/* Right: live status + theme toggle + hamburger */}
+      {/* Right: live status + theme toggle + user + hamburger */}
       <div className="flex items-center gap-2">
         {/* Live status pill */}
         <div
@@ -87,10 +90,26 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
 
         <ThemeToggle />
 
+        {/* User email + logout */}
+        {user && (
+          <>
+            <span className="hidden sm:block text-xs text-gray-400 dark:text-gray-500 font-mono truncate max-w-[140px]">
+              {user.email}
+            </span>
+            <button
+              onClick={logout}
+              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </>
+        )}
+
         {/* Mobile hamburger */}
         <button
           onClick={onMenuOpen}
-          className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 border border-white/10 dark:border-white/10 border-gray-200/60 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+          className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
           aria-label="Open menu"
         >
           <Menu className="w-4 h-4" />

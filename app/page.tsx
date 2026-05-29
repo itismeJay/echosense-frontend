@@ -11,7 +11,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import AudioVisualizer from "@/components/AudioVisualizer";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useAuth } from "@/lib/AuthProvider";
+import { useCurrentUser } from "@/lib/auth";
 import { getLogsStats } from "@/lib/api";
 import type { LogsStats } from "@/lib/types";
 
@@ -153,7 +153,7 @@ const cardVariant = {
 // ── Component ─────────────────────────────────────────────────────
 
 export default function LandingPage() {
-  const { token, loading: authLoading } = useAuth();
+  const currentUser = useCurrentUser();
 
   const [stats, setStats] = useState<LogsStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -165,7 +165,10 @@ export default function LandingPage() {
       .finally(() => setStatsLoading(false));
   }, []);
 
-  const ctaHref = authLoading ? null : token ? "/dashboard" : "/login";
+  // useCurrentUser() starts null on server/first render, resolves from cookie after mount
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const ctaHref = !mounted ? null : currentUser ? "/dashboard" : "/login";
 
   return (
     <div className="relative overflow-x-hidden">

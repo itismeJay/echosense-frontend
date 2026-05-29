@@ -13,7 +13,7 @@ import {
   Cpu,
   Users,
 } from "lucide-react";
-import { useAuth } from "@/lib/AuthProvider";
+import { useCurrentUser } from "@/lib/auth";
 
 const BASE_NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -131,7 +131,7 @@ interface SidebarProps {
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuth();
+  const user = useCurrentUser();
   const navItems = user?.role === "admin"
     ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM]
     : BASE_NAV_ITEMS;
@@ -156,7 +156,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex bg-white/60 dark:bg-white/[0.03] backdrop-blur-xl border-r border-gray-200/60 dark:border-white/[0.06] min-h-full sticky top-0 h-[calc(100vh-3.5rem)] overflow-y-auto shrink-0">
+      <aside className="hidden md:flex bg-white/60 dark:bg-white/[0.03] backdrop-blur-xl border-r border-gray-200/60 dark:border-white/[0.06] overflow-y-auto shrink-0">
         <NavContent
           collapsed={collapsed}
           pathname={pathname}

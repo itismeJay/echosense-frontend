@@ -1,4 +1,4 @@
-import type { Alert, LogsStats, Settings, User, LoginResponse } from "./types";
+import type { Alert, LogsStats, Settings, User } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -9,12 +9,30 @@ export class ApiError extends Error {
   }
 }
 
+function getToken(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  return document.cookie
+    .split("; ")
+    .find(r => r.startsWith("echosense_token="))
+    ?.split("=")[1];
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getToken();
   const res = await fetch(`${API_URL}${path}`, {
     cache: "no-store",
     signal: AbortSignal.timeout(8000),
     ...options,
+    headers: {
+      ...(options?.headers as Record<string, string>),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
   });
+  if (res.status === 401) {
+    document.cookie = "echosense_token=; path=/; max-age=0";
+    window.location.href = "/login";
+    throw new ApiError(401, "Unauthorized");
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({})) as { detail?: string };
     throw new ApiError(res.status, body.detail ?? `HTTP ${res.status}`);
@@ -54,43 +72,16 @@ export async function saveSettings(settings: Settings): Promise<Settings> {
   });
 }
 
-export async function loginUser(email: string, password: string): Promise<LoginResponse> {
-  return apiFetch<LoginResponse>("/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-}
-
-export async function getMe(token: string): Promise<User> {
-  return apiFetch<User>("/auth/me", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-}
-
-export async function getUsers(token: string): Promise<User[]> {
-  return apiFetch<User[]>("/users", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export async function getUsers(): Promise<User[]> {
+  return apiFetch<User[]>("/users");
 }
 
 export async function registerUser(
-  token: string,
   data: { email: string; password: string; role: "admin" | "user" }
 ): Promise<User> {
-  const res = await fetch(`${API_URL}/auth/register`, {
+  return apiFetch<User>("/auth/register", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-    cache: "no-store",
-    signal: AbortSignal.timeout(8000),
   });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { detail?: string };
-    throw new ApiError(res.status, body.detail ?? `HTTP ${res.status}`);
-  }
-  return res.json() as Promise<User>;
 }
