@@ -47,6 +47,30 @@ export function severityColor(s: Severity): string {
   return                     "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25";
 }
 
+export function capitalize(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Tailwind badge classes per emotion.
+// angry=red, aggressive=orange, distressed=yellow, upset=amber, neutral/unknown=gray.
+export function emotionBadgeColor(emotion?: string): string {
+  switch ((emotion ?? "").toLowerCase()) {
+    case "angry":
+      return "bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/25";
+    case "aggressive":
+      return "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:bg-orange-500/15 dark:text-orange-400 dark:border-orange-500/25";
+    case "distressed":
+      return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20 dark:bg-yellow-500/15 dark:text-yellow-400 dark:border-yellow-500/25";
+    case "upset":
+      return "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/25";
+    case "neutral":
+      return "bg-gray-500/10 text-gray-600 border-gray-500/20 dark:bg-gray-400/15 dark:text-gray-300 dark:border-gray-400/25";
+    default: // unknown / silent / missing
+      return "bg-gray-500/10 text-gray-500 border-gray-500/20 dark:bg-gray-500/15 dark:text-gray-400 dark:border-gray-500/25";
+  }
+}
+
 export function csvEscape(field: string): string {
   const str = String(field);
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {

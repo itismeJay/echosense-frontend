@@ -2,8 +2,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useAlerts } from "@/lib/AlertsProvider";
-import { formatConfidence, formatRelative } from "@/lib/format";
+import { formatConfidence, formatRelative, emotionBadgeColor } from "@/lib/format";
 import StatCard from "@/components/StatCard";
+import AlertEvidence from "@/components/AlertEvidence";
 import AudioVisualizer from "@/components/AudioVisualizer";
 import DetectionStatus from "@/components/DetectionStatus";
 import ConfidenceMeter from "@/components/ConfidenceMeter";
@@ -136,20 +137,42 @@ export default function DashboardPage() {
                       animate={{ x: 0, opacity: 1 }}
                       exit={{ x: -40, opacity: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="flex items-center gap-3 p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/8 transition-colors"
+                      className="flex flex-col gap-2 p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/8 transition-colors"
                     >
-                      <SeverityBadge severity={alert.severity} dot />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                          {alert.location}
-                        </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-600">
-                          {formatRelative(alert.created_at)}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <SeverityBadge severity={alert.severity} dot />
+                          {alert.emotion && (
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${emotionBadgeColor(
+                                alert.emotion
+                              )}`}
+                            >
+                              {alert.emotion}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                            {alert.location}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-600">
+                            {formatRelative(alert.created_at)}
+                          </p>
+                        </div>
+                        <span className="text-xs font-mono text-gray-400 shrink-0">
+                          {formatConfidence(alert.confidence)}
+                        </span>
                       </div>
-                      <span className="text-xs font-mono text-gray-400 shrink-0">
-                        {formatConfidence(alert.confidence)}
-                      </span>
+
+                      {alert.transcribed_text && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 italic truncate pl-1">
+                          “{alert.transcribed_text.slice(0, 40)}
+                          {alert.transcribed_text.length > 40 ? "…" : ""}”
+                        </p>
+                      )}
+
+                      <AlertEvidence alert={alert} />
                     </motion.div>
                   ))}
                 </AnimatePresence>

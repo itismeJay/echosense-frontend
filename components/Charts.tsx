@@ -15,7 +15,7 @@ import {
   Area,
   ResponsiveContainer,
 } from "recharts";
-import type { Alert } from "@/lib/types";
+import type { Alert, LogsStats } from "@/lib/types";
 
 const GLASS =
   "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]";
@@ -90,6 +90,46 @@ function getConfidenceOverTime(alerts: Alert[]) {
       index: i + 1,
       confidence: Math.round(a.confidence * 100),
     }));
+}
+
+const EMOTION_COLORS: Record<string, string> = {
+  angry:      "#ef4444",
+  aggressive: "#f97316",
+  distressed: "#eab308",
+  upset:      "#f59e0b",
+  neutral:    "#10b981",
+  unknown:    "#6b7280",
+};
+
+function getEmotionBreakdown(stats: LogsStats) {
+  const b = stats.emotion_breakdown;
+  if (!b) return [];
+  return (Object.keys(EMOTION_COLORS) as (keyof typeof EMOTION_COLORS)[])
+    .map((key) => ({
+      name: key.charAt(0).toUpperCase() + key.slice(1),
+      value: b[key as keyof typeof b] ?? 0,
+      color: EMOTION_COLORS[key],
+    }))
+    .filter((d) => d.value > 0);
+}
+
+function getTopKeywords(alerts: Alert[], stats: LogsStats) {
+  const counts = new Map<string, number>();
+  for (const a of alerts) {
+    for (const raw of a.detected_words ?? []) {
+      const w = raw.trim();
+      if (!w) continue;
+      counts.set(w, (counts.get(w) ?? 0) + 1);
+    }
+  }
+  const ordered =
+    stats.top_detected_words && stats.top_detected_words.length > 0
+      ? stats.top_detected_words
+      : [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([w]) => w);
+  return ordered.slice(0, 10).map((word) => ({
+    word,
+    count: counts.get(word) ?? counts.get(word.trim()) ?? 0,
+  }));
 }
 
 function getPeakHours(alerts: Alert[]) {
@@ -320,6 +360,126 @@ export function PeakHoursHeatmap({ alerts }: { alerts: Alert[] }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+export function EmotionDonut({ stats }: { stats: LogsStats }) {
+  const mounted = useIsMounted();
+  const { theme } = useTheme();
+  const tooltipStyle = useTooltipStyle(theme);
+  const data = useMemo(() => getEmotionBreakdown(stats), [stats]);
+
+  return (
+    <div className={GLASS}>
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+        Emotion Breakdown
+      </h3>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+        Emotion profile of incidents
+      </p>
+      {!mounted ? (
+        <ChartSkeleton />
+      ) : data.length === 0 ? (
+        <div className="h-48 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+          No emotion data yet
+        </div>
+      ) : (
+        <>
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                innerRadius={45}
+                paddingAngle={3}
+              >
+                {data.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={tooltipStyle.contentStyle}
+                itemStyle={tooltipStyle.itemStyle}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-1.5 mt-1">
+            {data.map((d) => (
+              <div key={d.name} className="flex items-center gap-1.5">
+                <span
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ background: d.color }}
+                />
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {d.name} ({d.value})
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function TopKeywordsBar({
+  alerts,
+  stats,
+}: {
+  alerts: Alert[];
+  stats: LogsStats;
+}) {
+  const mounted = useIsMounted();
+  const { theme } = useTheme();
+  const tooltipStyle = useTooltipStyle(theme);
+  const data = useMemo(() => getTopKeywords(alerts, stats), [alerts, stats]);
+
+  return (
+    <div className={GLASS}>
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+        Top Keywords
+      </h3>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+        Most frequent detected keywords
+      </p>
+      {!mounted ? (
+        <ChartSkeleton />
+      ) : data.length === 0 ? (
+        <div className="h-48 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+          No keyword data yet
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={Math.max(200, data.length * 28)}>
+          <BarChart
+            data={data}
+            layout="vertical"
+            margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
+          >
+            <XAxis
+              type="number"
+              tick={{ fill: "#6b7280", fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="word"
+              width={90}
+              tick={{ fill: "#6b7280", fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip {...tooltipStyle} />
+            <Bar dataKey="count" fill="#6366f1" radius={[0, 4, 4, 0]} name="Count" />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

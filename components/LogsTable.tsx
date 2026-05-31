@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import type { Alert } from "@/lib/types";
-import { formatConfidence, formatTimestamp } from "@/lib/format";
+import { formatConfidence, formatTimestamp, emotionBadgeColor } from "@/lib/format";
 import SeverityBadge from "./SeverityBadge";
-import { ChevronUp, ChevronDown, MapPin, Clock } from "lucide-react";
+import AlertEvidence from "./AlertEvidence";
+import { ChevronUp, ChevronDown, ChevronRight, MapPin, Clock } from "lucide-react";
 
 type SortKey = "severity" | "confidence" | "duration" | "created_at";
 type SortDir = "asc" | "desc";
@@ -16,6 +17,8 @@ interface LogsTableProps {
   pageSize?: number;
   paginated?: boolean;
   sortable?: boolean;
+  /** Allow clicking a row to expand its AlertEvidence panel. */
+  expandable?: boolean;
 }
 
 // Plain function — NOT a component — to avoid "component defined inside render" lint rule
@@ -39,10 +42,14 @@ export default function LogsTable({
   pageSize = 10,
   paginated = true,
   sortable = true,
+  expandable = false,
 }: LogsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(0);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  const colCount = expandable ? 7 : 6;
 
   const sorted = useMemo(() => {
     if (!sortable) return rows;
@@ -98,6 +105,9 @@ export default function LogsTable({
                 </th>
               ))}
               <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden sm:table-cell">
+                Emotion
+              </th>
+              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden sm:table-cell">
                 Location
               </th>
               <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden md:table-cell whitespace-nowrap">
@@ -108,59 +118,100 @@ export default function LogsTable({
                   Time {renderSortIcon(sortKey, "created_at", sortDir, sortable)}
                 </button>
               </th>
+              {expandable && <th className="w-8" aria-label="Expand" />}
             </tr>
           </thead>
           <tbody>
             {paged.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={colCount}
                   className="py-10 text-center text-gray-400 dark:text-gray-500 text-sm"
                 >
                   No logs found
                 </td>
               </tr>
             )}
-            {paged.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-gray-50 dark:border-white/5 hover:bg-indigo-50/50 dark:hover:bg-white/5 transition-colors"
-              >
-                <td className="py-3 px-3">
-                  <SeverityBadge severity={row.severity} dot />
-                </td>
-                <td className="py-3 px-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-14 bg-gray-100 dark:bg-white/5 rounded-full h-1.5 hidden sm:block shrink-0">
-                      <div
-                        className="h-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
-                        style={{
-                          width: `${Math.round(row.confidence * 100)}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-gray-600 dark:text-gray-300 text-xs font-mono">
-                      {formatConfidence(row.confidence)}
-                    </span>
-                  </div>
-                </td>
-                <td className="py-3 px-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
-                  {row.duration.toFixed(1)}s
-                </td>
-                <td className="py-3 px-3 text-gray-500 dark:text-gray-400 text-xs hidden sm:table-cell">
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
-                    {row.location}
-                  </span>
-                </td>
-                <td className="py-3 px-3 text-gray-400 dark:text-gray-500 text-xs hidden md:table-cell whitespace-nowrap">
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
-                    {formatTimestamp(row.created_at)}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {paged.map((row) => {
+              const isExpanded = expandable && expandedId === row.id;
+              return (
+                <Fragment key={row.id}>
+                  <tr
+                    onClick={
+                      expandable
+                        ? () => setExpandedId((id) => (id === row.id ? null : row.id))
+                        : undefined
+                    }
+                    className={`border-b border-gray-50 dark:border-white/5 hover:bg-indigo-50/50 dark:hover:bg-white/5 transition-colors ${
+                      expandable ? "cursor-pointer" : ""
+                    } ${isExpanded ? "bg-indigo-50/50 dark:bg-white/5" : ""}`}
+                  >
+                    <td className="py-3 px-3">
+                      <SeverityBadge severity={row.severity} dot />
+                    </td>
+                    <td className="py-3 px-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-14 bg-gray-100 dark:bg-white/5 rounded-full h-1.5 hidden sm:block shrink-0">
+                          <div
+                            className="h-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                            style={{
+                              width: `${Math.round(row.confidence * 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-gray-600 dark:text-gray-300 text-xs font-mono">
+                          {formatConfidence(row.confidence)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
+                      {row.duration.toFixed(1)}s
+                    </td>
+                    <td className="py-3 px-3 hidden sm:table-cell">
+                      {row.emotion ? (
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${emotionBadgeColor(
+                            row.emotion
+                          )}`}
+                        >
+                          {row.emotion}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-gray-500 dark:text-gray-400 text-xs hidden sm:table-cell">
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
+                        {row.location}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-gray-400 dark:text-gray-500 text-xs hidden md:table-cell whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
+                        {formatTimestamp(row.created_at)}
+                      </span>
+                    </td>
+                    {expandable && (
+                      <td className="py-3 px-3 text-gray-400">
+                        <ChevronRight
+                          className={`w-4 h-4 transition-transform ${
+                            isExpanded ? "rotate-90" : ""
+                          }`}
+                        />
+                      </td>
+                    )}
+                  </tr>
+                  {isExpanded && (
+                    <tr className="border-b border-gray-50 dark:border-white/5">
+                      <td colSpan={colCount} className="px-3 pb-4 pt-1 bg-indigo-50/30 dark:bg-white/[0.02]">
+                        <AlertEvidence alert={row} defaultExpanded hideToggle />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

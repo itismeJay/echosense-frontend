@@ -6,11 +6,12 @@ import { motion } from "framer-motion";
 import {
   Cpu, Mic2, Radio, Bell, ShieldAlert,
   ChevronRight, ArrowRight,
-  Activity, AlertTriangle, AlertCircle,
+  Activity, AlertTriangle, AlertCircle, Gauge,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import AudioVisualizer from "@/components/AudioVisualizer";
 import ThemeToggle from "@/components/ThemeToggle";
+import { capitalize } from "@/lib/format";
 import { useCurrentUser } from "@/lib/auth";
 import { getLogsStats } from "@/lib/api";
 import type { LogsStats } from "@/lib/types";
@@ -88,7 +89,7 @@ const STEPS: Step[] = [
 ];
 
 interface StatTile {
-  key: keyof LogsStats;
+  key: "total_alerts" | "high_severity" | "medium_severity" | "low_severity";
   label: string;
   icon: LucideIcon;
   numColor: string;
@@ -169,6 +170,21 @@ export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   const ctaHref = !mounted ? null : currentUser ? "/dashboard" : "/login";
+
+  // Most common emotion across all incidents (from evidence aggregates)
+  const topEmotion = (() => {
+    const b = stats?.emotion_breakdown;
+    if (!b) return null;
+    let best: string | null = null;
+    let max = 0;
+    for (const [emotion, count] of Object.entries(b)) {
+      if (typeof count === "number" && count > max) {
+        max = count;
+        best = emotion;
+      }
+    }
+    return best;
+  })();
 
   return (
     <div className="relative overflow-x-hidden">
@@ -400,6 +416,25 @@ export default function LandingPage() {
                   )}
                 </motion.div>
               ))}
+
+              {topEmotion && (
+                <motion.div
+                  variants={cardVariant}
+                  className="bg-white/60 dark:bg-white/5 backdrop-blur-xl border-t-2 border border-white/80 dark:border-white/10 border-t-purple-500 rounded-2xl p-5 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-none"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <p className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-medium">
+                      Most common emotion
+                    </p>
+                    <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
+                      <Gauge className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-black text-purple-400">
+                    {capitalize(topEmotion)}
+                  </p>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         </section>

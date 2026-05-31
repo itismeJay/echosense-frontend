@@ -7,10 +7,12 @@ import {
   SeverityPie,
   ConfidenceOverTimeLine,
   PeakHoursHeatmap,
+  EmotionDonut,
+  TopKeywordsBar,
 } from "@/components/Charts";
 
 export default function AnalyticsPage() {
-  const { alerts, loading } = useAlerts();
+  const { alerts, stats, loading } = useAlerts();
 
   return (
     <motion.div
@@ -49,6 +51,22 @@ export default function AnalyticsPage() {
               </motion.div>
             )
           )}
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.32, duration: 0.4 }}
+          >
+            <EmotionDonut stats={stats} />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+          >
+            <TopKeywordsBar alerts={alerts} stats={stats} />
+          </motion.div>
         </div>
       )}
     </motion.div>

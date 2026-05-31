@@ -9,6 +9,7 @@ import { Download, Search } from "lucide-react";
 import { csvEscape } from "@/lib/format";
 
 type Filter = "all" | Severity;
+type EmotionFilter = "all" | "angry" | "aggressive" | "distressed" | "upset" | "neutral";
 
 const FILTERS: { label: string; value: Filter }[] = [
   { label: "All",    value: "all"    },
@@ -24,19 +25,40 @@ const ACTIVE_PILL: Record<Filter, string> = {
   low:    "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
 };
 
+const EMOTION_FILTERS: { label: string; value: EmotionFilter }[] = [
+  { label: "All",        value: "all"        },
+  { label: "Angry",      value: "angry"      },
+  { label: "Aggressive", value: "aggressive" },
+  { label: "Distressed", value: "distressed" },
+  { label: "Upset",      value: "upset"      },
+  { label: "Neutral",    value: "neutral"    },
+];
+
+const ACTIVE_EMOTION_PILL: Record<EmotionFilter, string> = {
+  all:        "bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400",
+  angry:      "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400",
+  aggressive: "bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400",
+  distressed: "bg-yellow-500/10 border-yellow-500/20 text-yellow-600 dark:text-yellow-400",
+  upset:      "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400",
+  neutral:    "bg-gray-500/10 border-gray-500/20 text-gray-600 dark:text-gray-300",
+};
+
 export default function LogsPage() {
   const { alerts } = useAlerts();
   const [filter, setFilter] = useState<Filter>("all");
+  const [emotionFilter, setEmotionFilter] = useState<EmotionFilter>("all");
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     return alerts.filter((a) => {
       if (filter !== "all" && a.severity !== filter) return false;
+      if (emotionFilter !== "all" && (a.emotion ?? "").toLowerCase() !== emotionFilter)
+        return false;
       if (search && !a.location.toLowerCase().includes(search.toLowerCase()))
         return false;
       return true;
     });
-  }, [alerts, filter, search]);
+  }, [alerts, filter, emotionFilter, search]);
 
   const handleExport = () => {
     const headers = [
@@ -45,7 +67,10 @@ export default function LogsPage() {
       "Confidence",
       "Duration",
       "Location",
-      "Status",
+      "Emotion",
+      "Transcribed Text",
+      "Detected Words",
+      "YAMNet Class",
       "Created At",
     ];
     const rows = filtered.map((a) => [
@@ -54,7 +79,10 @@ export default function LogsPage() {
       Math.round(a.confidence * 100) + "%",
       a.duration.toFixed(1) + "s",
       csvEscape(a.location),
-      a.status,
+      csvEscape(a.emotion ?? ""),
+      csvEscape(a.transcribed_text ?? ""),
+      csvEscape((a.detected_words ?? []).join("; ")),
+      csvEscape(a.yamnet_class ?? ""),
       a.created_at,
     ]);
     const csv = [
@@ -125,6 +153,26 @@ export default function LogsPage() {
         </button>
       </div>
 
+      {/* Emotion filter pills */}
+      <div className="flex items-center gap-2 flex-wrap mb-5">
+        <span className="text-[11px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-medium mr-1">
+          Emotion
+        </span>
+        {EMOTION_FILTERS.map((f) => (
+          <button
+            key={f.value}
+            onClick={() => setEmotionFilter(f.value)}
+            className={`px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-all ${
+              emotionFilter === f.value
+                ? ACTIVE_EMOTION_PILL[f.value]
+                : "bg-white/60 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-700 dark:hover:text-gray-200"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {/* Table card */}
       <div className="bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl p-5 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]">
         <div className="flex items-center justify-between mb-4">
@@ -132,7 +180,7 @@ export default function LogsPage() {
             {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"}
           </p>
         </div>
-        <LogsTable rows={filtered} pageSize={10} paginated sortable />
+        <LogsTable rows={filtered} pageSize={10} paginated sortable expandable />
       </div>
     </motion.div>
   );
