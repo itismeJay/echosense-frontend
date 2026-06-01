@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { UserPlus, X, Loader2, Users, WifiOff } from "lucide-react";
+import { UserPlus, X, Loader2, Users, WifiOff, Trash2 } from "lucide-react";
 import { useCurrentUser } from "@/lib/auth";
-import { getUsers, registerUser, ApiError } from "@/lib/api";
+import { getUsers, registerUser, deleteUser, ApiError } from "@/lib/api";
 import type { User } from "@/lib/types";
 
 const CARD = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]";
@@ -33,6 +33,9 @@ export default function UsersPage() {
   const [password, setPassword]     = useState("");
   const [role, setRole]             = useState<"user" | "admin">("user");
   const [submitting, setSubmitting] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [deleting, setDeleting]         = useState(false);
 
   // Redirect non-admins — middleware already blocks unauthenticated users
   useEffect(() => {
@@ -65,6 +68,24 @@ export default function UsersPage() {
   };
 
   const closeModal = () => setShowModal(false);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteUser(deleteTarget.id);
+      setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        toast.error("Permission denied", TOAST_ERROR);
+      } else {
+        toast.error("Failed to delete user", TOAST_ERROR);
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
@@ -161,6 +182,7 @@ export default function UsersPage() {
                   <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">ID</th>
                   <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Email</th>
                   <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Role</th>
+                  <th className="py-3 px-4" />
                 </tr>
               </thead>
               <tbody>
@@ -190,6 +212,17 @@ export default function UsersPage() {
                           {u.role}
                         </span>
                       </td>
+                      <td className="py-3 px-4 text-right">
+                        {u.id !== currentUser?.id && (
+                          <button
+                            onClick={() => setDeleteTarget(u)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            aria-label={`Delete ${u.email}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -198,6 +231,56 @@ export default function UsersPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => !deleting && setDeleteTarget(null)}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="relative z-10 w-full max-w-sm bg-white/90 dark:bg-gray-950/95 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-2xl p-6"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-xl bg-red-500/10 shrink-0">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Delete user</h3>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5 break-all">
+                  {deleteTarget.email}
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+              Are you sure you want to delete this user? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                disabled={deleting}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-red-500/90 hover:bg-red-500 text-white text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                Delete
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Add User Modal */}
       {showModal && (

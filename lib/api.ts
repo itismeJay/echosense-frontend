@@ -85,3 +85,21 @@ export async function registerUser(
     body: JSON.stringify(data),
   });
 }
+
+export async function deleteUser(userId: string): Promise<void> {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/users/${userId}`, {
+    method: "DELETE",
+    signal: AbortSignal.timeout(8000),
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (res.status === 401) {
+    document.cookie = "echosense_token=; path=/; max-age=0";
+    window.location.href = "/login";
+    throw new ApiError(401, "Unauthorized");
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { detail?: string };
+    throw new ApiError(res.status, body.detail ?? `HTTP ${res.status}`);
+  }
+}
