@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -27,11 +28,13 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
   const { online, loading } = useAlerts();
   const pathname = usePathname();
   const user = useCurrentUser();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const navItems = user?.role === "admin"
     ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM]
     : BASE_NAV_ITEMS;
 
   return (
+    <>
     <header className="sticky top-0 z-40 h-14 flex items-center justify-between px-4 md:px-6 bg-white/70 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-white/[0.06] shrink-0">
       {/* Left: wordmark */}
       <div className="flex items-center gap-2.5">
@@ -97,7 +100,7 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
               {user.email}
             </span>
             <button
-              onClick={logout}
+              onClick={() => setShowLogoutConfirm(true)}
               className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
               aria-label="Sign out"
             >
@@ -116,5 +119,41 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
         </button>
       </div>
     </header>
+
+      {/* Logout confirmation dialog */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowLogoutConfirm(false)}
+          />
+          <div className="relative z-10 w-full max-w-sm bg-white/90 dark:bg-gray-950/95 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-2xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-xl bg-red-500/10 shrink-0">
+                <LogOut className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Sign out</h3>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Are you sure you want to sign out?</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={logout}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-500/90 hover:bg-red-500 text-white text-sm font-semibold transition-colors"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
