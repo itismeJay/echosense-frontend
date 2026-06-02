@@ -1,11 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const ADMIN_ONLY_PATHS = ['/settings', '/users']
+
+function getRoleFromToken(token: string): string | null {
+  try {
+    const base64url = token.split('.')[1]
+    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/')
+    const payload = JSON.parse(atob(base64)) as { role?: unknown }
+    return typeof payload.role === 'string' ? payload.role : null
+  } catch {
+    return null
+  }
+}
+
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('echosense_token')?.value
-  const isLogin = request.nextUrl.pathname === '/login'
+  const { pathname } = request.nextUrl
+  const isLogin = pathname === '/login'
 
   if (isLogin && token) return NextResponse.redirect(new URL('/dashboard', request.url))
   if (!isLogin && !token) return NextResponse.redirect(new URL('/login', request.url))
+
+  if (token && ADMIN_ONLY_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
+    const role = getRoleFromToken(token)
+    if (role !== 'admin') return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
   return NextResponse.next()
 }
 

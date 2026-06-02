@@ -77,7 +77,7 @@ export async function getUsers(): Promise<User[]> {
 }
 
 export async function registerUser(
-  data: { email: string; password: string; role: "admin" | "user" }
+  data: { email: string; password: string; role: "admin" | "staff" | "counselor" }
 ): Promise<User> {
   return apiFetch<User>("/auth/register", {
     method: "POST",

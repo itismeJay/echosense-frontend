@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { Save, Bell, MapPin, Sliders, WifiOff, Loader2 } from "lucide-react";
 import type { Settings } from "@/lib/types";
 import { getSettings, saveSettings } from "@/lib/api";
+import { useCurrentUser } from "@/lib/auth";
 
 const DEFAULT_SETTINGS: Settings = {
   confidence_threshold: 75,
@@ -17,10 +19,18 @@ const DEFAULT_SETTINGS: Settings = {
 const CARD = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]";
 
 export default function SettingsPage() {
+  const currentUser = useCurrentUser();
+  const router = useRouter();
   const [settings, setSettings]               = useState<Settings>(DEFAULT_SETTINGS);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [saving, setSaving]                   = useState(false);
   const [backendAvailable, setBackendAvailable] = useState(true);
+
+  useEffect(() => {
+    if (currentUser && currentUser.role !== "admin") {
+      router.replace("/dashboard");
+    }
+  }, [currentUser, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +61,8 @@ export default function SettingsPage() {
 
   const update = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     setSettings((prev) => ({ ...prev, [key]: value }));
+
+  if (currentUser && currentUser.role !== "admin") return null;
 
   return (
     <motion.div

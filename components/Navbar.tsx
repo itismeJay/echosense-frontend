@@ -15,10 +15,12 @@ const BASE_NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/logs",      icon: FileClock,        label: "Logs"      },
   { href: "/analytics", icon: BarChart3,         label: "Analytics" },
-  { href: "/settings",  icon: Settings,          label: "Settings"  },
 ];
 
-const ADMIN_NAV_ITEM = { href: "/users", icon: Users, label: "Users" };
+const ADMIN_NAV_ITEMS = [
+  { href: "/settings", icon: Settings, label: "Settings" },
+  { href: "/users",    icon: Users,    label: "Users"    },
+];
 
 interface NavbarProps {
   onMenuOpen: () => void;
@@ -30,7 +32,7 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
   const user = useCurrentUser();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const navItems = user?.role === "admin"
-    ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM]
+    ? [...BASE_NAV_ITEMS, ...ADMIN_NAV_ITEMS]
     : BASE_NAV_ITEMS;
 
   return (

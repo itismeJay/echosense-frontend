@@ -16,8 +16,9 @@ const TOAST_SUCCESS = { style: { background: "#1a1a2e", color: "#86efac", border
 const TOAST_ERROR   = { style: { background: "#1a1a2e", color: "#f87171", border: "1px solid rgba(239,68,68,0.35)", borderRadius: "12px" } };
 
 const ROLE_BADGE: Record<string, string> = {
-  admin: "bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20",
-  user:  "bg-gray-500/10  text-gray-500  dark:text-gray-400  border border-gray-500/20",
+  admin:     "bg-indigo-500/10 text-indigo-500    dark:text-indigo-400    border border-indigo-500/20",
+  staff:     "bg-violet-500/10 text-violet-500    dark:text-violet-400    border border-violet-500/20",
+  counselor: "bg-cyan-500/10   text-cyan-600      dark:text-cyan-400      border border-cyan-500/20",
 };
 
 export default function UsersPage() {
@@ -31,7 +32,7 @@ export default function UsersPage() {
   const [showModal, setShowModal]   = useState(false);
   const [email, setEmail]           = useState("");
   const [password, setPassword]     = useState("");
-  const [role, setRole]             = useState<"user" | "admin">("user");
+  const [role, setRole]             = useState<"admin" | "staff" | "counselor">("staff");
   const [submitting, setSubmitting] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
@@ -63,7 +64,7 @@ export default function UsersPage() {
   const openModal = () => {
     setEmail("");
     setPassword("");
-    setRole("user");
+    setRole("staff");
     setShowModal(true);
   };
 
@@ -340,10 +341,11 @@ export default function UsersPage() {
                 </label>
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value as "user" | "admin")}
+                  onChange={(e) => setRole(e.target.value as "admin" | "staff" | "counselor")}
                   className={INPUT}
                 >
-                  <option value="user">user</option>
+                  <option value="staff">staff</option>
+                  <option value="counselor">counselor</option>
                   <option value="admin">admin</option>
                 </select>
               </div>

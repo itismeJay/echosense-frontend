@@ -7,7 +7,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 export type AuthUser = {
   id: string
   email: string
-  role: 'admin' | 'user'
+  role: 'admin' | 'staff' | 'counselor'
 }
 
 export function setAuthCookie(token: string) {

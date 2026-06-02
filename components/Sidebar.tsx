@@ -19,10 +19,12 @@ const BASE_NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/logs",      icon: FileClock,        label: "Logs"      },
   { href: "/analytics", icon: BarChart3,         label: "Analytics" },
-  { href: "/settings",  icon: Settings,          label: "Settings"  },
 ];
 
-const ADMIN_NAV_ITEM = { href: "/users", icon: Users, label: "Users" };
+const ADMIN_NAV_ITEMS = [
+  { href: "/settings", icon: Settings, label: "Settings" },
+  { href: "/users",    icon: Users,    label: "Users"    },
+];
 
 // Extracted OUTSIDE Sidebar to avoid "component defined during render" lint rule
 interface NavContentProps {
@@ -133,7 +135,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const user = useCurrentUser();
   const navItems = user?.role === "admin"
-    ? [...BASE_NAV_ITEMS, ADMIN_NAV_ITEM]
+    ? [...BASE_NAV_ITEMS, ...ADMIN_NAV_ITEMS]
     : BASE_NAV_ITEMS;
 
   // Read localStorage after mount — use setTimeout to avoid setState-in-effect lint

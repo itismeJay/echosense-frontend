@@ -3,7 +3,7 @@ export type Severity = "high" | "medium" | "low";
 export interface User {
   id: string;
   email: string;
-  role: "admin" | "user";
+  role: "admin" | "staff" | "counselor";
 }
 
 export interface LoginResponse {
