@@ -12,7 +12,13 @@ import {
   X,
   Cpu,
   Users,
+  HeartPulse,
+  BookOpen,
+  ClipboardList,
+  Grid3X3,
+  UserRoundCheck,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useCurrentUser } from "@/lib/auth";
 
 const BASE_NAV_ITEMS = [
@@ -22,9 +28,28 @@ const BASE_NAV_ITEMS = [
 ];
 
 const ADMIN_NAV_ITEMS = [
-  { href: "/settings", icon: Settings, label: "Settings" },
-  { href: "/users",    icon: Users,    label: "Users"    },
+  { href: "/settings",         icon: Settings,      label: "Settings"   },
+  { href: "/users",            icon: Users,         label: "Users"      },
+  { href: "/admin/heartbeat",  icon: HeartPulse,    label: "Heartbeat"  },
+  { href: "/admin/dictionary", icon: BookOpen,      label: "Dictionary" },
+  { href: "/admin/audit",      icon: ClipboardList, label: "Audit Log"  },
+  { href: "/admin/heatmap",    icon: Grid3X3,       label: "Heatmap"    },
 ];
+
+const COUNSELOR_NAV_ITEMS = [
+  { href: "/counselor", icon: UserRoundCheck, label: "Overview" },
+];
+
+type NavItem = {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+};
+
+type NavSection = {
+  label?: string;
+  items: NavItem[];
+};
 
 // Extracted OUTSIDE Sidebar to avoid "component defined during render" lint rule
 interface NavContentProps {
@@ -33,7 +58,7 @@ interface NavContentProps {
   showCollapseToggle: boolean;
   onToggleCollapsed: () => void;
   onLinkClick?: () => void;
-  navItems: typeof BASE_NAV_ITEMS;
+  navSections: NavSection[];
 }
 
 function NavContent({
@@ -42,7 +67,7 @@ function NavContent({
   showCollapseToggle,
   onToggleCollapsed,
   onLinkClick,
-  navItems,
+  navSections,
 }: NavContentProps) {
   return (
     <div
@@ -51,40 +76,49 @@ function NavContent({
       }`}
     >
       {/* Nav items */}
-      <nav className="flex-1 px-2 pt-3 space-y-0.5">
-        {navItems.map(({ href, icon: Icon, label }) => {
-          const active = pathname === href;
-          return (
-            <Link
-              key={href}
-              href={href}
-              onClick={onLinkClick}
-              className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
-                active
-                  ? "bg-indigo-500/10 dark:bg-white/10 text-gray-900 dark:text-white"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-200"
-              } ${collapsed ? "justify-center" : ""}`}
-            >
-              {active && (
-                <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500" />
-              )}
-              <Icon
-                className={`w-5 h-5 shrink-0 transition-colors ${
-                  active ? "text-indigo-400" : ""
-                }`}
-              />
-              {!collapsed && (
-                <span className="text-sm font-medium">{label}</span>
-              )}
-              {/* Tooltip when collapsed */}
-              {collapsed && (
-                <span className="pointer-events-none absolute left-full ml-3 z-50 px-2.5 py-1.5 bg-gray-800 border border-white/10 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  {label}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 px-2 pt-3 space-y-4">
+        {navSections.map((section, sectionIndex) => (
+          <div key={section.label ?? `primary-${sectionIndex}`} className="space-y-0.5">
+            {section.label && !collapsed && (
+              <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">
+                {section.label}
+              </p>
+            )}
+            {section.items.map(({ href, icon: Icon, label }) => {
+              const active = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onLinkClick}
+                  className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
+                    active
+                      ? "bg-indigo-500/10 dark:bg-white/10 text-gray-900 dark:text-white"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-200"
+                  } ${collapsed ? "justify-center" : ""}`}
+                >
+                  {active && (
+                    <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500" />
+                  )}
+                  <Icon
+                    className={`w-5 h-5 shrink-0 transition-colors ${
+                      active ? "text-indigo-400" : ""
+                    }`}
+                  />
+                  {!collapsed && (
+                    <span className="text-sm font-medium">{label}</span>
+                  )}
+                  {/* Tooltip when collapsed */}
+                  {collapsed && (
+                    <span className="pointer-events-none absolute left-full ml-3 z-50 px-2.5 py-1.5 bg-gray-800 border border-white/10 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      {section.label ? `${section.label}: ${label}` : label}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Bottom section: Pi status + collapse toggle */}
@@ -134,9 +168,15 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const user = useCurrentUser();
-  const navItems = user?.role === "admin"
-    ? [...BASE_NAV_ITEMS, ...ADMIN_NAV_ITEMS]
-    : BASE_NAV_ITEMS;
+  const navSections: NavSection[] = [
+    { items: BASE_NAV_ITEMS },
+    ...(user?.role === "admin" || user?.role === "counselor"
+      ? [{ label: "Counselor", items: COUNSELOR_NAV_ITEMS }]
+      : []),
+    ...(user?.role === "admin"
+      ? [{ label: "Admin", items: ADMIN_NAV_ITEMS }]
+      : []),
+  ];
 
   // Read localStorage after mount — use setTimeout to avoid setState-in-effect lint
   useEffect(() => {
@@ -164,7 +204,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           pathname={pathname}
           showCollapseToggle
           onToggleCollapsed={handleToggleCollapsed}
-          navItems={navItems}
+          navSections={navSections}
         />
       </aside>
 
@@ -194,7 +234,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               showCollapseToggle={false}
               onToggleCollapsed={handleToggleCollapsed}
               onLinkClick={onMobileClose}
-              navItems={navItems}
+              navSections={navSections}
             />
           </aside>
         </div>

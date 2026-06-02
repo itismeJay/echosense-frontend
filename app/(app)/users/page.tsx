@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { UserPlus, X, Loader2, Users, WifiOff, Trash2 } from "lucide-react";
+import { UserPlus, X, Loader2, Users, WifiOff, Trash2, Pencil } from "lucide-react";
 import { useCurrentUser } from "@/lib/auth";
 import { getUsers, registerUser, deleteUser, ApiError } from "@/lib/api";
 import type { User } from "@/lib/types";
@@ -38,6 +38,10 @@ export default function UsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deleting, setDeleting]         = useState(false);
 
+  const [editTarget, setEditTarget] = useState<User | null>(null);
+  const [editEmail, setEditEmail]   = useState("");
+  const [editRole, setEditRole]     = useState<"admin" | "staff" | "counselor">("staff");
+
   // Redirect non-admins — middleware already blocks unauthenticated users
   useEffect(() => {
     if (currentUser && currentUser.role !== "admin") {
@@ -58,7 +62,8 @@ export default function UsersPage() {
   }, []);
 
   useEffect(() => {
-    void fetchUsers();
+    const timeout = setTimeout(() => void fetchUsers(), 0);
+    return () => clearTimeout(timeout);
   }, [fetchUsers]);
 
   const openModal = () => {
@@ -69,6 +74,14 @@ export default function UsersPage() {
   };
 
   const closeModal = () => setShowModal(false);
+
+  const openEditModal = (user: User) => {
+    setEditTarget(user);
+    setEditEmail(user.email);
+    setEditRole(user.role);
+  };
+
+  const closeEditModal = () => setEditTarget(null);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -107,6 +120,12 @@ export default function UsersPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleUpdate = (e: FormEvent) => {
+    e.preventDefault();
+    setEditTarget(null);
+    toast.success("User updated", TOAST_SUCCESS);
   };
 
   // Don't render page content for non-admins while redirect fires
@@ -183,13 +202,13 @@ export default function UsersPage() {
                   <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">ID</th>
                   <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Email</th>
                   <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Role</th>
-                  <th className="py-3 px-4" />
+                  <th className="text-right py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="py-12 text-center text-gray-400 dark:text-gray-500 text-sm">
+                    <td colSpan={4} className="py-12 text-center text-gray-400 dark:text-gray-500 text-sm">
                       No users found
                     </td>
                   </tr>
@@ -213,16 +232,25 @@ export default function UsersPage() {
                           {u.role}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        {u.id !== currentUser?.id && (
+                      <td className="py-3 px-4">
+                        <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => setDeleteTarget(u)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                            aria-label={`Delete ${u.email}`}
+                            onClick={() => openEditModal(u)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                            aria-label={`Edit ${u.email}`}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Pencil className="w-4 h-4" />
                           </button>
-                        )}
+                          {u.id !== currentUser?.id && (
+                            <button
+                              onClick={() => setDeleteTarget(u)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              aria-label={`Delete ${u.email}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -232,6 +260,80 @@ export default function UsersPage() {
           </div>
         )}
       </div>
+
+      {/* Update User Modal */}
+      {editTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closeEditModal}
+          />
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="relative z-10 w-full max-w-md bg-white/90 dark:bg-gray-950/95 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-2xl p-6"
+          >
+            <button
+              onClick={closeEditModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">Update User</h2>
+
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="user@example.com"
+                  className={INPUT}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                  Role
+                </label>
+                <select
+                  value={editRole}
+                  onChange={(e) => setEditRole(e.target.value as "admin" | "staff" | "counselor")}
+                  className={INPUT}
+                >
+                  <option value="staff">staff</option>
+                  <option value="counselor">counselor</option>
+                  <option value="admin">admin</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-semibold hover:opacity-90 active:opacity-80 transition-opacity shadow-lg shadow-indigo-500/20"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Save
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (

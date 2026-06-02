@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { Save, Bell, MapPin, Sliders, WifiOff, Loader2 } from "lucide-react";
+import { Save, Bell, MapPin, Sliders, WifiOff, Loader2, PackageCheck, UploadCloud } from "lucide-react";
 import type { Settings } from "@/lib/types";
 import { getSettings, saveSettings } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
@@ -57,6 +57,12 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handlePushConfig = () => {
+    toast.success("Config pushed to Pi", {
+      style: { background: "#1a1a2e", color: "#86efac", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "12px" },
+    });
   };
 
   const update = <K extends keyof Settings>(key: K, value: Settings[K]) =>
@@ -172,6 +178,43 @@ export default function SettingsPage() {
               className="w-full px-4 py-2.5 bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
               placeholder="e.g. Grade 6 Classroom"
             />
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36, duration: 0.4 }} className={CARD}>
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-cyan-500/10 shrink-0">
+                  <PackageCheck className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">OTA Version Monitor</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Static Pi model package versions</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handlePushConfig}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-sm font-semibold hover:bg-indigo-500/20 transition-colors"
+              >
+                <UploadCloud className="w-4 h-4" />
+                Push Config to Pi
+              </button>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="rounded-xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 px-4 py-3">
+                <p className="text-xs text-gray-400 dark:text-gray-500">vosk_version</p>
+                <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white break-all">
+                  vosk-model-small-en-us-0.15
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 px-4 py-3">
+                <p className="text-xs text-gray-400 dark:text-gray-500">yamnet_version</p>
+                <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                  YAMNet TFLite v1.0
+                </p>
+              </div>
+            </div>
           </motion.div>
 
           <motion.button
