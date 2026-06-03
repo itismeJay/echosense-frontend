@@ -63,10 +63,11 @@ export interface Settings {
 }
 
 export interface DictionaryEntry {
-  id: number;
-  keyword: string;
+  term_id: number;
+  slur_text: string;
   language: string;
   severity_weight: number;
+  added_at?: string;
 }
 
 export interface AuditLog {

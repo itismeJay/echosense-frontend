@@ -91,7 +91,7 @@ export async function getDictionary(): Promise<DictionaryEntry[]> {
 }
 
 export async function addDictionaryEntry(entry: {
-  keyword: string;
+  slur_text: string;
   language: string;
   severity_weight: number;
 }): Promise<DictionaryEntry> {

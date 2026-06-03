@@ -23,7 +23,7 @@ export default function DictionaryPage() {
   const [fetchError, setFetchError] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const [keyword, setKeyword]               = useState("");
+  const [slurText, setSlurText]             = useState("");
   const [language, setLanguage]             = useState("Filipino");
   const [severityWeight, setSeverityWeight] = useState(0.7);
   const [submitting, setSubmitting]         = useState(false);
@@ -49,11 +49,11 @@ export default function DictionaryPage() {
   useEffect(() => { void fetchEntries(); }, [fetchEntries]);
 
   const handleDelete = async (entry: DictionaryEntry) => {
-    setDeletingId(entry.id);
+    setDeletingId(entry.term_id);
     try {
-      await deleteDictionaryEntry(entry.id);
-      setEntries((prev) => prev.filter((e) => e.id !== entry.id));
-      toast.success(`"${entry.keyword}" removed`, TOAST_SUCCESS);
+      await deleteDictionaryEntry(entry.term_id);
+      setEntries((prev) => prev.filter((e) => e.term_id !== entry.term_id));
+      toast.success(`"${entry.slur_text}" removed`, TOAST_SUCCESS);
     } catch {
       toast.error("Failed to delete keyword", TOAST_ERROR);
     } finally {
@@ -65,10 +65,10 @@ export default function DictionaryPage() {
     event.preventDefault();
     setSubmitting(true);
     try {
-      const created = await addDictionaryEntry({ keyword, language, severity_weight: severityWeight });
+      const created = await addDictionaryEntry({ slur_text: slurText, language, severity_weight: severityWeight });
       setEntries((prev) => [created, ...prev]);
       toast.success("Keyword saved", TOAST_SUCCESS);
-      setKeyword("");
+      setSlurText("");
       setLanguage("Filipino");
       setSeverityWeight(0.7);
     } catch {
@@ -152,10 +152,10 @@ export default function DictionaryPage() {
                 ) : (
                   entries.map((entry) => (
                     <tr
-                      key={entry.id}
+                      key={entry.term_id}
                       className="border-b border-gray-50 dark:border-white/5 hover:bg-indigo-50/50 dark:hover:bg-white/5 transition-colors"
                     >
-                      <td className="py-3 px-4 text-gray-900 dark:text-white font-medium">{entry.keyword}</td>
+                      <td className="py-3 px-4 text-gray-900 dark:text-white font-medium">{entry.slur_text}</td>
                       <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{entry.language}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
@@ -171,11 +171,11 @@ export default function DictionaryPage() {
                       <td className="py-3 px-4 text-right">
                         <button
                           onClick={() => void handleDelete(entry)}
-                          disabled={deletingId === entry.id}
+                          disabled={deletingId === entry.term_id}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          aria-label={`Delete ${entry.keyword}`}
+                          aria-label={`Delete ${entry.slur_text}`}
                         >
-                          {deletingId === entry.id
+                          {deletingId === entry.term_id
                             ? <Loader2 className="w-4 h-4 animate-spin" />
                             : <Trash2 className="w-4 h-4" />
                           }
@@ -208,8 +208,8 @@ export default function DictionaryPage() {
             </label>
             <input
               type="text"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
+              value={slurText}
+              onChange={(event) => setSlurText(event.target.value)}
               placeholder="Enter keyword"
               className={INPUT}
               required
