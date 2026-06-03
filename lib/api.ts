@@ -1,4 +1,4 @@
-import type { Alert, LogsStats, Settings, User } from "./types";
+import type { Alert, LogsStats, Settings, User, DictionaryEntry, AuditLog, SystemSettings, Report } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -83,6 +83,63 @@ export async function registerUser(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
+  });
+}
+
+export async function getDictionary(): Promise<DictionaryEntry[]> {
+  return apiFetch<DictionaryEntry[]>("/dictionary");
+}
+
+export async function addDictionaryEntry(entry: {
+  keyword: string;
+  language: string;
+  severity_weight: number;
+}): Promise<DictionaryEntry> {
+  return apiFetch<DictionaryEntry>("/dictionary", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(entry),
+  });
+}
+
+export async function deleteDictionaryEntry(termId: number): Promise<void> {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/dictionary/${termId}`, {
+    method: "DELETE",
+    signal: AbortSignal.timeout(8000),
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (res.status === 401) {
+    document.cookie = "echosense_token=; path=/; max-age=0";
+    window.location.href = "/login";
+    throw new ApiError(401, "Unauthorized");
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { detail?: string };
+    throw new ApiError(res.status, body.detail ?? `HTTP ${res.status}`);
+  }
+}
+
+export async function getAuditLogs(): Promise<AuditLog[]> {
+  return apiFetch<AuditLog[]>("/audit-logs");
+}
+
+export async function getSystemSettings(): Promise<SystemSettings> {
+  return apiFetch<SystemSettings>("/system-settings");
+}
+
+export async function getReports(): Promise<Report[]> {
+  return apiFetch<Report[]>("/reports");
+}
+
+export async function generateReport(params: {
+  date_from: string;
+  date_to: string;
+}): Promise<Report> {
+  return apiFetch<Report>("/reports", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
   });
 }
 

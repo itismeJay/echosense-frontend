@@ -61,3 +61,34 @@ export interface Settings {
   notifications: boolean;
   location: string;
 }
+
+export interface DictionaryEntry {
+  id: number;
+  keyword: string;
+  language: string;
+  severity_weight: number;
+}
+
+export interface AuditLog {
+  id: number;
+  actor: string;
+  action: string;
+  target: string;
+  timestamp: string;
+}
+
+export interface SystemSettings {
+  device_status: "online" | "offline";
+  last_heartbeat: string | null;
+  vosk_version?: string;
+  yamnet_version?: string;
+  cpu_usage?: number;
+  temperature?: number;
+  uptime_seconds?: number;
+}
+
+export interface Report {
+  report_id: string;
+  generated_at: string;
+  total_incidents: number;
+}
