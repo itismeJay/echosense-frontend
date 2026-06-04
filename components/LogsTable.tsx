@@ -2,7 +2,7 @@
 
 import { useState, useMemo, Fragment } from "react";
 import type { Alert } from "@/lib/types";
-import { formatConfidence, formatTimestamp, emotionBadgeColor } from "@/lib/format";
+import { formatConfidence, formatTimestamp, emotionBadgeColor, categoryBadgeColor, categoryLabel, languageLabel } from "@/lib/format";
 import SeverityBadge from "./SeverityBadge";
 import AlertEvidence from "./AlertEvidence";
 import { ChevronUp, ChevronDown, ChevronRight, MapPin, Clock } from "lucide-react";
@@ -17,24 +17,13 @@ interface LogsTableProps {
   pageSize?: number;
   paginated?: boolean;
   sortable?: boolean;
-  /** Allow clicking a row to expand its AlertEvidence panel. */
   expandable?: boolean;
 }
 
-// Plain function — NOT a component — to avoid "component defined inside render" lint rule
-function renderSortIcon(
-  activeKey: SortKey,
-  thisKey: SortKey,
-  dir: SortDir,
-  sortable: boolean
-) {
+function renderSortIcon(activeKey: SortKey, thisKey: SortKey, dir: SortDir, sortable: boolean) {
   if (!sortable) return null;
   if (activeKey !== thisKey) return <ChevronDown className="w-3 h-3 opacity-20" />;
-  return dir === "asc" ? (
-    <ChevronUp className="w-3 h-3" />
-  ) : (
-    <ChevronDown className="w-3 h-3" />
-  );
+  return dir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />;
 }
 
 export default function LogsTable({
@@ -49,14 +38,14 @@ export default function LogsTable({
   const [page, setPage] = useState(0);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const colCount = expandable ? 7 : 6;
+  // Severity + Confidence + Duration + Category + Language + Words + Emotion + Location + Time + expand
+  const colCount = expandable ? 10 : 9;
 
   const sorted = useMemo(() => {
     if (!sortable) return rows;
     return [...rows].sort((a, b) => {
       let cmp = 0;
-      if (sortKey === "severity")
-        cmp = SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity];
+      if (sortKey === "severity") cmp = SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity];
       else if (sortKey === "confidence") cmp = a.confidence - b.confidence;
       else if (sortKey === "duration") cmp = a.duration - b.duration;
       else cmp = a.created_at.localeCompare(b.created_at);
@@ -65,24 +54,19 @@ export default function LogsTable({
   }, [rows, sortKey, sortDir, sortable]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
-  const paged = paginated
-    ? sorted.slice(page * pageSize, (page + 1) * pageSize)
-    : sorted.slice(0, pageSize);
+  const paged = paginated ? sorted.slice(page * pageSize, (page + 1) * pageSize) : sorted.slice(0, pageSize);
 
   const handleSort = (key: SortKey) => {
     if (!sortable) return;
     if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else {
-      setSortKey(key);
-      setSortDir("desc");
-    }
+    else { setSortKey(key); setSortDir("desc"); }
     setPage(0);
   };
 
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[520px]">
+        <table className="w-full text-sm min-w-[740px]">
           <thead>
             <tr className="border-b border-gray-100 dark:border-white/10">
               {(
@@ -104,6 +88,15 @@ export default function LogsTable({
                   </button>
                 </th>
               ))}
+              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden lg:table-cell">
+                Category
+              </th>
+              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden lg:table-cell">
+                Language
+              </th>
+              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden xl:table-cell whitespace-nowrap">
+                Words
+              </th>
               <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden sm:table-cell">
                 Emotion
               </th>
@@ -124,24 +117,19 @@ export default function LogsTable({
           <tbody>
             {paged.length === 0 && (
               <tr>
-                <td
-                  colSpan={colCount}
-                  className="py-10 text-center text-gray-400 dark:text-gray-500 text-sm"
-                >
+                <td colSpan={colCount} className="py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
                   No logs found
                 </td>
               </tr>
             )}
             {paged.map((row) => {
               const isExpanded = expandable && expandedId === row.id;
+              const firstCat = row.categories?.[0];
+              const wordCount = (row.hard_hits?.length ?? 0) + (row.soft_hits?.length ?? 0);
               return (
                 <Fragment key={row.id}>
                   <tr
-                    onClick={
-                      expandable
-                        ? () => setExpandedId((id) => (id === row.id ? null : row.id))
-                        : undefined
-                    }
+                    onClick={expandable ? () => setExpandedId((id) => (id === row.id ? null : row.id)) : undefined}
                     className={`border-b border-gray-50 dark:border-white/5 hover:bg-indigo-50/50 dark:hover:bg-white/5 transition-colors ${
                       expandable ? "cursor-pointer" : ""
                     } ${isExpanded ? "bg-indigo-50/50 dark:bg-white/5" : ""}`}
@@ -154,9 +142,7 @@ export default function LogsTable({
                         <div className="w-14 bg-gray-100 dark:bg-white/5 rounded-full h-1.5 hidden sm:block shrink-0">
                           <div
                             className="h-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
-                            style={{
-                              width: `${Math.round(row.confidence * 100)}%`,
-                            }}
+                            style={{ width: `${Math.round(row.confidence * 100)}%` }}
                           />
                         </div>
                         <span className="text-gray-600 dark:text-gray-300 text-xs font-mono">
@@ -167,12 +153,27 @@ export default function LogsTable({
                     <td className="py-3 px-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
                       {row.duration.toFixed(1)}s
                     </td>
+                    <td className="py-3 px-3 hidden lg:table-cell">
+                      {firstCat ? (
+                        <span className={`px-2 py-0.5 text-[11px] font-semibold rounded-full border ${categoryBadgeColor(firstCat)}`}>
+                          {categoryLabel(firstCat)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 hidden lg:table-cell">
+                      <span className="px-2 py-0.5 text-[11px] font-medium rounded-full border bg-purple-500/10 text-purple-600 border-purple-500/20 dark:bg-purple-500/15 dark:text-purple-400">
+                        {languageLabel(row.language)}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 hidden xl:table-cell text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
+                      {wordCount > 0 ? `${wordCount} word${wordCount !== 1 ? "s" : ""}` : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                    </td>
                     <td className="py-3 px-3 hidden sm:table-cell">
                       {row.emotion ? (
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${emotionBadgeColor(
-                            row.emotion
-                          )}`}
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${emotionBadgeColor(row.emotion)}`}
                         >
                           {row.emotion}
                         </span>
@@ -194,11 +195,7 @@ export default function LogsTable({
                     </td>
                     {expandable && (
                       <td className="py-3 px-3 text-gray-400">
-                        <ChevronRight
-                          className={`w-4 h-4 transition-transform ${
-                            isExpanded ? "rotate-90" : ""
-                          }`}
-                        />
+                        <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                       </td>
                     )}
                   </tr>

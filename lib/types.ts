@@ -32,6 +32,20 @@ export interface Alert {
   zero_crossing_rate?: number;
   peak_to_average?: number;
   waveform_snapshot?: number[];
+
+  // ── Classification (new fields) ──
+  categories?: string[];
+  language?: string;
+  hard_hits?: string[];
+  soft_hits?: string[];
+}
+
+export interface CategoryStats {
+  academic_shaming?: number;
+  body_shaming?: number;
+  emotional_taunting?: number;
+  threat?: number;
+  [key: string]: number | undefined;
 }
 
 export interface EmotionBreakdown {

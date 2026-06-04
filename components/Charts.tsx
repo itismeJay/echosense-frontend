@@ -15,7 +15,7 @@ import {
   Area,
   ResponsiveContainer,
 } from "recharts";
-import type { Alert, LogsStats } from "@/lib/types";
+import type { Alert, LogsStats, CategoryStats } from "@/lib/types";
 
 const GLASS =
   "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]";
@@ -422,6 +422,125 @@ export function EmotionDonut({ stats }: { stats: LogsStats }) {
             ))}
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+const CATEGORY_CHART_DATA = [
+  { key: "academic_shaming",   label: "Academic",  color: "#3b82f6" },
+  { key: "body_shaming",       label: "Physical",  color: "#f97316" },
+  { key: "emotional_taunting", label: "Emotional", color: "#eab308" },
+  { key: "threat",             label: "Threat",    color: "#ef4444" },
+];
+
+export function CategoryBarChart({ stats }: { stats: CategoryStats | null; loading?: boolean }) {
+  const mounted = useIsMounted();
+  const { theme } = useTheme();
+  const tooltipStyle = useTooltipStyle(theme);
+
+  const data = useMemo(() => {
+    if (!stats) return [];
+    return CATEGORY_CHART_DATA.map((d) => ({
+      name: d.label,
+      count: stats[d.key] ?? 0,
+      color: d.color,
+    }));
+  }, [stats]);
+
+  return (
+    <div className={GLASS}>
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+        Type of Bullying Detected
+      </h3>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+        Incident count by bullying category
+      </p>
+      {!mounted ? (
+        <ChartSkeleton />
+      ) : !stats || data.every((d) => d.count === 0) ? (
+        <div className="h-48 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+          No category data yet
+        </div>
+      ) : (
+        <>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+              <XAxis dataKey="name" tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <Tooltip {...tooltipStyle} />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Incidents">
+                {data.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} fillOpacity={0.85} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-1.5 mt-2">
+            {data.map((d) => (
+              <div key={d.name} className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
+                <span className="text-xs text-gray-500 dark:text-gray-400">{d.name} ({d.count})</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function LanguageBreakdown({ alerts }: { alerts: Alert[] }) {
+  const data = useMemo(() => {
+    const counts: Record<string, number> = { tl: 0, ceb: 0, en: 0, mixed: 0 };
+    for (const a of alerts) {
+      const k = a.language && ["tl", "ceb", "en"].includes(a.language) ? a.language : "mixed";
+      counts[k]++;
+    }
+    return [
+      { code: "tl",    label: "Filipino", count: counts.tl,    color: "#6366f1" },
+      { code: "ceb",   label: "Bisaya",   count: counts.ceb,   color: "#a855f7" },
+      { code: "en",    label: "English",  count: counts.en,    color: "#22d3ee" },
+      { code: "mixed", label: "Mixed",    count: counts.mixed, color: "#6b7280" },
+    ].filter((d) => d.count > 0);
+  }, [alerts]);
+
+  const total = data.reduce((s, d) => s + d.count, 0);
+
+  return (
+    <div className={GLASS}>
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+        Language Used in Bullying Incidents
+      </h3>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+        Reflects multilingual detection for Davao classrooms
+      </p>
+      {total === 0 ? (
+        <div className="h-24 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+          No data yet
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {data.map((d) => {
+            const pct = total > 0 ? Math.round((d.count / total) * 100) : 0;
+            return (
+              <div key={d.code}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{d.label}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
+                    {d.count} incident{d.count !== 1 ? "s" : ""} · {pct}%
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${pct}%`, background: d.color }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

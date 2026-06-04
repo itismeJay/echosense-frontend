@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useAlerts } from "@/lib/AlertsProvider";
-import { formatConfidence, formatRelative, emotionBadgeColor } from "@/lib/format";
+import { formatConfidence, formatRelative, emotionBadgeColor, categoryBadgeColor, categoryLabel, languageLabel } from "@/lib/format";
 import StatCard from "@/components/StatCard";
 import AlertEvidence from "@/components/AlertEvidence";
 import AudioVisualizer from "@/components/AudioVisualizer";
@@ -130,51 +130,71 @@ export default function DashboardPage() {
                   </p>
                 )}
                 <AnimatePresence mode="popLayout">
-                  {liveFeed.map((alert) => (
-                    <motion.div
-                      key={alert.id}
-                      initial={{ x: 40, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      exit={{ x: -40, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="flex flex-col gap-2 p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/8 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <SeverityBadge severity={alert.severity} dot />
-                          {alert.emotion && (
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${emotionBadgeColor(
-                                alert.emotion
-                              )}`}
-                            >
-                              {alert.emotion}
+                  {liveFeed.map((alert) => {
+                    const cats = alert.categories ?? [];
+                    const hasClassification = cats.length !== 0 || !!alert.language;
+                    const excerpt = alert.transcribed_text
+                      ? alert.transcribed_text.slice(0, 60) + (alert.transcribed_text.length > 60 ? "…" : "")
+                      : null;
+                    return (
+                      <motion.div
+                        key={alert.id}
+                        initial={{ x: 40, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: -40, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="flex flex-col gap-2 p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/8 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <SeverityBadge severity={alert.severity} dot />
+                            {alert.emotion && (
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${emotionBadgeColor(alert.emotion)}`}
+                              >
+                                {alert.emotion}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                              {alert.location}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-gray-600">
+                              {formatRelative(alert.created_at)}
+                            </p>
+                          </div>
+                          <span className="text-xs font-mono text-gray-400 shrink-0">
+                            {formatConfidence(alert.confidence)}
+                          </span>
+                        </div>
+
+                        {hasClassification && (
+                          <div className="flex flex-wrap gap-1 pl-1">
+                            {cats.slice(0, 2).map((cat) => (
+                              <span
+                                key={cat}
+                                className={`px-1.5 py-0.5 text-[10px] font-semibold rounded-full border ${categoryBadgeColor(cat)}`}
+                              >
+                                {categoryLabel(cat)}
+                              </span>
+                            ))}
+                            <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-full border bg-purple-500/10 text-purple-600 border-purple-500/20 dark:bg-purple-500/15 dark:text-purple-400">
+                              {languageLabel(alert.language)}
                             </span>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                            {alert.location}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-600">
-                            {formatRelative(alert.created_at)}
-                          </p>
-                        </div>
-                        <span className="text-xs font-mono text-gray-400 shrink-0">
-                          {formatConfidence(alert.confidence)}
-                        </span>
-                      </div>
+                          </div>
+                        )}
 
-                      {alert.transcribed_text && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 italic truncate pl-1">
-                          “{alert.transcribed_text.slice(0, 40)}
-                          {alert.transcribed_text.length > 40 ? "…" : ""}”
-                        </p>
-                      )}
+                        {excerpt && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 italic truncate pl-1">
+                            {`"${excerpt}"`}
+                          </p>
+                        )}
 
-                      <AlertEvidence alert={alert} />
-                    </motion.div>
-                  ))}
+                        <AlertEvidence alert={alert} />
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             </div>

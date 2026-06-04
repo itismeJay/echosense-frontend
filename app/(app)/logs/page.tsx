@@ -5,11 +5,13 @@ import { motion } from "framer-motion";
 import { useAlerts } from "@/lib/AlertsProvider";
 import LogsTable from "@/components/LogsTable";
 import type { Severity } from "@/lib/types";
-import { Download, Search } from "lucide-react";
-import { csvEscape } from "@/lib/format";
+import { Download, Search, ChevronDown } from "lucide-react";
+import { csvEscape, categoryLabel, languageLabel } from "@/lib/format";
 
 type Filter = "all" | Severity;
 type EmotionFilter = "all" | "angry" | "aggressive" | "distressed" | "upset" | "neutral";
+type CategoryFilter = "all" | "academic_shaming" | "body_shaming" | "emotional_taunting" | "threat";
+type LanguageFilter = "all" | "tl" | "ceb" | "en";
 
 const FILTERS: { label: string; value: Filter }[] = [
   { label: "All",    value: "all"    },
@@ -43,35 +45,47 @@ const ACTIVE_EMOTION_PILL: Record<EmotionFilter, string> = {
   neutral:    "bg-gray-500/10 border-gray-500/20 text-gray-600 dark:text-gray-300",
 };
 
+const CATEGORY_OPTIONS: { label: string; value: CategoryFilter }[] = [
+  { label: "All Categories",  value: "all"                },
+  { label: "Academic",        value: "academic_shaming"   },
+  { label: "Physical",        value: "body_shaming"       },
+  { label: "Emotional",       value: "emotional_taunting" },
+  { label: "Threat",          value: "threat"             },
+];
+
+const LANGUAGE_OPTIONS: { label: string; value: LanguageFilter }[] = [
+  { label: "All Languages", value: "all" },
+  { label: "Filipino",      value: "tl"  },
+  { label: "Bisaya",        value: "ceb" },
+  { label: "English",       value: "en"  },
+];
+
+const SELECT_BASE = "appearance-none pl-3 pr-8 py-2 text-xs bg-white/60 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-700 dark:text-gray-300 focus:outline-none focus:border-indigo-500/50 transition-colors cursor-pointer";
+
 export default function LogsPage() {
   const { alerts } = useAlerts();
   const [filter, setFilter] = useState<Filter>("all");
   const [emotionFilter, setEmotionFilter] = useState<EmotionFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [languageFilter, setLanguageFilter] = useState<LanguageFilter>("all");
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     return alerts.filter((a) => {
       if (filter !== "all" && a.severity !== filter) return false;
-      if (emotionFilter !== "all" && (a.emotion ?? "").toLowerCase() !== emotionFilter)
-        return false;
-      if (search && !a.location.toLowerCase().includes(search.toLowerCase()))
-        return false;
+      if (emotionFilter !== "all" && (a.emotion ?? "").toLowerCase() !== emotionFilter) return false;
+      if (categoryFilter !== "all" && !(a.categories ?? []).includes(categoryFilter)) return false;
+      if (languageFilter !== "all" && a.language !== languageFilter) return false;
+      if (search && !a.location.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [alerts, filter, emotionFilter, search]);
+  }, [alerts, filter, emotionFilter, categoryFilter, languageFilter, search]);
 
   const handleExport = () => {
     const headers = [
-      "ID",
-      "Severity",
-      "Confidence",
-      "Duration",
-      "Location",
-      "Emotion",
-      "Transcribed Text",
-      "Detected Words",
-      "YAMNet Class",
-      "Created At",
+      "ID", "Severity", "Confidence", "Duration", "Location", "Language",
+      "Categories", "Emotion", "Hard Hits", "Soft Hits", "Transcribed Text",
+      "Detected Words", "YAMNet Class", "Created At",
     ];
     const rows = filtered.map((a) => [
       a.id,
@@ -79,16 +93,17 @@ export default function LogsPage() {
       Math.round(a.confidence * 100) + "%",
       a.duration.toFixed(1) + "s",
       csvEscape(a.location),
+      languageLabel(a.language),
+      csvEscape((a.categories ?? []).map((c) => categoryLabel(c)).join("; ")),
       csvEscape(a.emotion ?? ""),
+      csvEscape((a.hard_hits ?? []).join("; ")),
+      csvEscape((a.soft_hits ?? []).join("; ")),
       csvEscape(a.transcribed_text ?? ""),
       csvEscape((a.detected_words ?? []).join("; ")),
       csvEscape(a.yamnet_class ?? ""),
       a.created_at,
     ]);
-    const csv = [
-      headers.join(","),
-      ...rows.map((r) => r.join(",")),
-    ].join("\n");
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -112,9 +127,8 @@ export default function LogsPage() {
         </p>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        {/* Severity pills */}
+      {/* Severity + Search + Export row */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="flex gap-2 flex-wrap">
           {FILTERS.map((f) => (
             <button
@@ -131,7 +145,6 @@ export default function LogsPage() {
           ))}
         </div>
 
-        {/* Search */}
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
           <input
@@ -143,7 +156,6 @@ export default function LogsPage() {
           />
         </div>
 
-        {/* Export */}
         <button
           onClick={handleExport}
           className="flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-white/60 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0"
@@ -151,6 +163,37 @@ export default function LogsPage() {
           <Download className="w-3.5 h-3.5" />
           Export CSV
         </button>
+      </div>
+
+      {/* Category + Language dropdowns */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <span className="text-[11px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-medium">
+          Filters
+        </span>
+        <div className="relative">
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value as CategoryFilter)}
+            className={SELECT_BASE}
+          >
+            {CATEGORY_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+        </div>
+        <div className="relative">
+          <select
+            value={languageFilter}
+            onChange={(e) => setLanguageFilter(e.target.value as LanguageFilter)}
+            className={SELECT_BASE}
+          >
+            {LANGUAGE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+        </div>
       </div>
 
       {/* Emotion filter pills */}

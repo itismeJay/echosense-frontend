@@ -12,9 +12,11 @@ import {
   PeakHoursHeatmap,
   EmotionDonut,
   TopKeywordsBar,
+  CategoryBarChart,
+  LanguageBreakdown,
 } from "@/components/Charts";
-import { getReports, generateReport } from "@/lib/api";
-import type { Report } from "@/lib/types";
+import { getReports, generateReport, getCategoryStats } from "@/lib/api";
+import type { Report, CategoryStats } from "@/lib/types";
 import { formatTimestamp } from "@/lib/format";
 
 const CARD = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]";
@@ -31,12 +33,19 @@ export default function AnalyticsPage() {
   const [generating, setGenerating] = useState(false);
   const [reports, setReports]       = useState<Report[]>([]);
   const [reportsLoading, setReportsLoading] = useState(true);
+  const [categoryStats, setCategoryStats] = useState<CategoryStats | null>(null);
 
   useEffect(() => {
     getReports()
       .then(setReports)
       .catch(() => {})
       .finally(() => setReportsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    getCategoryStats()
+      .then(setCategoryStats)
+      .catch(() => {});
   }, []);
 
   const handleGenerateReport = async () => {
@@ -160,6 +169,22 @@ export default function AnalyticsPage() {
             transition={{ delay: 0.4, duration: 0.4 }}
           >
             <TopKeywordsBar alerts={alerts} stats={stats} />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.48, duration: 0.4 }}
+          >
+            <CategoryBarChart stats={categoryStats} />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.56, duration: 0.4 }}
+          >
+            <LanguageBreakdown alerts={alerts} />
           </motion.div>
         </div>
       )}
