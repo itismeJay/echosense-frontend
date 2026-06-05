@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   AlertCircle, BellRing, CheckCircle2, Clock3, ShieldAlert,
-  UserRoundCheck, Tag, Globe,
+  UserRoundCheck, Tag, Globe, TrendingUp,
 } from "lucide-react";
 import { useCurrentUser } from "@/lib/auth";
 import { useAlerts } from "@/lib/AlertsProvider";
@@ -17,6 +17,7 @@ const CARD = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/8
 
 const CATEGORY_DEFS = [
   { key: "academic_shaming",   label: "Academic Shaming"   },
+  { key: "appearance_shaming", label: "Appearance Shaming" },
   { key: "body_shaming",       label: "Body Shaming"       },
   { key: "emotional_taunting", label: "Emotional Taunting" },
   { key: "threat",             label: "Threat"             },
@@ -50,6 +51,13 @@ export default function CounselorPage() {
   const weeklyTotal   = weeklyAlerts.length;
   const highToday     = todayAlerts.filter((a) => a.severity === "high").length;
   const recentIncidents = alerts.slice(0, 5);
+
+  const todayHigh   = todayAlerts.filter((a) => a.severity === "high").length;
+  const todayMedium = todayAlerts.filter((a) => a.severity === "medium").length;
+  const todayLow    = todayAlerts.filter((a) => a.severity === "low").length;
+  const weekHigh    = weeklyAlerts.filter((a) => a.severity === "high").length;
+  const weekMedium  = weeklyAlerts.filter((a) => a.severity === "medium").length;
+  const weekLow     = weeklyAlerts.filter((a) => a.severity === "low").length;
 
   // Category breakdown (weekly)
   const categoryBreakdown = useMemo(() => {
@@ -244,6 +252,59 @@ export default function CounselorPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Today vs This Week Comparison */}
+      <div className={CARD}>
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="w-4 h-4 text-cyan-400" />
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            Today vs This Week
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Today</p>
+            <div className="space-y-2">
+              {[
+                { label: "Total", value: todayAlerts.length, cls: "text-gray-900 dark:text-white" },
+                { label: "High",  value: todayHigh,          cls: "text-red-600 dark:text-red-400" },
+                { label: "Medium",value: todayMedium,        cls: "text-amber-600 dark:text-amber-400" },
+                { label: "Low",   value: todayLow,           cls: "text-emerald-600 dark:text-emerald-400" },
+              ].map(({ label, value, cls }) => (
+                <div key={label} className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">{label}</span>
+                  <span className={`font-bold tabular-nums ${cls}`}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">This Week</p>
+            <div className="space-y-2">
+              {[
+                { label: "Total", value: weeklyTotal, cls: "text-gray-900 dark:text-white" },
+                { label: "High",  value: weekHigh,    cls: "text-red-600 dark:text-red-400" },
+                { label: "Medium",value: weekMedium,  cls: "text-amber-600 dark:text-amber-400" },
+                { label: "Low",   value: weekLow,     cls: "text-emerald-600 dark:text-emerald-400" },
+              ].map(({ label, value, cls }) => (
+                <div key={label} className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">{label}</span>
+                  <span className={`font-bold tabular-nums ${cls}`}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        {weeklyTotal > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10 text-xs text-gray-400 dark:text-gray-500">
+            Today accounts for{" "}
+            <span className="font-semibold text-gray-700 dark:text-gray-300">
+              {Math.round((todayAlerts.length / weeklyTotal) * 100)}%
+            </span>{" "}
+            of this week&apos;s incidents
+          </div>
+        )}
       </div>
 
       {/* Recent Incidents */}

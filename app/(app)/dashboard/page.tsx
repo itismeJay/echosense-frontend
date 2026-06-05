@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAlerts } from "@/lib/AlertsProvider";
 import { formatConfidence, formatRelative, emotionBadgeColor, categoryBadgeColor, categoryLabel, languageLabel } from "@/lib/format";
@@ -11,16 +12,65 @@ import ConfidenceMeter from "@/components/ConfidenceMeter";
 import AlertBanner from "@/components/AlertBanner";
 import LogsTable from "@/components/LogsTable";
 import SeverityBadge from "@/components/SeverityBadge";
+import CategoryBadge from "@/components/CategoryBadge";
+import { CategoryBarChart, LanguageBreakdown } from "@/components/Charts";
+import { getCategoryStats, getHeartbeat } from "@/lib/api";
+import type { CategoryStats } from "@/lib/types";
 import {
   Activity,
   ShieldAlert,
   AlertTriangle,
   AlertCircle,
   WifiOff,
+  Cpu,
 } from "lucide-react";
 
 export default function DashboardPage() {
   const { alerts, logs, stats, loading, online } = useAlerts();
+  const [categoryStats, setCategoryStats] = useState<CategoryStats | null>(null);
+  const [piOnline, setPiOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkPi = async () => {
+      try {
+        const data = await getHeartbeat();
+        const isOnline = data.last_heartbeat
+          ? Date.now() - new Date(data.last_heartbeat).getTime() < 3 * 60 * 1000
+          : data.device_status === "online";
+        setPiOnline(isOnline);
+      } catch {
+        setPiOnline(false);
+      }
+    };
+    void checkPi();
+    const id = setInterval(() => void checkPi(), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    getCategoryStats().then(setCategoryStats).catch(() => {});
+  }, []);
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const todayAlerts = useMemo(
+    () => alerts.filter((a) => a.created_at.startsWith(today)),
+    [alerts, today]
+  );
+
+  const todayHigh   = todayAlerts.filter((a) => a.severity === "high").length;
+  const todayMedium = todayAlerts.filter((a) => a.severity === "medium").length;
+  const todayLow    = todayAlerts.filter((a) => a.severity === "low").length;
+
+  const topTodayCategory = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const a of todayAlerts) {
+      for (const cat of a.categories ?? []) {
+        counts[cat] = (counts[cat] ?? 0) + 1;
+      }
+    }
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  }, [todayAlerts]);
 
   const latestAlert = alerts[0];
   const isDetected  = latestAlert?.severity === "high";
@@ -35,6 +85,7 @@ export default function DashboardPage() {
     >
       {loading && alerts.length === 0 ? (
         <div className="space-y-4 animate-pulse">
+          <div className="h-16 bg-white/60 dark:bg-white/5 rounded-2xl border border-white/80 dark:border-white/10" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2 h-40 bg-white/60 dark:bg-white/5 rounded-2xl border border-white/80 dark:border-white/10" />
             <div className="h-40 bg-white/60 dark:bg-white/5 rounded-2xl border border-white/80 dark:border-white/10" />
@@ -64,6 +115,45 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
+          {/* ── Today Summary Banner ── */}
+          <div className="bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl px-5 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]">
+            {todayAlerts.length === 0 ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                  No incidents today
+                </span>
+                <span className="text-sm">✅</span>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-4">
+                <div>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5">Today</p>
+                  <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">
+                    {todayAlerts.length}
+                    <span className="text-sm font-normal text-gray-400 ml-1">alert{todayAlerts.length !== 1 ? "s" : ""}</span>
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-1 text-xs font-semibold rounded-full border bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/15 dark:text-red-400">
+                    {todayHigh} High
+                  </span>
+                  <span className="px-2.5 py-1 text-xs font-semibold rounded-full border bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-400">
+                    {todayMedium} Medium
+                  </span>
+                  <span className="px-2.5 py-1 text-xs font-semibold rounded-full border bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-400">
+                    {todayLow} Low
+                  </span>
+                </div>
+                {topTodayCategory && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400 dark:text-gray-500">Most common:</span>
+                    <CategoryBadge category={topTodayCategory} size="md" />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {isDetected && latestAlert && (
             <AlertBanner key={latestAlert.id} alert={latestAlert} />
           )}
@@ -78,15 +168,35 @@ export default function DashboardPage() {
             <ConfidenceMeter value={latestAlert?.confidence ?? 0} />
           </div>
 
+          {/* ── Audio Feed + Pi Status ── */}
           <div className="bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl px-6 py-5 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest font-medium">
                 Live Audio Feed — Raspberry Pi 5
               </p>
-              <span className="flex items-center gap-1.5 text-xs text-emerald-500 dark:text-emerald-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Always On
-              </span>
+              <div className="flex items-center gap-3">
+                {/* Pi status */}
+                <div className="flex items-center gap-1.5 text-xs font-medium">
+                  <Cpu className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  {piOnline === null ? (
+                    <span className="text-gray-400 dark:text-gray-500">Checking...</span>
+                  ) : piOnline ? (
+                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Pi Online
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                      Pi Offline
+                    </span>
+                  )}
+                </div>
+                <span className="flex items-center gap-1.5 text-xs text-emerald-500 dark:text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Always On
+                </span>
+              </div>
             </div>
             <AudioVisualizer
               variant="dashboard"
@@ -179,7 +289,7 @@ export default function DashboardPage() {
                                 {categoryLabel(cat)}
                               </span>
                             ))}
-                            <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-full border bg-purple-500/10 text-purple-600 border-purple-500/20 dark:bg-purple-500/15 dark:text-purple-400">
+                            <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-full border bg-gray-500/10 text-gray-600 border-gray-300/40 dark:bg-gray-500/15 dark:text-gray-300 dark:border-gray-400/25">
                               {languageLabel(alert.language)}
                             </span>
                           </div>
@@ -205,6 +315,24 @@ export default function DashboardPage() {
               </h2>
               <LogsTable rows={logs} pageSize={10} paginated={false} sortable={false} />
             </div>
+          </div>
+
+          {/* ── Bullying Type + Language Breakdown ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+            >
+              <CategoryBarChart stats={categoryStats} />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.18, duration: 0.4 }}
+            >
+              <LanguageBreakdown alerts={alerts} />
+            </motion.div>
           </div>
         </>
       )}

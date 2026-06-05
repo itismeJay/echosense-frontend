@@ -35,17 +35,38 @@ export interface Alert {
 
   // ── Classification (new fields) ──
   categories?: string[];
-  language?: string;
+  language?: string | null;
   hard_hits?: string[];
   soft_hits?: string[];
+  duration_gate?: string | null;
+  required_duration?: number | null;
 }
 
 export interface CategoryStats {
   academic_shaming?: number;
+  appearance_shaming?: number;
   body_shaming?: number;
   emotional_taunting?: number;
   threat?: number;
   [key: string]: number | undefined;
+}
+
+export interface DailySummary {
+  total: number;
+  high: number;
+  medium: number;
+  low: number;
+  top_category?: string | null;
+}
+
+export interface AnalyticsSummary {
+  today: DailySummary;
+  week?: DailySummary;
+}
+
+export interface HeartbeatStatus {
+  last_heartbeat: string | null;
+  device_status?: "online" | "offline";
 }
 
 export interface EmotionBreakdown {

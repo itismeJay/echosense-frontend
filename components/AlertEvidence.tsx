@@ -4,7 +4,9 @@ import { useState } from "react";
 import type { Alert } from "@/lib/types";
 import { emotionBadgeColor, categoryBadgeColor, categoryLabel, languageLabel } from "@/lib/format";
 import WaveformDisplay from "./WaveformDisplay";
-import { ChevronDown, ChevronUp, Quote, Volume2, Activity, Waves, ShieldAlert, Clock, BarChart2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Quote, Volume2, Activity, Waves, ShieldAlert, Clock, BarChart2, Timer } from "lucide-react";
+import DurationGateBadge from "./DurationGateBadge";
+import LanguageBadge from "./LanguageBadge";
 
 interface AlertEvidenceProps {
   alert: Alert;
@@ -61,6 +63,8 @@ export default function AlertEvidence({
     soft_hits,
     categories,
     language,
+    duration_gate,
+    required_duration,
     yamnet_class,
     yamnet_score,
     emotion,
@@ -130,9 +134,14 @@ export default function AlertEvidence({
                     <Clock className="w-3 h-3" />
                     {duration.toFixed(1)}s
                   </span>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium bg-purple-500/10 text-purple-600 border-purple-500/20 dark:bg-purple-500/15 dark:text-purple-400">
-                    {langLabel}
-                  </span>
+                  <LanguageBadge language={language} size="md" />
+                  {duration_gate && <DurationGateBadge gate={duration_gate} size="md" />}
+                  {required_duration != null && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-semibold bg-gray-500/10 text-gray-600 border-gray-300/40 dark:bg-white/5 dark:text-gray-300 dark:border-white/10">
+                      <Timer className="w-3 h-3" />
+                      {required_duration}s required
+                    </span>
+                  )}
                 </div>
               </section>
 

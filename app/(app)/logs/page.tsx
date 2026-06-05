@@ -10,8 +10,9 @@ import { csvEscape, categoryLabel, languageLabel } from "@/lib/format";
 
 type Filter = "all" | Severity;
 type EmotionFilter = "all" | "angry" | "aggressive" | "distressed" | "upset" | "neutral";
-type CategoryFilter = "all" | "academic_shaming" | "body_shaming" | "emotional_taunting" | "threat";
+type CategoryFilter = "all" | "academic_shaming" | "appearance_shaming" | "body_shaming" | "emotional_taunting" | "threat";
 type LanguageFilter = "all" | "tl" | "ceb" | "en";
+type TriggerFilter = "all" | "threat" | "hard" | "repeated" | "medium" | "soft";
 
 const FILTERS: { label: string; value: Filter }[] = [
   { label: "All",    value: "all"    },
@@ -48,9 +49,19 @@ const ACTIVE_EMOTION_PILL: Record<EmotionFilter, string> = {
 const CATEGORY_OPTIONS: { label: string; value: CategoryFilter }[] = [
   { label: "All Categories",  value: "all"                },
   { label: "Academic",        value: "academic_shaming"   },
-  { label: "Physical",        value: "body_shaming"       },
+  { label: "Appearance",      value: "appearance_shaming" },
+  { label: "Body",            value: "body_shaming"       },
   { label: "Emotional",       value: "emotional_taunting" },
   { label: "Threat",          value: "threat"             },
+];
+
+const TRIGGER_OPTIONS: { label: string; value: TriggerFilter }[] = [
+  { label: "All Triggers",    value: "all"      },
+  { label: "Immediate",       value: "threat"   },
+  { label: "Severe Word",     value: "hard"     },
+  { label: "Repeated",        value: "repeated" },
+  { label: "Multiple Words",  value: "medium"   },
+  { label: "Pattern",         value: "soft"     },
 ];
 
 const LANGUAGE_OPTIONS: { label: string; value: LanguageFilter }[] = [
@@ -68,6 +79,7 @@ export default function LogsPage() {
   const [emotionFilter, setEmotionFilter] = useState<EmotionFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [languageFilter, setLanguageFilter] = useState<LanguageFilter>("all");
+  const [triggerFilter, setTriggerFilter] = useState<TriggerFilter>("all");
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -76,10 +88,11 @@ export default function LogsPage() {
       if (emotionFilter !== "all" && (a.emotion ?? "").toLowerCase() !== emotionFilter) return false;
       if (categoryFilter !== "all" && !(a.categories ?? []).includes(categoryFilter)) return false;
       if (languageFilter !== "all" && a.language !== languageFilter) return false;
+      if (triggerFilter !== "all" && a.duration_gate !== triggerFilter) return false;
       if (search && !a.location.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [alerts, filter, emotionFilter, categoryFilter, languageFilter, search]);
+  }, [alerts, filter, emotionFilter, categoryFilter, languageFilter, triggerFilter, search]);
 
   const handleExport = () => {
     const headers = [
@@ -165,7 +178,7 @@ export default function LogsPage() {
         </button>
       </div>
 
-      {/* Category + Language dropdowns */}
+      {/* Category + Language + Trigger dropdowns */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <span className="text-[11px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-medium">
           Filters
@@ -189,6 +202,18 @@ export default function LogsPage() {
             className={SELECT_BASE}
           >
             {LANGUAGE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+        </div>
+        <div className="relative">
+          <select
+            value={triggerFilter}
+            onChange={(e) => setTriggerFilter(e.target.value as TriggerFilter)}
+            className={SELECT_BASE}
+          >
+            {TRIGGER_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>

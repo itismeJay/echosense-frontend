@@ -5,6 +5,7 @@ import type { Alert } from "@/lib/types";
 import { formatConfidence, formatTimestamp, emotionBadgeColor, categoryBadgeColor, categoryLabel, languageLabel } from "@/lib/format";
 import SeverityBadge from "./SeverityBadge";
 import AlertEvidence from "./AlertEvidence";
+import DurationGateBadge from "./DurationGateBadge";
 import { ChevronUp, ChevronDown, ChevronRight, MapPin, Clock } from "lucide-react";
 
 type SortKey = "severity" | "confidence" | "duration" | "created_at";
@@ -38,8 +39,8 @@ export default function LogsTable({
   const [page, setPage] = useState(0);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  // Severity + Confidence + Duration + Category + Language + Words + Emotion + Location + Time + expand
-  const colCount = expandable ? 10 : 9;
+  // Severity + Confidence + Duration + Category + Language + Trigger + Words + Emotion + Location + Time + expand
+  const colCount = expandable ? 11 : 10;
 
   const sorted = useMemo(() => {
     if (!sortable) return rows;
@@ -93,6 +94,9 @@ export default function LogsTable({
               </th>
               <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden lg:table-cell">
                 Language
+              </th>
+              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden xl:table-cell whitespace-nowrap">
+                Trigger
               </th>
               <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden xl:table-cell whitespace-nowrap">
                 Words
@@ -163,9 +167,16 @@ export default function LogsTable({
                       )}
                     </td>
                     <td className="py-3 px-3 hidden lg:table-cell">
-                      <span className="px-2 py-0.5 text-[11px] font-medium rounded-full border bg-purple-500/10 text-purple-600 border-purple-500/20 dark:bg-purple-500/15 dark:text-purple-400">
+                      <span className="px-2 py-0.5 text-[11px] font-medium rounded-full border bg-gray-500/10 text-gray-600 border-gray-300/40 dark:bg-gray-500/15 dark:text-gray-300 dark:border-gray-400/25">
                         {languageLabel(row.language)}
                       </span>
+                    </td>
+                    <td className="py-3 px-3 hidden xl:table-cell">
+                      {row.duration_gate ? (
+                        <DurationGateBadge gate={row.duration_gate} />
+                      ) : (
+                        <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
+                      )}
                     </td>
                     <td className="py-3 px-3 hidden xl:table-cell text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
                       {wordCount > 0 ? `${wordCount} word${wordCount !== 1 ? "s" : ""}` : <span className="text-gray-300 dark:text-gray-600">—</span>}

@@ -428,10 +428,11 @@ export function EmotionDonut({ stats }: { stats: LogsStats }) {
 }
 
 const CATEGORY_CHART_DATA = [
-  { key: "academic_shaming",   label: "Academic",  color: "#3b82f6" },
-  { key: "body_shaming",       label: "Physical",  color: "#f97316" },
-  { key: "emotional_taunting", label: "Emotional", color: "#eab308" },
-  { key: "threat",             label: "Threat",    color: "#ef4444" },
+  { key: "academic_shaming",   label: "Academic",   color: "#3b82f6" },
+  { key: "appearance_shaming", label: "Appearance", color: "#a855f7" },
+  { key: "body_shaming",       label: "Body",       color: "#f97316" },
+  { key: "emotional_taunting", label: "Emotional",  color: "#eab308" },
+  { key: "threat",             label: "Threat",     color: "#ef4444" },
 ];
 
 export function CategoryBarChart({ stats }: { stats: CategoryStats | null; loading?: boolean }) {

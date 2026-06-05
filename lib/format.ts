@@ -71,21 +71,34 @@ export function emotionBadgeColor(emotion?: string): string {
   }
 }
 
-export type BullyingCategory = "academic_shaming" | "body_shaming" | "emotional_taunting" | "threat";
+export type BullyingCategory = "academic_shaming" | "appearance_shaming" | "body_shaming" | "emotional_taunting" | "threat";
 
 export const CATEGORY_LABELS: Record<string, string> = {
   academic_shaming:   "Academic",
-  body_shaming:       "Physical",
+  appearance_shaming: "Appearance",
+  body_shaming:       "Body",
   emotional_taunting: "Emotional",
   threat:             "Threat",
 };
 
 export const CATEGORY_COLORS: Record<string, string> = {
   academic_shaming:   "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/25",
+  appearance_shaming: "bg-purple-500/10 text-purple-600 border-purple-500/20 dark:bg-purple-500/15 dark:text-purple-400 dark:border-purple-500/25",
   body_shaming:       "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:bg-orange-500/15 dark:text-orange-400 dark:border-orange-500/25",
   emotional_taunting: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20 dark:bg-yellow-500/15 dark:text-yellow-400 dark:border-yellow-500/25",
   threat:             "bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/25",
 };
+
+export function durationGateLabel(gate?: string | null): string {
+  switch (gate) {
+    case "threat":   return "⚡ Immediate";
+    case "hard":     return "🔴 Severe Word";
+    case "repeated": return "🔁 Repeated";
+    case "medium":   return "⚠️ Multiple Words";
+    case "soft":     return "📋 Pattern";
+    default:         return gate ?? "—";
+  }
+}
 
 export function categoryBadgeColor(cat: string): string {
   return CATEGORY_COLORS[cat] ?? "bg-gray-500/10 text-gray-600 border-gray-500/20 dark:bg-gray-400/15 dark:text-gray-300 dark:border-gray-400/25";

@@ -1,4 +1,4 @@
-import type { Alert, LogsStats, Settings, User, DictionaryEntry, AuditLog, SystemSettings, Report, CategoryStats } from "./types";
+import type { Alert, LogsStats, Settings, User, DictionaryEntry, AuditLog, SystemSettings, Report, CategoryStats, AnalyticsSummary, HeartbeatStatus } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -40,16 +40,31 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function getAlerts(params?: { category?: string; language?: string }): Promise<Alert[]> {
+export async function getAlerts(params?: {
+  category?: string;
+  language?: string;
+  severity?: string;
+  duration_gate?: string;
+}): Promise<Alert[]> {
   const qs = new URLSearchParams();
   if (params?.category) qs.set("category", params.category);
   if (params?.language) qs.set("language", params.language);
+  if (params?.severity) qs.set("severity", params.severity);
+  if (params?.duration_gate) qs.set("duration_gate", params.duration_gate);
   const query = qs.toString();
   return apiFetch<Alert[]>(`/alerts/${query ? `?${query}` : ""}`);
 }
 
 export async function getCategoryStats(): Promise<CategoryStats> {
   return apiFetch<CategoryStats>("/alerts/analytics/categories");
+}
+
+export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+  return apiFetch<AnalyticsSummary>("/alerts/analytics/summary");
+}
+
+export async function getHeartbeat(): Promise<HeartbeatStatus> {
+  return apiFetch<HeartbeatStatus>("/system-settings/heartbeat");
 }
 
 export async function createAlert(input: Omit<Alert, "id">): Promise<Alert> {
