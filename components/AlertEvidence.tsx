@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Alert } from "@/lib/types";
-import { emotionBadgeColor, categoryBadgeColor, categoryLabel, languageLabel } from "@/lib/format";
+import { emotionBadgeColor, categoryBadgeColor, categoryLabel } from "@/lib/format";
 import WaveformDisplay from "./WaveformDisplay";
 import { ChevronDown, ChevronUp, Quote, Volume2, Activity, Waves, ShieldAlert, Clock, BarChart2, Timer } from "lucide-react";
 import DurationGateBadge from "./DurationGateBadge";
@@ -88,7 +88,6 @@ export default function AlertEvidence({
   const hasRaw = peak_to_average != null || zero_crossing_rate != null || hasWaveform;
   const hasAny = !!transcribed_text || hasWords || hasAcoustic || hasCategories || hasWaveform;
 
-  const langLabel = languageLabel(language);
 
   return (
     <div>
