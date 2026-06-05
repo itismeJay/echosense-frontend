@@ -61,7 +61,6 @@ export default function AlertsProvider({
 
   const uptimeStartRef   = useRef<number>(0);
   const seenLatestHighId = useRef<number | null>(null);
-  const offlineTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const poll = useCallback(async () => {
     try {
@@ -73,9 +72,6 @@ export default function AlertsProvider({
 
       setOnline(true);
       setError(null);
-      if (offlineTimerRef.current) clearTimeout(offlineTimerRef.current);
-      offlineTimerRef.current = setTimeout(() => setOnline(false), 40_000);
-
       setAlerts(newAlerts);
       setLogs(newLogs);
       setStats(newStats);
@@ -103,6 +99,7 @@ export default function AlertsProvider({
         }
       }
     } catch (err) {
+      // Only mark offline on a real API failure, not a timer
       setOnline(false);
       setError(err instanceof Error ? err.message : "Backend unreachable");
       setLoading(false);
@@ -114,8 +111,8 @@ export default function AlertsProvider({
     const initialTimer = setTimeout(() => { void poll(); }, 0);
     const intervalId = setInterval(() => { void poll(); }, 3000);
 
-    // Re-poll immediately when the tab becomes visible again (browsers throttle
-    // setInterval in background tabs, which causes false "offline" states).
+    // Re-poll immediately when the tab becomes visible so background-tab
+    // throttling never causes a stale / offline view.
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         void poll();
@@ -127,7 +124,6 @@ export default function AlertsProvider({
       clearTimeout(initialTimer);
       clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (offlineTimerRef.current) clearTimeout(offlineTimerRef.current);
     };
   }, [poll]);
 
