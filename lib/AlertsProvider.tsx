@@ -74,7 +74,7 @@ export default function AlertsProvider({
       setOnline(true);
       setError(null);
       if (offlineTimerRef.current) clearTimeout(offlineTimerRef.current);
-      offlineTimerRef.current = setTimeout(() => setOnline(false), 10_000);
+      offlineTimerRef.current = setTimeout(() => setOnline(false), 40_000);
 
       setAlerts(newAlerts);
       setLogs(newLogs);
@@ -113,9 +113,20 @@ export default function AlertsProvider({
     uptimeStartRef.current = Date.now();
     const initialTimer = setTimeout(() => { void poll(); }, 0);
     const intervalId = setInterval(() => { void poll(); }, 3000);
+
+    // Re-poll immediately when the tab becomes visible again (browsers throttle
+    // setInterval in background tabs, which causes false "offline" states).
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void poll();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       clearTimeout(initialTimer);
       clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (offlineTimerRef.current) clearTimeout(offlineTimerRef.current);
     };
   }, [poll]);
