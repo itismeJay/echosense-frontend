@@ -111,9 +111,12 @@ export default function PiLogsPage() {
   }, []);
 
   useEffect(() => {
-    void fetchLogs();
+    const initialTimer = setTimeout(() => { void fetchLogs(); }, 0);
     const id = setInterval(() => { void fetchLogs(); }, 3000);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(id);
+    };
   }, [fetchLogs]);
 
   // Tick every second so "X seconds ago" stays live
