@@ -17,6 +17,7 @@ import {
   ClipboardList,
   Grid3X3,
   UserRoundCheck,
+  Terminal,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCurrentUser } from "@/lib/auth";
@@ -34,6 +35,7 @@ const ADMIN_NAV_ITEMS = [
   { href: "/admin/dictionary", icon: BookOpen,      label: "Dictionary" },
   { href: "/admin/audit",      icon: ClipboardList, label: "Audit Log"  },
   { href: "/admin/heatmap",    icon: Grid3X3,       label: "Heatmap"    },
+  { href: "/admin/logs",       icon: Terminal,      label: "Pi Logs"    },
 ];
 
 const COUNSELOR_NAV_ITEMS = [

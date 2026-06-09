@@ -1,4 +1,4 @@
-import type { Alert, LogsStats, Settings, User, DictionaryEntry, AuditLog, SystemSettings, Report, CategoryStats, AnalyticsSummary, HeartbeatStatus } from "./types";
+import type { Alert, LogsStats, Settings, User, DictionaryEntry, AuditLog, SystemSettings, Report, CategoryStats, AnalyticsSummary, HeartbeatStatus, PiLog } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -164,6 +164,10 @@ export async function generateReport(params: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
+}
+
+export async function getSystemLogs(): Promise<PiLog[]> {
+  return apiFetch<PiLog[]>("/system/logs");
 }
 
 export async function deleteUser(userId: string): Promise<void> {

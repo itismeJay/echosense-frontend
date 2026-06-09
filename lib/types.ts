@@ -128,3 +128,10 @@ export interface Report {
   generated_at: string;
   total_incidents: number;
 }
+
+export interface PiLog {
+  id?: number | string;
+  timestamp: string;
+  type: string;
+  message: string;
+}
