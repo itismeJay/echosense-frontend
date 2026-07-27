@@ -28,6 +28,7 @@ interface AlertsContextValue {
   flashKey: number;
   loading: boolean;
   error: string | null;
+  refresh: () => Promise<void>;
 }
 
 const AlertsContext = createContext<AlertsContextValue>({
@@ -39,6 +40,7 @@ const AlertsContext = createContext<AlertsContextValue>({
   flashKey: 0,
   loading: true,
   error: null,
+  refresh: async () => {},
 });
 
 export function useAlerts(): AlertsContextValue {
@@ -61,8 +63,11 @@ export default function AlertsProvider({
 
   const uptimeStartRef   = useRef<number>(0);
   const seenLatestHighId = useRef<number | null>(null);
+  const pollInFlightRef = useRef(false);
 
   const poll = useCallback(async () => {
+    if (pollInFlightRef.current) return;
+    pollInFlightRef.current = true;
     try {
       const [newAlerts, newLogs, newStats] = await Promise.all([
         getAlerts(),
@@ -84,12 +89,12 @@ export default function AlertsProvider({
         } else if (latest.id !== seenLatestHighId.current) {
           seenLatestHighId.current = latest.id;
           if (latest.severity === "high") {
-            toast.error(`🚨 HIGH ALERT — ${latest.location}`, {
+            toast.error(`High priority possible alert — ${latest.location}`, {
               duration: 6000,
               style: {
-                background: "#1a1a2e",
-                color: "#f87171",
-                border: "1px solid rgba(239,68,68,0.35)",
+                background: "#fff7ed",
+                color: "#9a3412",
+                border: "1px solid #fdba74",
                 fontWeight: "600",
                 borderRadius: "12px",
               },
@@ -101,8 +106,10 @@ export default function AlertsProvider({
     } catch (err) {
       // Only mark offline on a real API failure, not a timer
       setOnline(false);
-      setError(err instanceof Error ? err.message : "Backend unreachable");
+      setError(err instanceof Error ? err.message : "Classroom alerts are unavailable");
       setLoading(false);
+    } finally {
+      pollInFlightRef.current = false;
     }
   }, []);
 
@@ -136,7 +143,7 @@ export default function AlertsProvider({
 
   return (
     <AlertsContext.Provider
-      value={{ alerts, logs, stats, online, uptimeMs, flashKey, loading, error }}
+      value={{ alerts, logs, stats, online, uptimeMs, flashKey, loading, error, refresh: poll }}
     >
       {children}
     </AlertsContext.Provider>

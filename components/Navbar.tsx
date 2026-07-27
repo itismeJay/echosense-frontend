@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Radio, Wifi, WifiOff, Menu,
-  LayoutDashboard, FileClock, BarChart3, Settings, Users, LogOut,
+  School,
+  Wifi,
+  WifiOff,
+  Menu,
+  LayoutDashboard,
+  BellRing,
+  FileClock,
+  LogOut,
 } from "lucide-react";
 import { useAlerts } from "@/lib/AlertsProvider";
 import ThemeToggle from "./ThemeToggle";
@@ -13,50 +19,81 @@ import { logout, useCurrentUser } from "@/lib/auth";
 
 const BASE_NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/logs",      icon: FileClock,        label: "Logs"      },
-  { href: "/analytics", icon: BarChart3,         label: "Analytics" },
-];
-
-const ADMIN_NAV_ITEMS = [
-  { href: "/settings", icon: Settings, label: "Settings" },
-  { href: "/users",    icon: Users,    label: "Users"    },
+  { href: "/alerts", icon: BellRing, label: "Alerts" },
+  { href: "/logs", icon: FileClock, label: "History" },
 ];
 
 interface NavbarProps {
   onMenuOpen: () => void;
+  mobileMenuOpen: boolean;
 }
 
-export default function Navbar({ onMenuOpen }: NavbarProps) {
+export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
   const { online, loading } = useAlerts();
   const pathname = usePathname();
   const user = useCurrentUser();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const navItems = user?.role === "admin"
-    ? [...BASE_NAV_ITEMS, ...ADMIN_NAV_ITEMS]
-    : BASE_NAV_ITEMS;
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  const signOutButtonRef = useRef<HTMLButtonElement>(null);
+  const logoutButtonRef = useRef<HTMLButtonElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const wasMenuOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (wasMenuOpenRef.current && !mobileMenuOpen) {
+      menuButtonRef.current?.focus();
+    }
+    wasMenuOpenRef.current = mobileMenuOpen;
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (!showLogoutConfirm) return;
+    const logoutTrigger = logoutButtonRef.current;
+    cancelButtonRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowLogoutConfirm(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      if (event.shiftKey && document.activeElement === cancelButtonRef.current) {
+        event.preventDefault();
+        signOutButtonRef.current?.focus();
+      } else if (!event.shiftKey && document.activeElement === signOutButtonRef.current) {
+        event.preventDefault();
+        cancelButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      logoutTrigger?.focus();
+    };
+  }, [showLogoutConfirm]);
 
   return (
     <>
-    <header className="sticky top-0 z-40 h-14 flex items-center justify-between px-4 md:px-6 bg-white/70 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-white/[0.06] shrink-0">
+    <header className="sticky top-0 z-40 flex min-h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/95 px-4 dark:border-slate-800 dark:bg-slate-950/95 md:px-6">
       {/* Left: wordmark */}
       <div className="flex items-center gap-2.5">
-        <div className="p-1.5 rounded-xl bg-indigo-500/10 shrink-0">
-          <Radio className="w-4 h-4 text-indigo-400" />
+        <div className="shrink-0 rounded-xl bg-indigo-100 p-2 dark:bg-indigo-950/60">
+          <School className="h-5 w-5 text-indigo-700 dark:text-indigo-300" aria-hidden="true" />
         </div>
-        <span className="font-black text-sm bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
+        <span className="text-sm font-bold tracking-tight text-slate-950 dark:text-white">
           EchoSense
         </span>
       </div>
 
       {/* Center: nav links (desktop only) */}
-      <nav className="hidden md:flex items-center gap-1">
-        {navItems.map(({ href, label }) => {
-          const active = pathname === href;
+      <nav aria-label="Main shortcuts" className="hidden items-center gap-1 md:flex">
+        {BASE_NAV_ITEMS.map(({ href, label }) => {
+          const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
               key={href}
               href={href}
-              className={`relative px-4 py-1.5 text-sm font-medium rounded-lg transition-colors duration-150 ${
+              aria-current={active ? "page" : undefined}
+              className={`relative flex min-h-11 items-center rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                 active
                   ? "text-gray-900 dark:text-white"
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-white/5"
@@ -71,10 +108,11 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
         })}
       </nav>
 
-      {/* Right: live status + theme toggle + user + hamburger */}
+      {/* Right: update status + theme toggle + user + hamburger */}
       <div className="flex items-center gap-2">
-        {/* Live status pill */}
+        {/* Backend update status pill */}
         <div
+          role="status"
           className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
             loading
               ? "bg-gray-500/10 border-gray-500/20 text-gray-500 dark:text-gray-400"
@@ -84,13 +122,13 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
           }`}
         >
           {loading ? (
-            <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+            <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
           ) : online ? (
-            <Wifi className="w-3 h-3 animate-pulse" />
+            <Wifi className="h-3 w-3" aria-hidden="true" />
           ) : (
-            <WifiOff className="w-3 h-3" />
+            <WifiOff className="h-3 w-3" aria-hidden="true" />
           )}
-          {loading ? "Connecting..." : online ? "Live" : "Offline"}
+          {loading ? "Checking updates" : online ? "Updates connected" : "Updates unavailable"}
         </div>
 
         <ThemeToggle />
@@ -98,12 +136,14 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
         {/* User email + logout */}
         {user && (
           <>
-            <span className="hidden sm:block text-xs text-gray-400 dark:text-gray-500 font-mono truncate max-w-[140px]">
+            <span className="hidden max-w-[140px] truncate text-xs text-slate-500 dark:text-slate-400 sm:block">
               {user.email}
             </span>
             <button
+              ref={logoutButtonRef}
+              type="button"
               onClick={() => setShowLogoutConfirm(true)}
-              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition-colors hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-300"
               aria-label="Sign out"
             >
               <LogOut className="w-4 h-4" />
@@ -113,8 +153,10 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
 
         {/* Mobile hamburger */}
         <button
+          ref={menuButtonRef}
+          type="button"
           onClick={onMenuOpen}
-          className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white md:hidden"
           aria-label="Open menu"
         >
           <Menu className="w-4 h-4" />
@@ -128,27 +170,38 @@ export default function Navbar({ onMenuOpen }: NavbarProps) {
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowLogoutConfirm(false)}
+            aria-hidden="true"
           />
-          <div className="relative z-10 w-full max-w-sm bg-white/90 dark:bg-gray-950/95 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-2xl p-6">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-dialog-title"
+            aria-describedby="logout-dialog-description"
+            className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-xl bg-red-500/10 shrink-0">
                 <LogOut className="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Sign out</h3>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Are you sure you want to sign out?</p>
+                <h2 id="logout-dialog-title" className="text-base font-semibold text-gray-900 dark:text-white">Sign out</h2>
+                <p id="logout-dialog-description" className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Are you sure you want to sign out?</p>
               </div>
             </div>
             <div className="flex gap-3">
               <button
+                ref={cancelButtonRef}
+                type="button"
                 onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                className="min-h-11 flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
               >
                 Cancel
               </button>
               <button
+                ref={signOutButtonRef}
+                type="button"
                 onClick={logout}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-red-500/90 hover:bg-red-500 text-white text-sm font-semibold transition-colors"
+                className="min-h-11 flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2"
               >
                 Sign out
               </button>

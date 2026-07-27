@@ -28,7 +28,10 @@ function getTokenFromCookie(): string | undefined {
 
 function decodeToken(token: string): AuthUser | null {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    const base64url = token.split('.')[1]
+    const normalized = base64url.replace(/-/g, '+').replace(/_/g, '/')
+    const base64 = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    const payload = JSON.parse(atob(base64))
     return { id: String(payload.sub), email: payload.email, role: payload.role }
   } catch {
     return null
@@ -62,7 +65,10 @@ export function useCurrentUser(): AuthUser | null {
   const [user, setUser] = useState<AuthUser | null>(null)
   useEffect(() => {
     const token = getTokenFromCookie()
-    setUser(token ? decodeToken(token) : null)
+    const timer = setTimeout(() => {
+      setUser(token ? decodeToken(token) : null)
+    }, 0)
+    return () => clearTimeout(timer)
   }, [])
   return user
 }

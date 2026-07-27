@@ -1,12 +1,124 @@
-import type { Alert, LogsStats, Settings, User, DictionaryEntry, AuditLog, SystemSettings, Report, CategoryStats, AnalyticsSummary, HeartbeatStatus, PiLog } from "./types";
+import type { Alert, LogsStats, Settings, User, DictionaryEntry, AuditLog, SystemSettings, Report, CategoryStats, AnalyticsSummary, HeartbeatStatus, PiLog, SystemLogsResponse } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, message: string) {
+  public readonly status: number;
+
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
     this.name = "ApiError";
   }
+}
+
+export class ApiContractError extends Error {
+  public readonly endpoint: string;
+
+  constructor(endpoint: string, message: string) {
+    super(`Invalid response from ${endpoint}: ${message}`);
+    this.endpoint = endpoint;
+    this.name = "ApiContractError";
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+export function parseAuditLogs(value: unknown): AuditLog[] {
+  const endpoint = "/audit-logs";
+  if (!Array.isArray(value)) {
+    throw new ApiContractError(endpoint, "expected an array");
+  }
+
+  return value.map((entry, index) => {
+    if (!isRecord(entry)) {
+      throw new ApiContractError(endpoint, `entry ${index} is not an object`);
+    }
+    const performedAt = entry.performed_at;
+    if (
+      typeof entry.log_id !== "number" ||
+      (entry.user_id !== undefined &&
+        entry.user_id !== null &&
+        typeof entry.user_id !== "number") ||
+      (entry.actor_email !== undefined &&
+        entry.actor_email !== null &&
+        typeof entry.actor_email !== "string") ||
+      typeof entry.action !== "string" ||
+      typeof entry.module !== "string" ||
+      (entry.target !== undefined &&
+        entry.target !== null &&
+        typeof entry.target !== "string") ||
+      (performedAt !== undefined &&
+        performedAt !== null &&
+        typeof performedAt !== "string")
+    ) {
+      throw new ApiContractError(
+        endpoint,
+        `entry ${index} does not match the audit-log schema`
+      );
+    }
+    return {
+      id: String(entry.log_id),
+      occurred_at: typeof performedAt === "string" ? performedAt : null,
+      actor_user_id:
+        typeof entry.user_id === "number" ? String(entry.user_id) : null,
+      actor_email:
+        typeof entry.actor_email === "string" ? entry.actor_email : null,
+      actor_role: null,
+      action: entry.action,
+      resource: entry.module,
+      resource_id: null,
+      target: typeof entry.target === "string" ? entry.target : null,
+      status: null,
+      description: null,
+      ip_address: null,
+      user_agent: null,
+      request_id: null,
+      metadata: null,
+      created_at: null,
+    };
+  });
+}
+
+function parseSystemLogsResponse(value: unknown): SystemLogsResponse {
+  const endpoint = "/system/logs";
+  if (!isRecord(value)) {
+    throw new ApiContractError(endpoint, "expected an object");
+  }
+  if (!Array.isArray(value.lines)) {
+    throw new ApiContractError(endpoint, "expected lines to be an array");
+  }
+  if (typeof value.total !== "number") {
+    throw new ApiContractError(endpoint, "expected total to be a number");
+  }
+
+  const lines = value.lines.map((line, index): PiLog => {
+    if (
+      !isRecord(line) ||
+      (line.id !== undefined &&
+        typeof line.id !== "number" &&
+        typeof line.id !== "string") ||
+      typeof line.timestamp !== "string" ||
+      Number.isNaN(Date.parse(line.timestamp)) ||
+      typeof line.type !== "string" ||
+      typeof line.message !== "string"
+    ) {
+      throw new ApiContractError(
+        endpoint,
+        `line ${index} does not match the system-log schema`
+      );
+    }
+    return {
+      id: line.id as number | string | undefined,
+      timestamp: line.timestamp,
+      type: line.type,
+      message: line.message,
+    };
+  });
+
+  return { lines, total: value.total };
 }
 
 function getToken(): string | undefined {
@@ -144,7 +256,7 @@ export async function deleteDictionaryEntry(termId: number): Promise<void> {
 }
 
 export async function getAuditLogs(): Promise<AuditLog[]> {
-  return apiFetch<AuditLog[]>("/audit-logs");
+  return parseAuditLogs(await apiFetch<unknown>("/audit-logs/"));
 }
 
 export async function getSystemSettings(): Promise<SystemSettings> {
@@ -166,8 +278,8 @@ export async function generateReport(params: {
   });
 }
 
-export async function getSystemLogs(): Promise<PiLog[]> {
-  return apiFetch<PiLog[]>("/system/logs");
+export async function getSystemLogs(): Promise<SystemLogsResponse> {
+  return parseSystemLogsResponse(await apiFetch<unknown>("/system/logs"));
 }
 
 export async function deleteUser(userId: string): Promise<void> {

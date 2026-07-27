@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EchoSense — Real-Time Acoustic Aggression Detection",
+  title: "EchoSense — Classroom Monitoring System",
   description:
-    "IoT Edge-AI monitoring system for Grade 6 classrooms — Davao del Norte State College Capstone 2026",
+    "A classroom monitoring dashboard for possible aggression alerts used by authorized school personnel.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0f",
+  themeColor: "#f8fafc",
 };
 
 export default function RootLayout({

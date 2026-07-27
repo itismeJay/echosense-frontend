@@ -42,11 +42,11 @@ export default function DetectionStatus({
                 <div className="flex items-center gap-2 mb-1">
                   <AlertTriangle className="w-5 h-5 text-red-400" />
                   <span className="text-xs text-red-400 font-semibold uppercase tracking-widest">
-                    Alert Active
+                    Waiting for Attention
                   </span>
                 </div>
                 <h2 className="text-2xl font-black text-red-700 dark:text-red-200 leading-tight">
-                  Aggression Detected
+                  Possible Aggression Alert
                 </h2>
               </>
             ) : (
@@ -79,7 +79,7 @@ export default function DetectionStatus({
             </div>
             <div className="flex items-center gap-4 text-sm mt-1">
               <span className="text-gray-400 dark:text-gray-500">
-                Confidence:{" "}
+                Detection Confidence:{" "}
                 <span className="text-red-500 dark:text-red-300 font-bold">
                   {formatConfidence(latest.confidence)}
                 </span>
@@ -97,7 +97,7 @@ export default function DetectionStatus({
         {/* Listening state */}
         {!isDetected && (
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            No aggression detected in classroom. System is actively listening...
+            No recent high-priority possible alert is shown.
           </p>
         )}
 
@@ -106,7 +106,7 @@ export default function DetectionStatus({
           <div className="mt-4 p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
             <div className="flex items-center gap-1.5 mb-1">
               <Timer className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600" />
-              <p className="text-xs text-gray-400 dark:text-gray-500">Last Detection</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Last Alert</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <SeverityBadge severity={latest.severity} />

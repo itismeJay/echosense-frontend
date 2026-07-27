@@ -18,7 +18,7 @@ import {
 import type { Alert, LogsStats, CategoryStats } from "@/lib/types";
 
 const GLASS =
-  "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]";
+  "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900";
 
 function useTooltipStyle(theme: string | undefined) {
   const isDark = theme === "dark";
@@ -204,7 +204,7 @@ export function SeverityPie({ alerts }: { alerts: Alert[] }) {
   return (
     <div className={GLASS}>
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-        Severity Breakdown
+        Priority Breakdown
       </h3>
       {!mounted ? (
         <ChartSkeleton />
@@ -260,7 +260,7 @@ export function ConfidenceOverTimeLine({ alerts }: { alerts: Alert[] }) {
   return (
     <div className={GLASS}>
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-        Confidence Over Time (Last 20 Detections)
+        Detection Confidence Over Time (Last 20 Alerts)
       </h3>
       {!mounted ? (
         <ChartSkeleton />
@@ -318,7 +318,7 @@ export function PeakHoursHeatmap({ alerts }: { alerts: Alert[] }) {
   return (
     <div className={GLASS}>
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-        Peak Detection Hours
+        Most Common Alert Times
       </h3>
       <div className="overflow-x-auto">
         <div className="min-w-max">
@@ -373,10 +373,10 @@ export function EmotionDonut({ stats }: { stats: LogsStats }) {
   return (
     <div className={GLASS}>
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-        Emotion Breakdown
+        Possible Vocal Tone
       </h3>
       <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-        Emotion profile of incidents
+        Possible vocal tone in alerts
       </p>
       {!mounted ? (
         <ChartSkeleton />
@@ -452,10 +452,10 @@ export function CategoryBarChart({ stats }: { stats: CategoryStats | null; loadi
   return (
     <div className={GLASS}>
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-        Type of Bullying Detected
+        Possible Concern Categories
       </h3>
       <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-        Incident count by bullying category
+        Alert count by possible concern category
       </p>
       {!mounted ? (
         <ChartSkeleton />
@@ -470,7 +470,7 @@ export function CategoryBarChart({ stats }: { stats: CategoryStats | null; loadi
               <XAxis dataKey="name" tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip {...tooltipStyle} />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Incidents">
+              <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Alerts">
                 {data.map((entry) => (
                   <Cell key={entry.name} fill={entry.color} fillOpacity={0.85} />
                 ))}
@@ -502,7 +502,7 @@ export function LanguageBreakdown({ alerts }: { alerts: Alert[] }) {
       { code: "tl",    label: "Filipino", count: counts.tl,    color: "#6366f1" },
       { code: "ceb",   label: "Bisaya",   count: counts.ceb,   color: "#a855f7" },
       { code: "en",    label: "English",  count: counts.en,    color: "#22d3ee" },
-      { code: "mixed", label: "Mixed",    count: counts.mixed, color: "#6b7280" },
+      { code: "mixed", label: "Not available / Other", count: counts.mixed, color: "#6b7280" },
     ].filter((d) => d.count > 0);
   }, [alerts]);
 
@@ -511,10 +511,10 @@ export function LanguageBreakdown({ alerts }: { alerts: Alert[] }) {
   return (
     <div className={GLASS}>
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-        Language Used in Bullying Incidents
+        Alert Languages
       </h3>
       <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-        Reflects multilingual detection for Davao classrooms
+        Language information included with recorded alerts
       </p>
       {total === 0 ? (
         <div className="h-24 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
@@ -529,7 +529,7 @@ export function LanguageBreakdown({ alerts }: { alerts: Alert[] }) {
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{d.label}</span>
                   <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
-                    {d.count} incident{d.count !== 1 ? "s" : ""} · {pct}%
+                    {d.count} alert{d.count !== 1 ? "s" : ""} · {pct}%
                   </span>
                 </div>
                 <div className="w-full h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
@@ -562,10 +562,10 @@ export function TopKeywordsBar({
   return (
     <div className={GLASS}>
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-        Top Keywords
+        Possible Detected Terms
       </h3>
       <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-        Most frequent detected keywords
+        Most frequent terms included with recorded alerts
       </p>
       {!mounted ? (
         <ChartSkeleton />

@@ -15,14 +15,37 @@
 /* ── Base backgrounds ────────────────────────────────────────────── */
 
 body {
-  background: linear-gradient(135deg, #f0f4ff 0%, #faf0ff 50%, #f0f8ff 100%);
-  background-attachment: fixed;
+  background: #f8fafc;
   color: #1e293b;
 }
 
 .dark body {
-  background: linear-gradient(135deg, #0a0a0f 0%, #0d0d1a 50%, #0a0f1a 100%);
+  background: #020617;
   color: #f1f5f9;
+}
+
+:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 0.75rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  border-radius: 0.75rem;
+  background: #312e81;
+  color: #fff;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: transform 150ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
 }
 
 /* ── Animations ──────────────────────────────────────────────────── */
@@ -68,4 +91,15 @@ body {
 /* ── Range input ─────────────────────────────────────────────────── */
 input[type="range"] {
   accent-color: #6366f1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

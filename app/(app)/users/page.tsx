@@ -1,478 +1,371 @@
 "use client";
 
-import { useState, useEffect, useCallback, FormEvent } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { UserPlus, X, Loader2, Users, WifiOff, Trash2, Pencil } from "lucide-react";
+import {
+  Loader2,
+  Mail,
+  RefreshCw,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import AccessibleDialog from "@/components/AccessibleDialog";
+import {
+  ApiError,
+  deleteUser,
+  getUsers,
+  registerUser,
+} from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
-import { getUsers, registerUser, deleteUser, ApiError } from "@/lib/api";
 import type { User } from "@/lib/types";
 
-const CARD = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]";
-const INPUT = "w-full px-4 py-2.5 bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors";
-
-const TOAST_SUCCESS = { style: { background: "#1a1a2e", color: "#86efac", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "12px" } };
-const TOAST_ERROR   = { style: { background: "#1a1a2e", color: "#f87171", border: "1px solid rgba(239,68,68,0.35)", borderRadius: "12px" } };
-
-const ROLE_BADGE: Record<string, string> = {
-  admin:     "bg-indigo-500/10 text-indigo-500    dark:text-indigo-400    border border-indigo-500/20",
-  staff:     "bg-violet-500/10 text-violet-500    dark:text-violet-400    border border-violet-500/20",
-  counselor: "bg-cyan-500/10   text-cyan-600      dark:text-cyan-400      border border-cyan-500/20",
+const ROLE_LABELS: Record<User["role"], string> = {
+  admin: "Administrator",
+  staff: "Teacher / Staff",
+  counselor: "Guidance Counselor",
 };
+
+const INPUT =
+  "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
 
 export default function UsersPage() {
   const currentUser = useCurrentUser();
   const router = useRouter();
-
-  const [users, setUsers]           = useState<User[]>([]);
-  const [fetching, setFetching]     = useState(true);
-  const [fetchError, setFetchError] = useState(false);
-
-  const [showModal, setShowModal]   = useState(false);
-  const [email, setEmail]           = useState("");
-  const [password, setPassword]     = useState("");
-  const [role, setRole]             = useState<"admin" | "staff" | "counselor">("staff");
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<User["role"]>("staff");
   const [submitting, setSubmitting] = useState(false);
-
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
-  const [deleting, setDeleting]         = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  const [editTarget, setEditTarget] = useState<User | null>(null);
-  const [editEmail, setEditEmail]   = useState("");
-  const [editRole, setEditRole]     = useState<"admin" | "staff" | "counselor">("staff");
-
-  // Redirect non-admins — middleware already blocks unauthenticated users
   useEffect(() => {
     if (currentUser && currentUser.role !== "admin") {
       router.replace("/dashboard");
     }
   }, [currentUser, router]);
 
-  const fetchUsers = useCallback(async () => {
-    setFetching(true);
-    setFetchError(false);
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    setError(false);
     try {
       setUsers(await getUsers());
     } catch {
-      setFetchError(true);
+      setError(true);
     } finally {
-      setFetching(false);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const timeout = setTimeout(() => void fetchUsers(), 0);
-    return () => clearTimeout(timeout);
-  }, [fetchUsers]);
+    const timer = setTimeout(() => {
+      void loadUsers();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [loadUsers]);
 
-  const openModal = () => {
+  const openCreateDialog = () => {
     setEmail("");
     setPassword("");
     setRole("staff");
-    setShowModal(true);
+    setShowCreate(true);
   };
 
-  const closeModal = () => setShowModal(false);
-
-  const openEditModal = (user: User) => {
-    setEditTarget(user);
-    setEditEmail(user.email);
-    setEditRole(user.role);
-  };
-
-  const closeEditModal = () => setEditTarget(null);
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    try {
-      await deleteUser(deleteTarget.id);
-      setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
-      setDeleteTarget(null);
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 403) {
-        toast.error("Permission denied", TOAST_ERROR);
-      } else {
-        toast.error("Failed to delete user", TOAST_ERROR);
-      }
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleCreate = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleCreate = async (event: FormEvent) => {
+    event.preventDefault();
     setSubmitting(true);
     try {
       await registerUser({ email, password, role });
-      closeModal();
-      await fetchUsers();
-      toast.success("User created successfully", TOAST_SUCCESS);
+      setShowCreate(false);
+      await loadUsers();
+      toast.success("User account created.");
     } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.status === 409) toast.error("Email already registered", TOAST_ERROR);
-        else if (err.status === 403) toast.error("Permission denied", TOAST_ERROR);
-        else toast.error("Failed to create user", TOAST_ERROR);
+      if (err instanceof ApiError && err.status === 409) {
+        toast.error("That email address is already registered.");
+      } else if (err instanceof ApiError && err.status === 403) {
+        toast.error("You don’t have permission to create this account.");
       } else {
-        toast.error("Failed to create user", TOAST_ERROR);
+        toast.error("We couldn’t create the user account.");
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleUpdate = (e: FormEvent) => {
-    e.preventDefault();
-    setEditTarget(null);
-    toast.success("User updated", TOAST_SUCCESS);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteUser(deleteTarget.id);
+      setUsers((current) =>
+        current.filter((user) => user.id !== deleteTarget.id)
+      );
+      setDeleteTarget(null);
+      toast.success("User account deleted.");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        toast.error("You don’t have permission to delete this account.");
+      } else {
+        toast.error("We couldn’t delete the user account.");
+      }
+    } finally {
+      setDeleting(false);
+    }
   };
 
-  // Don't render page content for non-admins while redirect fires
   if (currentUser && currentUser.role !== "admin") return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
-      className="p-4 md:p-6 max-w-4xl"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-indigo-500/10 shrink-0">
-            <Users className="w-5 h-5 text-indigo-400" />
-          </div>
+    <div className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">
+      <header className="mb-6">
+        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+          Administrator
+        </p>
+        <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
-            <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">Manage system users and their roles</p>
+            <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+              User Accounts
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+              View authorized users, assign roles when creating accounts, and
+              remove accounts using the current account system.
+            </p>
           </div>
-        </div>
-        <button
-          onClick={openModal}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold text-sm hover:opacity-90 active:opacity-80 transition-opacity shadow-lg shadow-indigo-500/20"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span className="hidden sm:inline">Add New User</span>
-          <span className="sm:hidden">Add</span>
-        </button>
-      </div>
-
-      {/* Table card */}
-      <div className={CARD}>
-        {fetching ? (
-          <div className="p-2">
-            <div className="animate-pulse">
-              <div className="flex gap-4 px-4 py-3 border-b border-gray-100 dark:border-white/10">
-                {["w-24", "w-48", "w-16"].map((w, i) => (
-                  <div key={i} className={`h-3 ${w} bg-gray-200 dark:bg-white/10 rounded-full`} />
-                ))}
-              </div>
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="flex gap-4 px-4 py-4 border-b border-gray-50 dark:border-white/5">
-                  <div className="h-3 w-32 bg-gray-100 dark:bg-white/5 rounded-full" />
-                  <div className="h-3 w-48 bg-gray-100 dark:bg-white/5 rounded-full" />
-                  <div className="h-5 w-14 bg-gray-100 dark:bg-white/5 rounded-full" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : fetchError ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <div className="p-3 rounded-2xl bg-gray-500/10 border border-gray-500/20">
-              <WifiOff className="w-6 h-6 text-gray-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Failed to load users</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Check your connection and try again</p>
-            </div>
-            <button
-              onClick={() => void fetchUsers()}
-              className="px-4 py-2 text-xs font-medium rounded-xl bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[480px]">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-white/10">
-                  <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">ID</th>
-                  <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Email</th>
-                  <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Role</th>
-                  <th className="text-right py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="py-12 text-center text-gray-400 dark:text-gray-500 text-sm">
-                      No users found
-                    </td>
-                  </tr>
-                ) : (
-                  users.map((u) => (
-                    <tr
-                      key={u.id}
-                      className="border-b border-gray-50 dark:border-white/5 hover:bg-indigo-50/50 dark:hover:bg-white/5 transition-colors"
-                    >
-                      <td className="py-3 px-4 text-gray-400 dark:text-gray-500 text-xs font-mono truncate max-w-[120px]">
-                        {u.id}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700 dark:text-gray-300 text-sm">
-                        {u.email}
-                        {u.id === currentUser?.id && (
-                          <span className="ml-2 text-xs text-indigo-400">(you)</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${ROLE_BADGE[u.role] ?? ROLE_BADGE.user}`}>
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => openEditModal(u)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
-                            aria-label={`Edit ${u.email}`}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          {u.id !== currentUser?.id && (
-                            <button
-                              onClick={() => setDeleteTarget(u)}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                              aria-label={`Delete ${u.email}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Update User Modal */}
-      {editTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={closeEditModal}
-          />
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="relative z-10 w-full max-w-md bg-white/90 dark:bg-gray-950/95 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-2xl p-6"
+          <button
+            type="button"
+            onClick={openCreateDialog}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600"
           >
-            <button
-              onClick={closeEditModal}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">Update User</h2>
-
-            <form onSubmit={handleUpdate} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                  placeholder="user@example.com"
-                  className={INPUT}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                  Role
-                </label>
-                <select
-                  value={editRole}
-                  onChange={(e) => setEditRole(e.target.value as "admin" | "staff" | "counselor")}
-                  className={INPUT}
-                >
-                  <option value="staff">staff</option>
-                  <option value="counselor">counselor</option>
-                  <option value="admin">admin</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-semibold hover:opacity-90 active:opacity-80 transition-opacity shadow-lg shadow-indigo-500/20"
-                >
-                  <Pencil className="w-4 h-4" />
-                  Save
-                </button>
-              </div>
-            </form>
-          </motion.div>
+            <UserPlus className="h-4 w-4" aria-hidden="true" />
+            Add User
+          </button>
         </div>
+      </header>
+
+      {loading ? (
+        <div role="status" className="grid gap-4 sm:grid-cols-2">
+          <span className="sr-only">Loading user accounts</span>
+          {[0, 1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+            />
+          ))}
+        </div>
+      ) : error ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
+        >
+          <h2 className="font-bold text-red-950 dark:text-red-100">
+            We couldn&apos;t load user accounts.
+          </h2>
+          <p className="mt-2 text-sm text-red-800 dark:text-red-200">
+            Please check the connection and try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => void loadUsers()}
+            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Retry
+          </button>
+        </div>
+      ) : users.length === 0 ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
+          <Users className="mx-auto h-7 w-7 text-slate-500" aria-hidden="true" />
+          <h2 className="mt-3 font-bold text-slate-950 dark:text-white">
+            No user accounts are available.
+          </h2>
+        </div>
+      ) : (
+        <section aria-label="User accounts">
+          <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">
+            {users.length} account{users.length === 1 ? "" : "s"}
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {users.map((user) => (
+              <article
+                key={user.id}
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <span className="rounded-xl bg-indigo-50 p-2.5 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200">
+                    <Users className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  {user.id !== currentUser?.id && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(user)}
+                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-700 dark:hover:bg-red-950/30 dark:hover:text-red-300"
+                      aria-label={`Delete ${user.email}`}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+
+                <dl className="mt-4 space-y-3">
+                  <div>
+                    <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <Mail className="h-4 w-4" aria-hidden="true" />
+                      Email
+                    </dt>
+                    <dd className="mt-1 break-words font-semibold text-slate-950 dark:text-white">
+                      {user.email}
+                      {user.id === currentUser?.id && (
+                        <span className="ml-2 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                          You
+                        </span>
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                      Access level
+                    </dt>
+                    <dd className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+                      {ROLE_LABELS[user.role]}
+                    </dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => !deleting && setDeleteTarget(null)}
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="relative z-10 w-full max-w-sm bg-white/90 dark:bg-gray-950/95 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-2xl p-6"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-xl bg-red-500/10 shrink-0">
-                <Trash2 className="w-5 h-5 text-red-500" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Delete user</h3>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5 break-all">
-                  {deleteTarget.email}
-                </p>
-              </div>
+      {showCreate && (
+        <AccessibleDialog
+          title="Add User Account"
+          description="Create an account for authorized school personnel."
+          onClose={() => setShowCreate(false)}
+          closeDisabled={submitting}
+        >
+          <form onSubmit={(event) => void handleCreate(event)} className="space-y-4">
+            <div>
+              <label
+                htmlFor="new-user-email"
+                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+              >
+                Email
+              </label>
+              <input
+                id="new-user-email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className={INPUT}
+              />
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-              Are you sure you want to delete this user? This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
+            <div>
+              <label
+                htmlFor="new-user-password"
+                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+              >
+                Temporary password
+              </label>
+              <input
+                id="new-user-password"
+                type="password"
+                required
+                autoComplete="new-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className={INPUT}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="new-user-role"
+                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+              >
+                Access level
+              </label>
+              <select
+                id="new-user-role"
+                value={role}
+                onChange={(event) =>
+                  setRole(event.target.value as User["role"])
+                }
+                className={INPUT}
+              >
+                <option value="staff">Teacher / Staff</option>
+                <option value="counselor">Guidance Counselor</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+            <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleting}
-                className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+                onClick={() => setShowCreate(false)}
+                disabled={submitting}
+                className="min-h-11 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Cancel
               </button>
               <button
-                type="button"
-                onClick={() => void handleDelete()}
-                disabled={deleting}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-red-500/90 hover:bg-red-500 text-white text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                type="submit"
+                disabled={submitting}
+                aria-busy={submitting}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-60"
               >
-                {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
-                Delete
+                {submitting && (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                )}
+                {submitting ? "Creating…" : "Create Account"}
               </button>
             </div>
-          </motion.div>
-        </div>
+          </form>
+        </AccessibleDialog>
       )}
 
-      {/* Add User Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={closeModal}
-          />
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="relative z-10 w-full max-w-md bg-white/90 dark:bg-gray-950/95 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-2xl p-6"
-          >
+      {deleteTarget && (
+        <AccessibleDialog
+          title="Delete User Account"
+          description={`Delete ${deleteTarget.email}? This action cannot be undone.`}
+          onClose={() => setDeleteTarget(null)}
+          closeDisabled={deleting}
+        >
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+              className="min-h-11 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
             >
-              <X className="w-5 h-5" />
+              Cancel
             </button>
-
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-5">Add New User</h2>
-
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="user@example.com"
-                  className={INPUT}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className={INPUT}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                  Role
-                </label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as "admin" | "staff" | "counselor")}
-                  className={INPUT}
-                >
-                  <option value="staff">staff</option>
-                  <option value="counselor">counselor</option>
-                  <option value="admin">admin</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-semibold hover:opacity-90 active:opacity-80 transition-opacity shadow-lg shadow-indigo-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Create User
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={deleting}
+              aria-busy={deleting}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700 disabled:opacity-60"
+            >
+              {deleting && (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              )}
+              {deleting ? "Deleting…" : "Delete Account"}
+            </button>
+          </div>
+        </AccessibleDialog>
       )}
-    </motion.div>
+    </div>
   );
 }

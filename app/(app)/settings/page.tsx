@@ -1,30 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { Save, Bell, MapPin, Sliders, WifiOff, Loader2, PackageCheck, UploadCloud } from "lucide-react";
-import type { Settings } from "@/lib/types";
+import {
+  Bell,
+  Loader2,
+  MapPin,
+  RefreshCw,
+  Save,
+  SlidersHorizontal,
+} from "lucide-react";
 import { getSettings, saveSettings } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
-
-const DEFAULT_SETTINGS: Settings = {
-  confidence_threshold: 75,
-  duration_threshold: 3,
-  notifications: true,
-  location: "Grade 6 Classroom",
-};
-
-const CARD = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]";
+import type { Settings } from "@/lib/types";
 
 export default function SettingsPage() {
   const currentUser = useCurrentUser();
   const router = useRouter();
-  const [settings, setSettings]               = useState<Settings>(DEFAULT_SETTINGS);
-  const [loadingSettings, setLoadingSettings] = useState(true);
-  const [saving, setSaving]                   = useState(false);
-  const [backendAvailable, setBackendAvailable] = useState(true);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (currentUser && currentUser.role !== "admin") {
@@ -32,204 +29,261 @@ export default function SettingsPage() {
     }
   }, [currentUser, router]);
 
-  useEffect(() => {
-    let cancelled = false;
-    getSettings()
-      .then((data) => { if (!cancelled) { setSettings(data); setBackendAvailable(true); } })
-      .catch(() => { if (!cancelled) setBackendAvailable(false); })
-      .finally(() => { if (!cancelled) setLoadingSettings(false); });
-    return () => { cancelled = true; };
+  const loadSettings = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      setSettings(await getSettings());
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void loadSettings();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [loadSettings]);
+
+  const update = <K extends keyof Settings>(key: K, value: Settings[K]) => {
+    setSettings((current) =>
+      current ? { ...current, [key]: value } : current
+    );
+  };
+
   const handleSave = async () => {
+    if (!settings) return;
     setSaving(true);
     try {
-      await saveSettings(settings);
-      setBackendAvailable(true);
-      toast.success("Settings saved", {
-        style: { background: "#1a1a2e", color: "#86efac", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "12px" },
-      });
+      setSettings(await saveSettings(settings));
+      toast.success("System settings saved.");
     } catch {
-      setBackendAvailable(false);
-      toast.error("Failed to save — backend unavailable", {
-        style: { background: "#1a1a2e", color: "#f87171", border: "1px solid rgba(239,68,68,0.35)", borderRadius: "12px" },
-      });
+      toast.error("We couldn’t save the settings. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handlePushConfig = () => {
-    toast.success("Config pushed to Pi", {
-      style: { background: "#1a1a2e", color: "#86efac", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "12px" },
-    });
-  };
-
-  const update = <K extends keyof Settings>(key: K, value: Settings[K]) =>
-    setSettings((prev) => ({ ...prev, [key]: value }));
-
   if (currentUser && currentUser.role !== "admin") return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
-      className="p-4 md:p-6 max-w-2xl"
-    >
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Settings</h1>
-        <p className="text-gray-400 dark:text-gray-500 text-sm">
-          Configure the EchoSense detection system parameters
+    <div className="mx-auto max-w-3xl p-4 md:p-6 lg:p-8">
+      <header className="mb-6">
+        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+          Administrator
         </p>
-      </div>
+        <h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+          System Settings
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+          Manage the existing classroom alert settings. Changes are saved to the
+          current monitoring system.
+        </p>
+      </header>
 
-      {loadingSettings ? (
-        <div className="space-y-4 animate-pulse">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-white/60 dark:bg-white/5 rounded-2xl border border-white/80 dark:border-white/10" />
+      {loading ? (
+        <div role="status" className="space-y-4">
+          <span className="sr-only">Loading system settings</span>
+          {[0, 1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+            />
           ))}
+        </div>
+      ) : loadError || !settings ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
+        >
+          <h2 className="font-bold text-red-950 dark:text-red-100">
+            We couldn&apos;t load system settings.
+          </h2>
+          <p className="mt-2 text-sm text-red-800 dark:text-red-200">
+            No default values are being shown because the current backend values
+            could not be verified.
+          </p>
+          <button
+            type="button"
+            onClick={() => void loadSettings()}
+            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Retry
+          </button>
         </div>
       ) : (
         <div className="space-y-4">
-          {!backendAvailable && (
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-sm">
-              <WifiOff className="w-4 h-4 shrink-0" />
-              <span>Using defaults — backend unavailable. Changes won&apos;t persist until the backend is reachable.</span>
-            </div>
-          )}
-
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.4 }} className={CARD}>
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-2 rounded-xl bg-indigo-500/10 shrink-0">
-                <Sliders className="w-4 h-4 text-indigo-400" />
-              </div>
+          <section
+            aria-labelledby="sensitivity-title"
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900"
+          >
+            <div className="flex items-start gap-3">
+              <span className="rounded-xl bg-indigo-50 p-2.5 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200">
+                <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
+              </span>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Confidence Threshold</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Minimum AI confidence to trigger an alert</p>
-              </div>
-              <span className="text-xl font-black text-indigo-500 dark:text-indigo-400 tabular-nums">{settings.confidence_threshold}%</span>
-            </div>
-            <input type="range" min={0} max={100} value={settings.confidence_threshold}
-              onChange={(e) => update("confidence_threshold", Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 dark:bg-white/10 rounded-full appearance-none cursor-pointer" />
-            <div className="flex justify-between mt-1.5">
-              <span className="text-xs text-gray-400 dark:text-gray-600">0%</span>
-              <span className="text-xs text-gray-400 dark:text-gray-600">100%</span>
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.4 }} className={CARD}>
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-2 rounded-xl bg-violet-500/10 shrink-0">
-                <Sliders className="w-4 h-4 text-violet-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Duration Threshold</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Minimum sound duration to trigger an alert</p>
-              </div>
-              <span className="text-xl font-black text-violet-500 dark:text-violet-400 tabular-nums">{settings.duration_threshold.toFixed(1)}s</span>
-            </div>
-            <input type="range" min={1} max={10} step={0.5} value={settings.duration_threshold}
-              onChange={(e) => update("duration_threshold", Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 dark:bg-white/10 rounded-full appearance-none cursor-pointer" />
-            <div className="flex justify-between mt-1.5">
-              <span className="text-xs text-gray-400 dark:text-gray-600">1s</span>
-              <span className="text-xs text-gray-400 dark:text-gray-600">10s</span>
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24, duration: 0.4 }} className={CARD}>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-amber-500/10 shrink-0">
-                  <Bell className="w-4 h-4 text-amber-400" />
+                <div className="flex items-center justify-between gap-4">
+                  <label
+                    id="sensitivity-title"
+                    htmlFor="alert-sensitivity"
+                    className="font-bold text-slate-950 dark:text-white"
+                  >
+                    Alert Sensitivity
+                  </label>
+                  <span className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
+                    {settings.confidence_threshold}%
+                  </span>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">Alert Notifications</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Show toast notifications for new detections</p>
-                </div>
-              </div>
-              <button
-                role="switch"
-                aria-checked={settings.notifications}
-                onClick={() => update("notifications", !settings.notifications)}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${settings.notifications ? "bg-indigo-500" : "bg-gray-200 dark:bg-white/10"}`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${settings.notifications ? "translate-x-6" : "translate-x-1"}`} />
-              </button>
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.4 }} className={CARD}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-xl bg-emerald-500/10 shrink-0">
-                <MapPin className="w-4 h-4 text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Location Name</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Name of the monitored classroom</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  Minimum detection strength required before an alert is created.
+                </p>
               </div>
             </div>
             <input
-              type="text"
-              value={settings.location}
-              onChange={(e) => update("location", e.target.value)}
-              className="w-full px-4 py-2.5 bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
-              placeholder="e.g. Grade 6 Classroom"
+              id="alert-sensitivity"
+              type="range"
+              min={0}
+              max={100}
+              value={settings.confidence_threshold}
+              onChange={(event) =>
+                update("confidence_threshold", Number(event.target.value))
+              }
+              className="mt-5 h-11 w-full cursor-pointer accent-indigo-700"
             />
-          </motion.div>
+          </section>
 
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36, duration: 0.4 }} className={CARD}>
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-cyan-500/10 shrink-0">
-                  <PackageCheck className="w-4 h-4 text-cyan-400" />
+          <section
+            aria-labelledby="duration-title"
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900"
+          >
+            <div className="flex items-start gap-3">
+              <span className="rounded-xl bg-violet-50 p-2.5 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200">
+                <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div className="flex-1">
+                <div className="flex items-center justify-between gap-4">
+                  <label
+                    id="duration-title"
+                    htmlFor="minimum-alert-duration"
+                    className="font-bold text-slate-950 dark:text-white"
+                  >
+                    Minimum Alert Duration
+                  </label>
+                  <span className="text-lg font-bold text-violet-700 dark:text-violet-300">
+                    {settings.duration_threshold.toFixed(1)}s
+                  </span>
                 </div>
+                <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  Minimum sound duration required before an alert is created.
+                </p>
+              </div>
+            </div>
+            <input
+              id="minimum-alert-duration"
+              type="range"
+              min={1}
+              max={10}
+              step={0.5}
+              value={settings.duration_threshold}
+              onChange={(event) =>
+                update("duration_threshold", Number(event.target.value))
+              }
+              className="mt-5 h-11 w-full cursor-pointer accent-violet-700"
+            />
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex gap-3">
+                <span className="rounded-xl bg-amber-50 p-2.5 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
+                  <Bell className="h-5 w-5" aria-hidden="true" />
+                </span>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">OTA Version Monitor</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Static Pi model package versions</p>
+                  <p className="font-bold text-slate-950 dark:text-white">
+                    Alert Notifications
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    Use the existing notification setting for new alerts.
+                  </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={handlePushConfig}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-sm font-semibold hover:bg-indigo-500/20 transition-colors"
+                role="switch"
+                aria-checked={settings.notifications}
+                aria-label="Alert notifications"
+                onClick={() =>
+                  update("notifications", !settings.notifications)
+                }
+                className={`relative inline-flex h-11 w-14 shrink-0 items-center rounded-full focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                  settings.notifications
+                    ? "bg-indigo-700"
+                    : "bg-slate-300 dark:bg-slate-700"
+                }`}
               >
-                <UploadCloud className="w-4 h-4" />
-                Push Config to Pi
+                <span
+                  className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    settings.notifications
+                      ? "translate-x-8"
+                      : "translate-x-1.5"
+                  }`}
+                />
               </button>
             </div>
+          </section>
 
-            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="rounded-xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 px-4 py-3">
-                <p className="text-xs text-gray-400 dark:text-gray-500">vosk_version</p>
-                <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white break-all">
-                  vosk-model-small-en-us-0.15
+          <section
+            aria-labelledby="classroom-name-title"
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900"
+          >
+            <div className="flex gap-3">
+              <span className="rounded-xl bg-emerald-50 p-2.5 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200">
+                <MapPin className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div className="flex-1">
+                <label
+                  id="classroom-name-title"
+                  htmlFor="classroom-name"
+                  className="font-bold text-slate-950 dark:text-white"
+                >
+                  Classroom Name
+                </label>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  Name shown with alerts from the current monitored classroom.
                 </p>
-              </div>
-              <div className="rounded-xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 px-4 py-3">
-                <p className="text-xs text-gray-400 dark:text-gray-500">yamnet_version</p>
-                <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
-                  YAMNet TFLite v1.0
-                </p>
+                <input
+                  id="classroom-name"
+                  type="text"
+                  value={settings.location}
+                  onChange={(event) =>
+                    update("location", event.target.value)
+                  }
+                  className="mt-4 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                />
               </div>
             </div>
-          </motion.div>
+          </section>
 
-          <motion.button
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-            onClick={handleSave}
+          <button
+            type="button"
+            onClick={() => void handleSave()}
             disabled={saving}
-            className="w-full flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold hover:opacity-90 active:opacity-80 transition-opacity shadow-lg shadow-indigo-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
+            aria-busy={saving}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-700 px-5 py-3 font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? "Saving..." : "Save Settings"}
-          </motion.button>
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Save className="h-4 w-4" aria-hidden="true" />
+            )}
+            {saving ? "Saving…" : "Save Settings"}
+          </button>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }

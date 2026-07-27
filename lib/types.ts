@@ -105,12 +105,47 @@ export interface DictionaryEntry {
   added_at?: string;
 }
 
+export type AuditLogStatus = "SUCCESS" | "FAILURE";
+
 export interface AuditLog {
-  id: number;
-  actor: string;
+  id: string;
+  occurred_at: string | null;
+  actor_user_id: string | null;
+  actor_email: string | null;
+  actor_role: string | null;
   action: string;
-  target: string;
-  timestamp: string;
+  resource: string;
+  resource_id: string | null;
+  target: string | null;
+  status: AuditLogStatus | null;
+  description: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  request_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string | null;
+}
+
+export interface AuditLogFilters {
+  page: number;
+  page_size: number;
+  search: string;
+  actor_email: string;
+  actor_role: string;
+  action: string;
+  resource: string;
+  status: AuditLogStatus | "";
+  date_from: string;
+  date_to: string;
+  sort_order: "asc" | "desc";
+}
+
+export interface AuditLogClientPage {
+  items: AuditLog[];
+  page: number;
+  page_size: number;
+  total_loaded: number;
+  total_pages: number;
 }
 
 export interface SystemSettings {
@@ -134,4 +169,9 @@ export interface PiLog {
   timestamp: string;
   type: string;
   message: string;
+}
+
+export interface SystemLogsResponse {
+  lines: PiLog[];
+  total: number;
 }

@@ -1,32 +1,48 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { BookOpen, Loader2, Plus, Save, Trash2, WifiOff } from "lucide-react";
+import {
+  BookOpen,
+  Globe2,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Save,
+  SlidersHorizontal,
+  Trash2,
+} from "lucide-react";
+import AccessibleDialog from "@/components/AccessibleDialog";
+import {
+  addDictionaryEntry,
+  deleteDictionaryEntry,
+  getDictionary,
+} from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
-import { getDictionary, addDictionaryEntry, deleteDictionaryEntry } from "@/lib/api";
 import type { DictionaryEntry } from "@/lib/types";
 
-const CARD = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]";
-const INPUT = "w-full px-4 py-2.5 bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors";
-const TOAST_SUCCESS = { style: { background: "#1a1a2e", color: "#86efac", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "12px" } };
-const TOAST_ERROR   = { style: { background: "#1a1a2e", color: "#f87171", border: "1px solid rgba(239,68,68,0.35)", borderRadius: "12px" } };
+const INPUT =
+  "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
 
 export default function DictionaryPage() {
   const currentUser = useCurrentUser();
   const router = useRouter();
-
-  const [entries, setEntries]       = useState<DictionaryEntry[]>([]);
-  const [fetching, setFetching]     = useState(true);
-  const [fetchError, setFetchError] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-
-  const [slurText, setSlurText]             = useState("");
-  const [language, setLanguage]             = useState("Filipino");
-  const [severityWeight, setSeverityWeight] = useState(0.7);
-  const [submitting, setSubmitting]         = useState(false);
+  const [entries, setEntries] = useState<DictionaryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [term, setTerm] = useState("");
+  const [language, setLanguage] = useState("Filipino");
+  const [alertWeight, setAlertWeight] = useState(0.7);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] =
+    useState<DictionaryEntry | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (currentUser && currentUser.role !== "admin") {
@@ -34,235 +50,303 @@ export default function DictionaryPage() {
     }
   }, [currentUser, router]);
 
-  const fetchEntries = useCallback(async () => {
-    setFetching(true);
-    setFetchError(false);
+  const loadEntries = useCallback(async () => {
+    setLoading(true);
+    setError(false);
     try {
       setEntries(await getDictionary());
     } catch {
-      setFetchError(true);
+      setError(true);
     } finally {
-      setFetching(false);
+      setLoading(false);
     }
   }, []);
 
-  useEffect(() => { void fetchEntries(); }, [fetchEntries]);
-
-  const handleDelete = async (entry: DictionaryEntry) => {
-    setDeletingId(entry.term_id);
-    try {
-      await deleteDictionaryEntry(entry.term_id);
-      setEntries((prev) => prev.filter((e) => e.term_id !== entry.term_id));
-      toast.success(`"${entry.slur_text}" removed`, TOAST_SUCCESS);
-    } catch {
-      toast.error("Failed to delete keyword", TOAST_ERROR);
-    } finally {
-      setDeletingId(null);
-    }
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void loadEntries();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [loadEntries]);
 
   const handleSave = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
     try {
-      const created = await addDictionaryEntry({ slur_text: slurText, language, severity_weight: severityWeight });
-      setEntries((prev) => [created, ...prev]);
-      toast.success("Keyword saved", TOAST_SUCCESS);
-      setSlurText("");
+      const created = await addDictionaryEntry({
+        slur_text: term,
+        language,
+        severity_weight: alertWeight,
+      });
+      setEntries((current) => [created, ...current]);
+      setTerm("");
       setLanguage("Filipino");
-      setSeverityWeight(0.7);
+      setAlertWeight(0.7);
+      toast.success("Monitored term saved.");
     } catch {
-      toast.error("Failed to save keyword", TOAST_ERROR);
+      toast.error("We couldn’t save the monitored term.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteDictionaryEntry(deleteTarget.term_id);
+      setEntries((current) =>
+        current.filter((entry) => entry.term_id !== deleteTarget.term_id)
+      );
+      setDeleteTarget(null);
+      toast.success("Monitored term deleted.");
+    } catch {
+      toast.error("We couldn’t delete the monitored term.");
+    } finally {
+      setDeleting(false);
     }
   };
 
   if (currentUser && currentUser.role !== "admin") return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
-      className="p-4 md:p-6 max-w-screen-lg space-y-5"
-    >
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Keyword Dictionary</h1>
-        <p className="text-gray-400 dark:text-gray-500 text-sm">
-          Manage static severity weights for monitored words
+    <div className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">
+      <header className="mb-6">
+        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+          Administrator
         </p>
-      </div>
+        <h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+          Monitored Terms
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+          Manage terms and alert weights used by the current monitoring system.
+          These terms support detection and do not confirm an incident.
+        </p>
+      </header>
 
-      <div className={`${CARD} overflow-hidden`}>
-        <div className="flex items-center gap-3 p-5 border-b border-gray-100 dark:border-white/10">
-          <div className="p-2 rounded-xl bg-indigo-500/10 shrink-0">
-            <BookOpen className="w-5 h-5 text-indigo-400" />
-          </div>
+      <section
+        aria-labelledby="add-term-title"
+        className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900"
+      >
+        <div className="flex gap-3">
+          <span className="rounded-xl bg-emerald-50 p-2.5 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200">
+            <Plus className="h-5 w-5" aria-hidden="true" />
+          </span>
           <div>
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Dictionary Entries</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{entries.length} keyword{entries.length !== 1 ? "s" : ""} in dictionary</p>
-          </div>
-        </div>
-
-        {fetching ? (
-          <div className="animate-pulse p-2">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="flex gap-4 px-4 py-4 border-b border-gray-50 dark:border-white/5">
-                <div className="h-3 w-24 bg-gray-100 dark:bg-white/5 rounded-full" />
-                <div className="h-3 w-20 bg-gray-100 dark:bg-white/5 rounded-full" />
-                <div className="h-3 w-32 bg-gray-100 dark:bg-white/5 rounded-full" />
-              </div>
-            ))}
-          </div>
-        ) : fetchError ? (
-          <div className="flex flex-col items-center justify-center py-14 gap-4">
-            <div className="p-3 rounded-2xl bg-gray-500/10 border border-gray-500/20">
-              <WifiOff className="w-6 h-6 text-gray-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Failed to load dictionary</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Check your connection and try again</p>
-            </div>
-            <button
-              onClick={() => void fetchEntries()}
-              className="px-4 py-2 text-xs font-medium rounded-xl bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
+            <h2
+              id="add-term-title"
+              className="font-bold text-slate-950 dark:text-white"
             >
-              Retry
-            </button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[640px]">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-white/10">
-                  <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Keyword</th>
-                  <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Language</th>
-                  <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Severity Weight</th>
-                  <th className="text-right py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="py-12 text-center text-gray-400 dark:text-gray-500 text-sm">
-                      No keywords in dictionary yet
-                    </td>
-                  </tr>
-                ) : (
-                  entries.map((entry) => (
-                    <tr
-                      key={entry.term_id}
-                      className="border-b border-gray-50 dark:border-white/5 hover:bg-indigo-50/50 dark:hover:bg-white/5 transition-colors"
-                    >
-                      <td className="py-3 px-4 text-gray-900 dark:text-white font-medium">{entry.slur_text}</td>
-                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{entry.language}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-2 w-28 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
-                              style={{ width: `${entry.severity_weight * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-gray-700 dark:text-gray-300 tabular-nums">{entry.severity_weight.toFixed(1)}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => void handleDelete(entry)}
-                          disabled={deletingId === entry.term_id}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          aria-label={`Delete ${entry.slur_text}`}
-                        >
-                          {deletingId === entry.term_id
-                            ? <Loader2 className="w-4 h-4 animate-spin" />
-                            : <Trash2 className="w-4 h-4" />
-                          }
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <form onSubmit={(e) => void handleSave(e)} className={`${CARD} p-5`}>
-        <div className="flex items-center gap-3 mb-5">
-          <div className="p-2 rounded-xl bg-emerald-500/10 shrink-0">
-            <Plus className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Add New Keyword</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Saved to the backend blacklist database</p>
+              Add Monitored Term
+            </h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              The value is saved to the monitored-terms list.
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <form
+          onSubmit={(event) => void handleSave(event)}
+          className="mt-5 grid gap-4 md:grid-cols-3"
+        >
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-              Keyword
+            <label
+              htmlFor="monitored-term"
+              className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+            >
+              Term
             </label>
             <input
+              id="monitored-term"
               type="text"
-              value={slurText}
-              onChange={(event) => setSlurText(event.target.value)}
-              placeholder="Enter keyword"
-              className={INPUT}
               required
+              value={term}
+              onChange={(event) => setTerm(event.target.value)}
+              className={INPUT}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+            <label
+              htmlFor="term-language"
+              className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+            >
               Language
             </label>
             <select
+              id="term-language"
               value={language}
               onChange={(event) => setLanguage(event.target.value)}
               className={INPUT}
             >
-              <option value="Bisaya">Bisaya</option>
               <option value="Filipino">Filipino</option>
+              <option value="Bisaya">Bisaya</option>
               <option value="English">English</option>
             </select>
           </div>
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
-                Severity Weight
+            <div className="flex items-center justify-between gap-3">
+              <label
+                htmlFor="term-alert-weight"
+                className="text-sm font-medium text-slate-700 dark:text-slate-200"
+              >
+                Alert Weight
               </label>
-              <span className="text-xs font-semibold text-indigo-500 dark:text-indigo-400 tabular-nums">
-                {severityWeight.toFixed(1)}
+              <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
+                {alertWeight.toFixed(1)}
               </span>
             </div>
             <input
+              id="term-alert-weight"
               type="range"
               min={0}
               max={1}
               step={0.1}
-              value={severityWeight}
-              onChange={(event) => setSeverityWeight(Number(event.target.value))}
-              className="w-full h-2 bg-gray-200 dark:bg-white/10 rounded-full appearance-none cursor-pointer"
+              value={alertWeight}
+              onChange={(event) =>
+                setAlertWeight(Number(event.target.value))
+              }
+              className="mt-1 h-11 w-full cursor-pointer accent-indigo-700"
             />
-            <div className="flex justify-between mt-1.5">
-              <span className="text-xs text-gray-400 dark:text-gray-600">0.0</span>
-              <span className="text-xs text-gray-400 dark:text-gray-600">1.0</span>
-            </div>
           </div>
+          <div className="md:col-span-3">
+            <button
+              type="submit"
+              disabled={submitting}
+              aria-busy={submitting}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-60"
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Save className="h-4 w-4" aria-hidden="true" />
+              )}
+              {submitting ? "Saving…" : "Save Term"}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="mt-8" aria-labelledby="saved-terms-title">
+        <div className="mb-4">
+          <h2
+            id="saved-terms-title"
+            className="text-xl font-bold text-slate-950 dark:text-white"
+          >
+            Saved Terms
+          </h2>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            {loading
+              ? "Loading terms…"
+              : `${entries.length} term${entries.length === 1 ? "" : "s"}`}
+          </p>
         </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-5 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-semibold hover:opacity-90 active:opacity-80 transition-opacity shadow-lg shadow-indigo-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
+        {loading ? (
+          <div role="status" className="grid gap-4 sm:grid-cols-2">
+            <span className="sr-only">Loading monitored terms</span>
+            {[0, 1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+              />
+            ))}
+          </div>
+        ) : error ? (
+          <div
+            role="alert"
+            className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
+          >
+            <h3 className="font-bold text-red-950 dark:text-red-100">
+              We couldn&apos;t load monitored terms.
+            </h3>
+            <button
+              type="button"
+              onClick={() => void loadEntries()}
+              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              Retry
+            </button>
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
+            <BookOpen className="mx-auto h-7 w-7 text-slate-500" aria-hidden="true" />
+            <h3 className="mt-3 font-bold text-slate-950 dark:text-white">
+              No monitored terms are available.
+            </h3>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {entries.map((entry) => (
+              <article
+                key={entry.term_id}
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h3 className="break-words font-bold text-slate-950 dark:text-white">
+                      {entry.slur_text}
+                    </h3>
+                    <p className="mt-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                      <Globe2 className="h-4 w-4" aria-hidden="true" />
+                      {entry.language}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(entry)}
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-700 dark:hover:bg-red-950/30 dark:hover:text-red-300"
+                    aria-label={`Delete ${entry.slur_text}`}
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+                <div className="mt-4 flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-950/60">
+                  <SlidersHorizontal className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                  <span className="text-sm text-slate-600 dark:text-slate-300">
+                    Alert Weight
+                  </span>
+                  <span className="ml-auto font-bold text-slate-950 dark:text-white">
+                    {entry.severity_weight.toFixed(1)}
+                  </span>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {deleteTarget && (
+        <AccessibleDialog
+          title="Delete Monitored Term"
+          description={`Delete “${deleteTarget.slur_text}” from the monitored-terms list?`}
+          onClose={() => setDeleteTarget(null)}
+          closeDisabled={deleting}
         >
-          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {submitting ? "Saving..." : "Save"}
-        </button>
-      </form>
-    </motion.div>
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+              className="min-h-11 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={deleting}
+              aria-busy={deleting}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700 disabled:opacity-60"
+            >
+              {deleting && (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              )}
+              {deleting ? "Deleting…" : "Delete Term"}
+            </button>
+          </div>
+        </AccessibleDialog>
+      )}
+    </div>
   );
 }

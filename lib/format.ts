@@ -4,23 +4,121 @@ export function formatConfidence(n: number): string {
   return `${Math.round(n * 100)}%`;
 }
 
-export function formatTimestamp(iso: string): string {
-  const date = new Date(iso);
+type DateInput = string | number | Date | null | undefined;
+
+type ParsedDate =
+  | { date: Date; fallback: null }
+  | { date: null; fallback: "Time unavailable" | "Invalid timestamp" };
+
+export interface DateFormatContext {
+  recordId?: string | number;
+  field?: string;
+}
+
+const reportedDateErrors = new Set<string>();
+
+function reportDateError(
+  formatter: string,
+  value: DateInput,
+  reason: "missing" | "invalid",
+  context?: DateFormatContext
+) {
+  if (process.env.NODE_ENV === "production") return;
+
+  const printableValue =
+    value instanceof Date ? value.toString() : String(value);
+  const key = `${formatter}:${reason}:${context?.recordId ?? ""}:${printableValue}`;
+  if (reportedDateErrors.has(key)) return;
+  reportedDateErrors.add(key);
+
+  console.warn(
+    `[EchoSense] ${formatter} received ${
+      reason === "invalid" ? "an invalid" : "a missing"
+    } date value. Check the API timestamp field and backend data.`,
+    {
+      value,
+      recordId: context?.recordId,
+      field: context?.field,
+    }
+  );
+}
+
+function parseDateInput(
+  value: DateInput,
+  formatter: string,
+  context?: DateFormatContext
+): ParsedDate {
+  if (
+    value === null ||
+    value === undefined ||
+    (typeof value === "string" && value.trim() === "")
+  ) {
+    reportDateError(formatter, value, "missing", context);
+    return { date: null, fallback: "Time unavailable" };
+  }
+
+  const date =
+    value instanceof Date
+      ? new Date(value.getTime())
+      : typeof value === "number"
+        ? new Date(value)
+        : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    reportDateError(formatter, value, "invalid", context);
+    return { date: null, fallback: "Invalid timestamp" };
+  }
+
+  return { date, fallback: null };
+}
+
+export function formatTimestamp(
+  value: DateInput,
+  context?: DateFormatContext
+): string {
+  const parsed = parseDateInput(value, "formatTimestamp", context);
+  if (!parsed.date) return parsed.fallback;
+
   const time = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-  }).format(date);
+  }).format(parsed.date);
   const dateStr = new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(date);
+  }).format(parsed.date);
   return `${time} — ${dateStr}`;
 }
 
-export function formatRelative(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
+export function formatTime(value: DateInput): string {
+  const parsed = parseDateInput(value, "formatTime");
+  if (!parsed.date) return parsed.fallback;
+
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(parsed.date);
+}
+
+export function formatDate(value: DateInput): string {
+  const parsed = parseDateInput(value, "formatDate");
+  if (!parsed.date) return parsed.fallback;
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(parsed.date);
+}
+
+export function formatRelative(value: DateInput): string {
+  const parsed = parseDateInput(value, "formatRelative");
+  if (!parsed.date) return parsed.fallback;
+
+  const diff = Date.now() - parsed.date.getTime();
   const seconds = Math.floor(diff / 1000);
   if (seconds < 60) return "just now";
   const minutes = Math.floor(seconds / 60);
@@ -91,11 +189,11 @@ export const CATEGORY_COLORS: Record<string, string> = {
 
 export function durationGateLabel(gate?: string | null): string {
   switch (gate) {
-    case "threat":   return "⚡ Immediate";
-    case "hard":     return "🔴 Severe Word";
-    case "repeated": return "🔁 Repeated";
-    case "medium":   return "⚠️ Multiple Words";
-    case "soft":     return "📋 Pattern";
+    case "threat":   return "Immediate concern";
+    case "hard":     return "High-priority term";
+    case "repeated": return "Repeated phrase";
+    case "medium":   return "Multiple terms";
+    case "soft":     return "Possible pattern";
     default:         return gate ?? "—";
   }
 }
@@ -113,12 +211,18 @@ export function languageLabel(lang?: string | null): string {
     case "tl":  return "Filipino";
     case "ceb": return "Bisaya";
     case "en":  return "English";
-    default:    return "Mixed";
+    case null:
+    case undefined:
+    case "":
+      return "Not available";
+    default:
+      return "Mixed / Other";
   }
 }
 
 export function csvEscape(field: string): string {
-  const str = String(field);
+  const raw = String(field);
+  const str = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
     return `"${str.replace(/"/g, '""')}"`;
   }

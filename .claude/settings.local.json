@@ -10,7 +10,8 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(git commit *)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(curl -s \"https://echosense-backend-75h3.onrender.com/system/logs\" -H \"Authorization: Bearer dummy\")"
     ]
   }
 }

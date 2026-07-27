@@ -1,120 +1,194 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useAlerts } from "@/lib/AlertsProvider";
-import { CalendarDays, FileText, Loader2 } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  FileText,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import {
   AlertsPerDayBar,
-  SeverityPie,
-  ConfidenceOverTimeLine,
-  PeakHoursHeatmap,
-  EmotionDonut,
-  TopKeywordsBar,
   CategoryBarChart,
+  ConfidenceOverTimeLine,
+  EmotionDonut,
   LanguageBreakdown,
+  PeakHoursHeatmap,
+  SeverityPie,
+  TopKeywordsBar,
 } from "@/components/Charts";
-import { getReports, generateReport, getCategoryStats } from "@/lib/api";
-import type { Report, CategoryStats } from "@/lib/types";
+import { useAlerts } from "@/lib/AlertsProvider";
+import {
+  generateReport,
+  getCategoryStats,
+  getReports,
+} from "@/lib/api";
 import { formatTimestamp } from "@/lib/format";
+import type { CategoryStats, Report } from "@/lib/types";
 
-const CARD = "bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]";
-const INPUT = "w-full px-4 py-2.5 bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors";
-const TOAST_SUCCESS = { style: { background: "#1a1a2e", color: "#86efac", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "12px" } };
-const TOAST_ERROR   = { style: { background: "#1a1a2e", color: "#f87171", border: "1px solid rgba(239,68,68,0.35)", borderRadius: "12px" } };
+const INPUT =
+  "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
 
 export default function AnalyticsPage() {
-  const { alerts, stats, loading } = useAlerts();
-
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const [dateFrom, setDateFrom]     = useState("2026-06-01");
-  const [dateTo, setDateTo]         = useState(todayStr);
+  const {
+    alerts,
+    stats,
+    loading,
+    error: alertsError,
+    refresh,
+  } = useAlerts();
+  const [today] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dateFrom, setDateFrom] = useState(() => {
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+    return start.toISOString().slice(0, 10);
+  });
+  const [dateTo, setDateTo] = useState(today);
   const [generating, setGenerating] = useState(false);
-  const [reports, setReports]       = useState<Report[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [reportsLoading, setReportsLoading] = useState(true);
-  const [categoryStats, setCategoryStats] = useState<CategoryStats | null>(null);
+  const [reportsError, setReportsError] = useState(false);
+  const [categoryStats, setCategoryStats] =
+    useState<CategoryStats | null>(null);
 
-  useEffect(() => {
-    getReports()
-      .then(setReports)
-      .catch(() => {})
-      .finally(() => setReportsLoading(false));
+  const loadReportData = useCallback(async () => {
+    setReportsLoading(true);
+    setReportsError(false);
+    const [reportsResult, categoryResult] = await Promise.allSettled([
+      getReports(),
+      getCategoryStats(),
+    ]);
+    if (reportsResult.status === "fulfilled") {
+      setReports(reportsResult.value);
+    } else {
+      setReportsError(true);
+    }
+    if (categoryResult.status === "fulfilled") {
+      setCategoryStats(categoryResult.value);
+    }
+    setReportsLoading(false);
   }, []);
 
   useEffect(() => {
-    getCategoryStats()
-      .then(setCategoryStats)
-      .catch(() => {});
-  }, []);
+    const timer = setTimeout(() => {
+      void loadReportData();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [loadReportData]);
 
   const handleGenerateReport = async () => {
     if (!dateFrom || !dateTo || dateFrom > dateTo) {
-      toast.error("Invalid date range — From must be before To", TOAST_ERROR);
+      toast.error("Choose a valid date range.");
       return;
     }
     setGenerating(true);
     try {
-      const report = await generateReport({ date_from: dateFrom, date_to: dateTo });
-      setReports((prev) => [report, ...prev]);
-      toast.success("Report generated", TOAST_SUCCESS);
+      const report = await generateReport({
+        date_from: dateFrom,
+        date_to: dateTo,
+      });
+      setReports((current) => [report, ...current]);
+      toast.success("Report generated.");
     } catch {
-      toast.error("Failed to generate report", TOAST_ERROR);
+      toast.error("We couldn’t generate the report. Please try again.");
     } finally {
       setGenerating(false);
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
-      className="p-4 md:p-6 max-w-screen-xl"
-    >
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Analytics</h1>
-        <p className="text-gray-400 dark:text-gray-500 text-sm">
-          Detection patterns and trends across all locations
+    <div className="mx-auto max-w-6xl p-4 md:p-6 lg:p-8">
+      <header className="mb-6">
+        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+          Guidance and administration
         </p>
-      </div>
+        <h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+          Reports and Trends
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+          View patterns in recorded alerts. These summaries describe automated,
+          unverified alerts rather than confirmed incidents.
+        </p>
+      </header>
 
-      {/* ── Generate Report ───────────────────────────────────── */}
-      <div className={`${CARD} p-5 mb-5`}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-xl bg-indigo-500/10 shrink-0">
-            <CalendarDays className="w-5 h-5 text-indigo-400" />
-          </div>
+      {alertsError && (
+        <div
+          role="alert"
+          className="mb-6 flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-red-900/60 dark:bg-red-950/30"
+        >
           <div>
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Generate Report</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              Export a summary of incidents within a date range
+            <p className="font-semibold text-red-950 dark:text-red-100">
+              We couldn&apos;t load alert trends.
+            </p>
+            <p className="mt-1 text-sm text-red-800 dark:text-red-200">
+              Please try again.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Retry
+          </button>
+        </div>
+      )}
+
+      <section
+        aria-labelledby="generate-report-title"
+        className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+      >
+        <div className="flex gap-3">
+          <span className="rounded-xl bg-indigo-50 p-2.5 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200">
+            <CalendarDays className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div>
+            <h2
+              id="generate-report-title"
+              className="font-bold text-slate-950 dark:text-white"
+            >
+              Generate Report
+            </h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              Create and save a report for a selected date range.
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 md:items-end">
+
+        <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-              Date From
+            <label
+              htmlFor="report-date-from"
+              className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+            >
+              From
             </label>
             <input
+              id="report-date-from"
               type="date"
               value={dateFrom}
               max={dateTo}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={(event) => setDateFrom(event.target.value)}
               className={INPUT}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-              Date To
+            <label
+              htmlFor="report-date-to"
+              className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+            >
+              To
             </label>
             <input
+              id="report-date-to"
               type="date"
               value={dateTo}
               min={dateFrom}
-              max={todayStr}
-              onChange={(e) => setDateTo(e.target.value)}
+              max={today}
+              onChange={(event) => setDateTo(event.target.value)}
               className={INPUT}
             />
           </div>
@@ -122,139 +196,145 @@ export default function AnalyticsPage() {
             type="button"
             onClick={() => void handleGenerateReport()}
             disabled={generating}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-semibold hover:opacity-90 active:opacity-80 transition-opacity shadow-lg shadow-indigo-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
+            aria-busy={generating}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-            {generating ? "Generating..." : "Generate Report"}
+            {generating ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <FileText className="h-4 w-4" aria-hidden="true" />
+            )}
+            {generating ? "Generating…" : "Generate Report"}
           </button>
         </div>
-      </div>
+      </section>
 
-      {/* ── Charts ───────────────────────────────────────────── */}
-      {loading && alerts.length === 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl p-6 h-72 animate-pulse"
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {[AlertsPerDayBar, SeverityPie, ConfidenceOverTimeLine, PeakHoursHeatmap].map(
-            (Chart, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08, duration: 0.4 }}
-              >
-                <Chart alerts={alerts} />
-              </motion.div>
-            )
-          )}
+      <section className="mt-8" aria-labelledby="alert-trends-title">
+        <h2
+          id="alert-trends-title"
+          className="text-xl font-bold text-slate-950 dark:text-white"
+        >
+          Alert Trends
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          Summaries based on the alert records currently available.
+        </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.32, duration: 0.4 }}
+        {loading && alerts.length === 0 ? (
+          <div
+            role="status"
+            className="mt-4 grid gap-4 lg:grid-cols-2"
           >
-            <EmotionDonut stats={stats} />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-          >
-            <TopKeywordsBar alerts={alerts} stats={stats} />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.48, duration: 0.4 }}
-          >
-            <CategoryBarChart stats={categoryStats} />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.56, duration: 0.4 }}
-          >
-            <LanguageBreakdown alerts={alerts} />
-          </motion.div>
-        </div>
-      )}
-
-      {/* ── Report History ───────────────────────────────────── */}
-      <div className={`${CARD} mt-5 overflow-hidden`}>
-        <div className="flex items-center gap-3 p-5 border-b border-gray-100 dark:border-white/10">
-          <div className="p-2 rounded-xl bg-cyan-500/10 shrink-0">
-            <FileText className="w-5 h-5 text-cyan-400" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Report History</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              {reportsLoading ? "Loading..." : `${reports.length} report${reports.length !== 1 ? "s" : ""} generated`}
-            </p>
-          </div>
-        </div>
-
-        {reportsLoading ? (
-          <div className="animate-pulse p-2">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="flex gap-4 px-4 py-4 border-b border-gray-50 dark:border-white/5">
-                <div className="h-3 w-28 bg-gray-100 dark:bg-white/5 rounded-full" />
-                <div className="h-3 w-40 bg-gray-100 dark:bg-white/5 rounded-full" />
-                <div className="h-3 w-16 bg-gray-100 dark:bg-white/5 rounded-full" />
-              </div>
+            <span className="sr-only">Loading alert trends</span>
+            {[0, 1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className="h-72 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+              />
             ))}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[520px]">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-white/10">
-                  <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Report ID</th>
-                  <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Generated At</th>
-                  <th className="text-left py-3 px-4 text-xs text-gray-400 dark:text-gray-500 font-medium">Total Incidents</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reports.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
-                      No reports generated yet — use the form above to create one
-                    </td>
-                  </tr>
-                ) : (
-                  reports.map((report) => (
-                    <tr
-                      key={report.report_id}
-                      className="border-b border-gray-50 dark:border-white/5 hover:bg-indigo-50/50 dark:hover:bg-white/5 transition-colors"
-                    >
-                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400 font-mono text-xs truncate max-w-[200px]">
-                        {report.report_id}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700 dark:text-gray-300 text-xs whitespace-nowrap">
-                        {formatTimestamp(report.generated_at)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                          {report.total_incidents} incident{report.total_incidents !== 1 ? "s" : ""}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <>
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <AlertsPerDayBar alerts={alerts} />
+              <SeverityPie alerts={alerts} />
+              <CategoryBarChart stats={categoryStats} />
+              <LanguageBreakdown alerts={alerts} />
+              <PeakHoursHeatmap alerts={alerts} />
+              <EmotionDonut stats={stats} />
+            </div>
+
+            <details className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 font-semibold text-slate-800 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-slate-100">
+                <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                Additional Signal Analysis
+              </summary>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                These technical and potentially sensitive summaries are supporting
+                information only and do not confirm an incident.
+              </p>
+              <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                <ConfidenceOverTimeLine alerts={alerts} />
+                <TopKeywordsBar alerts={alerts} stats={stats} />
+              </div>
+            </details>
+          </>
+        )}
+      </section>
+
+      <section className="mt-8" aria-labelledby="report-history-title">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2
+              id="report-history-title"
+              className="text-xl font-bold text-slate-950 dark:text-white"
+            >
+              Report History
+            </h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              Previously generated alert reports.
+            </p>
+          </div>
+          {reportsError && (
+            <button
+              type="button"
+              onClick={() => void loadReportData()}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              Retry
+            </button>
+          )}
+        </div>
+
+        {reportsLoading ? (
+          <div role="status" className="mt-4 grid gap-3 sm:grid-cols-2">
+            <span className="sr-only">Loading report history</span>
+            {[0, 1].map((item) => (
+              <div
+                key={item}
+                className="h-28 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800"
+              />
+            ))}
+          </div>
+        ) : reportsError ? (
+          <div
+            role="alert"
+            className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-950 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-100"
+          >
+            We couldn&apos;t load report history.
+          </div>
+        ) : reports.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
+            <p className="font-semibold text-slate-950 dark:text-white">
+              No reports have been generated yet.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {reports.map((report) => (
+              <article
+                key={report.report_id}
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <FileText className="h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
+                  <span className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">
+                    {report.total_incidents} alert
+                    {report.total_incidents === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <p className="mt-4 text-sm font-semibold text-slate-950 dark:text-white">
+                  Generated {formatTimestamp(report.generated_at)}
+                </p>
+                <p className="mt-2 break-all text-xs text-slate-500 dark:text-slate-400">
+                  Report reference: {report.report_id}
+                </p>
+              </article>
+            ))}
           </div>
         )}
-      </div>
-    </motion.div>
+      </section>
+    </div>
   );
 }
