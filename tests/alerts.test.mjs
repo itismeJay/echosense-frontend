@@ -140,6 +140,38 @@ test("keeps legacy alerts compatible when new fields are absent", () => {
   );
 });
 
+test("accepts nullable legacy evidence from the deployed alert schema", () => {
+  const [alert] = parseAlertListResponse([
+    {
+      ...BASE_ALERT,
+      transcribed_text: null,
+      detected_words: null,
+      yamnet_class: null,
+      yamnet_score: null,
+      emotion: null,
+      rms: null,
+      energy_variance: null,
+      zero_crossing_rate: null,
+      peak_to_average: null,
+      waveform_snapshot: null,
+      categories: null,
+      hard_hits: null,
+      soft_hits: null,
+      duration_gate: null,
+      required_duration: null,
+      language: "unknown",
+      language_confidence: null,
+      matched_terms: [],
+    },
+  ]);
+
+  assert.equal(alert.transcribed_text, null);
+  assert.equal(alert.categories, null);
+  assert.equal(alert.language, "unknown");
+  assert.equal(alert.language_confidence, null);
+  assert.deepEqual(alert.matched_terms, []);
+});
+
 test("uses careful, unverified wording for matched evidence", () => {
   assert.equal(
     matchedTermEvidenceLabel("phrase"),

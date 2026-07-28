@@ -66,10 +66,11 @@ function validateOptionalArray(
   field: string,
   path: string,
   endpoint: string,
-  itemIsValid: (item: unknown) => boolean
+  itemIsValid: (item: unknown) => boolean,
+  nullable = false
 ) {
   const value = alert[field];
-  if (value === undefined) return;
+  if (value === undefined || (nullable && value === null)) return;
   if (!Array.isArray(value) || !value.every(itemIsValid)) {
     throw new AlertContractError(
       endpoint,
@@ -163,7 +164,7 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
     "emotion",
     "duration_gate",
   ]) {
-    validateOptionalString(value, field, path, endpoint, field === "duration_gate");
+    validateOptionalString(value, field, path, endpoint, true);
   }
   for (const field of [
     "yamnet_score",
@@ -178,7 +179,7 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
       field,
       path,
       endpoint,
-      field === "required_duration"
+      true
     );
   }
   for (const field of [
@@ -192,7 +193,8 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
       field,
       path,
       endpoint,
-      (item) => typeof item === "string"
+      (item) => typeof item === "string",
+      true
     );
   }
   validateOptionalArray(
@@ -200,7 +202,8 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
     "waveform_snapshot",
     path,
     endpoint,
-    isFiniteNumber
+    isFiniteNumber,
+    true
   );
 
   if (

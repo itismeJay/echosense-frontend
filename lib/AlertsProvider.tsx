@@ -10,7 +10,12 @@ import React, {
 } from "react";
 import toast from "react-hot-toast";
 import type { Alert, LogsStats } from "./types";
-import { getAlerts, getLogs, getLogsStats } from "./api";
+import {
+  checkBackendHealth,
+  getAlerts,
+  getLogs,
+  getLogsStats,
+} from "./api";
 
 const EMPTY_STATS: LogsStats = {
   total_alerts: 0,
@@ -69,14 +74,26 @@ export default function AlertsProvider({
     if (pollInFlightRef.current) return;
     pollInFlightRef.current = true;
     try {
-      const [alertsResult, logsResult, statsResult] = await Promise.allSettled([
-        getAlerts(),
-        getLogs(),
-        getLogsStats(),
-      ]);
+      const [alertsResult, logsResult, statsResult, healthResult] =
+        await Promise.allSettled([
+          getAlerts(),
+          getLogs(),
+          getLogsStats(),
+          checkBackendHealth(),
+        ]);
 
       if (alertsResult.status === "rejected") {
-        throw alertsResult.reason;
+        const backendReachable = healthResult.status === "fulfilled";
+        setOnline(backendReachable);
+        setError(
+          backendReachable
+            ? "Backend connected, but alert data is temporarily unavailable."
+            : alertsResult.reason instanceof Error
+              ? alertsResult.reason.message
+              : "Classroom alerts are unavailable"
+        );
+        setLoading(false);
+        return;
       }
 
       const newAlerts = alertsResult.value;
@@ -109,7 +126,6 @@ export default function AlertsProvider({
         }
       }
     } catch (err) {
-      // Only mark offline on a real API failure, not a timer
       setOnline(false);
       setError(err instanceof Error ? err.message : "Classroom alerts are unavailable");
       setLoading(false);

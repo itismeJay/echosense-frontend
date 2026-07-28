@@ -31,24 +31,24 @@ export interface Alert {
   created_at: string;
 
   // ── Rich evidence (all optional — backend may omit on older alerts) ──
-  transcribed_text?: string;
-  detected_words?: string[];
-  yamnet_class?: string;
-  yamnet_score?: number;
-  emotion?: string;
-  rms?: number;
-  energy_variance?: number;
-  zero_crossing_rate?: number;
-  peak_to_average?: number;
-  waveform_snapshot?: number[];
+  transcribed_text?: string | null;
+  detected_words?: string[] | null;
+  yamnet_class?: string | null;
+  yamnet_score?: number | null;
+  emotion?: string | null;
+  rms?: number | null;
+  energy_variance?: number | null;
+  zero_crossing_rate?: number | null;
+  peak_to_average?: number | null;
+  waveform_snapshot?: number[] | null;
 
   // ── Classification (optional for legacy alerts) ──
-  categories?: string[];
+  categories?: string[] | null;
   language?: AlertLanguage | null;
   language_confidence?: number | null;
   matched_terms?: MatchedTerm[];
-  hard_hits?: string[];
-  soft_hits?: string[];
+  hard_hits?: string[] | null;
+  soft_hits?: string[] | null;
   duration_gate?: string | null;
   required_duration?: number | null;
 }

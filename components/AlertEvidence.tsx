@@ -290,7 +290,10 @@ export default function AlertEvidence({
               {waveform.length > 0 && (
                 <div>
                   <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-200">Waveform snapshot</p>
-                  <WaveformDisplay snapshot={waveform} emotion={alert.emotion} />
+                  <WaveformDisplay
+                    snapshot={waveform}
+                    emotion={alert.emotion ?? undefined}
+                  />
                 </div>
               )}
 

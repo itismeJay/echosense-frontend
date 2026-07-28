@@ -178,6 +178,10 @@ export async function getHeartbeat(): Promise<HeartbeatStatus> {
   return apiFetch<HeartbeatStatus>("/system-settings/heartbeat");
 }
 
+export async function checkBackendHealth(): Promise<void> {
+  await apiRequest("/health");
+}
+
 export async function createAlert(input: Omit<Alert, "id">): Promise<Alert> {
   return parseAlertResponse(
     await apiFetch<unknown>("/alerts/", {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   School,
+  TriangleAlert,
   Wifi,
   WifiOff,
   Menu,
@@ -29,7 +30,8 @@ interface NavbarProps {
 }
 
 export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
-  const { online, loading } = useAlerts();
+  const { online, loading, error } = useAlerts();
+  const alertDataUnavailable = online && error !== null;
   const pathname = usePathname();
   const user = useCurrentUser();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -116,6 +118,8 @@ export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
           className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
             loading
               ? "bg-gray-500/10 border-gray-500/20 text-gray-500 dark:text-gray-400"
+              : alertDataUnavailable
+                ? "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300"
               : online
                 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
                 : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
@@ -123,12 +127,20 @@ export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
         >
           {loading ? (
             <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
+          ) : alertDataUnavailable ? (
+            <TriangleAlert className="h-3 w-3" aria-hidden="true" />
           ) : online ? (
             <Wifi className="h-3 w-3" aria-hidden="true" />
           ) : (
             <WifiOff className="h-3 w-3" aria-hidden="true" />
           )}
-          {loading ? "Checking updates" : online ? "Updates connected" : "Updates unavailable"}
+          {loading
+            ? "Connecting automatically"
+            : alertDataUnavailable
+              ? "Backend connected · alerts unavailable"
+              : online
+                ? "Backend connected"
+                : "Backend unavailable · retrying"}
         </div>
 
         <ThemeToggle />
