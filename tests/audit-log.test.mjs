@@ -1,56 +1,93 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  ApiContractError,
   auditFiltersFromSearchParams,
+  auditFiltersToApiSearchParams,
   auditFiltersToSearchParams,
-  createAuditCsv,
   DEFAULT_AUDIT_FILTERS,
-  filterAndSortAuditLogs,
   formatAuditAction,
-  paginateAuditLogs,
+  parseAuditLogListResponse,
   sanitizeAuditMetadata,
 } from "../lib/audit-log.ts";
-import { ApiContractError, parseAuditLogs } from "../lib/api.ts";
 import { formatTimestamp } from "../lib/format.ts";
 
-const LEGACY_RECORD = {
-  log_id: 7,
-  user_id: 10,
+const AUDIT_RECORD = {
+  id: "7",
+  occurred_at: "2026-07-27T10:42:00Z",
+  actor_user_id: "10",
   actor_email: "admin@school.edu",
-  action: "Updated System Settings",
-  module: "System Settings",
-  target: "Detection Threshold",
-  performed_at: "2026-07-27T10:42:00Z",
+  actor_role: "admin",
+  action: "UPDATE_SETTINGS",
+  resource: "Detection Settings",
+  resource_id: "settings-1",
+  target: "Confidence Threshold",
+  status: "SUCCESS",
+  description: "Changed confidence threshold.",
+  ip_address: "127.0.0.1",
+  user_agent: "Mozilla/5.0",
+  request_id: "request-7",
+  metadata: { previous: 0.8, current: 0.85 },
+  created_at: "2026-07-27T10:42:00Z",
 };
 
-test("parses and normalizes the verified legacy audit response", () => {
-  const [record] = parseAuditLogs([LEGACY_RECORD]);
+const AUDIT_PAGE = {
+  items: [AUDIT_RECORD],
+  page: 1,
+  page_size: 25,
+  total: 1,
+  total_pages: 1,
+};
 
-  assert.equal(record.id, "7");
-  assert.equal(record.occurred_at, LEGACY_RECORD.performed_at);
-  assert.equal(record.actor_user_id, "10");
-  assert.equal(record.resource, "System Settings");
-  assert.equal(record.status, null);
-  assert.equal(record.metadata, null);
+test("parses the deployed paginated audit response", () => {
+  const page = parseAuditLogListResponse(AUDIT_PAGE);
+
+  assert.equal(page.items[0].id, "7");
+  assert.equal(page.items[0].occurred_at, AUDIT_RECORD.occurred_at);
+  assert.equal(page.items[0].actor_role, "admin");
+  assert.equal(page.items[0].status, "SUCCESS");
+  assert.equal(page.total, 1);
+  assert.equal(page.total_pages, 1);
 });
 
-test("rejects an object when the verified backend contract requires an array", () => {
+test("accepts nullable legacy fields from the deployed schema", () => {
+  const page = parseAuditLogListResponse({
+    ...AUDIT_PAGE,
+    items: [
+      {
+        id: "8",
+        action: "LOGIN_FAILED",
+        resource: "Authentication",
+        occurred_at: null,
+        status: null,
+        metadata: {},
+      },
+    ],
+  });
+
+  assert.equal(page.items[0].occurred_at, null);
+  assert.equal(page.items[0].actor_email, null);
+  assert.equal(page.items[0].status, null);
+});
+
+test("rejects the old raw-array audit response", () => {
   assert.throws(
-    () =>
-      parseAuditLogs({
-        items: [LEGACY_RECORD],
-        page: 1,
-        page_size: 25,
-        total: 1,
-        total_pages: 1,
-      }),
+    () => parseAuditLogListResponse([AUDIT_RECORD]),
     ApiContractError
   );
 });
 
-test("rejects structurally malformed audit records", () => {
+test("rejects malformed pagination and audit records", () => {
   assert.throws(
-    () => parseAuditLogs([{ ...LEGACY_RECORD, action: null }]),
+    () => parseAuditLogListResponse({ ...AUDIT_PAGE, total: "1" }),
+    ApiContractError
+  );
+  assert.throws(
+    () =>
+      parseAuditLogListResponse({
+        ...AUDIT_PAGE,
+        items: [{ ...AUDIT_RECORD, status: "UNKNOWN" }],
+      }),
     ApiContractError
   );
 });
@@ -113,60 +150,53 @@ test("redacts sensitive metadata recursively", () => {
   });
 });
 
-test("filters all loaded records before client pagination", () => {
-  const logs = parseAuditLogs([
-    LEGACY_RECORD,
-    {
-      ...LEGACY_RECORD,
-      log_id: 8,
-      action: "Created User",
-      target: "teacher@school.edu",
-      performed_at: "2026-07-27T11:00:00Z",
-    },
-  ]);
-  const filtered = filterAndSortAuditLogs(logs, {
-    ...DEFAULT_AUDIT_FILTERS,
-    search: "teacher@school.edu",
-  });
-  const page = paginateAuditLogs(filtered, 1, 10);
-
-  assert.equal(filtered.length, 1);
-  assert.equal(page.total_loaded, 1);
-  assert.equal(page.items[0].id, "8");
-});
-
-test("serializes shareable filter state and omits defaults", () => {
-  const params = auditFiltersToSearchParams({
+test("serializes every backend filter and pagination field", () => {
+  const filters = {
     ...DEFAULT_AUDIT_FILTERS,
     page: 2,
     page_size: 50,
     search: "login",
+    actor_email: "admin@school.edu",
+    actor_role: "admin",
     action: "LOGIN",
-  });
+    resource: "Authentication",
+    status: "SUCCESS",
+    date_from: "2026-07-01",
+    date_to: "2026-07-31",
+    sort_order: "asc",
+  };
+  const params = auditFiltersToApiSearchParams(filters);
 
   assert.equal(params.get("page"), "2");
   assert.equal(params.get("page_size"), "50");
   assert.equal(params.get("search"), "login");
+  assert.equal(params.get("actor_email"), "admin@school.edu");
+  assert.equal(params.get("actor_role"), "admin");
   assert.equal(params.get("action"), "LOGIN");
-  assert.equal(params.has("sort_order"), false);
+  assert.equal(params.get("resource"), "Authentication");
+  assert.equal(params.get("status"), "SUCCESS");
+  assert.equal(params.get("date_from"), "2026-07-01");
+  assert.equal(params.get("date_to"), "2026-07-31");
+  assert.equal(params.get("sort_order"), "asc");
 
-  const restored = auditFiltersFromSearchParams(params);
-  assert.equal(restored.page, 2);
-  assert.equal(restored.page_size, 50);
-  assert.equal(restored.search, "login");
+  const exportParams = auditFiltersToApiSearchParams(filters, {
+    includePagination: false,
+  });
+  assert.equal(exportParams.has("page"), false);
+  assert.equal(exportParams.has("page_size"), false);
+  assert.equal(exportParams.get("status"), "SUCCESS");
 });
 
-test("CSV export includes all filtered rows and redacts metadata", () => {
-  const record = {
-    ...parseAuditLogs([LEGACY_RECORD])[0],
-    metadata: {
-      token: "do-not-export",
-      changed: "threshold",
-    },
-  };
-  const csv = createAuditCsv([record]);
+test("preserves all shareable audit filters in the URL", () => {
+  const params = auditFiltersToSearchParams({
+    ...DEFAULT_AUDIT_FILTERS,
+    page: 2,
+    actor_role: "admin",
+    status: "FAILURE",
+  });
+  const restored = auditFiltersFromSearchParams(params);
 
-  assert.match(csv, /Updated System Settings/);
-  assert.match(csv, /\[REDACTED\]/);
-  assert.doesNotMatch(csv, /do-not-export/);
+  assert.equal(restored.page, 2);
+  assert.equal(restored.actor_role, "admin");
+  assert.equal(restored.status, "FAILURE");
 });

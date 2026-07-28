@@ -69,17 +69,22 @@ export default function AlertsProvider({
     if (pollInFlightRef.current) return;
     pollInFlightRef.current = true;
     try {
-      const [newAlerts, newLogs, newStats] = await Promise.all([
+      const [alertsResult, logsResult, statsResult] = await Promise.allSettled([
         getAlerts(),
         getLogs(),
         getLogsStats(),
       ]);
 
+      if (alertsResult.status === "rejected") {
+        throw alertsResult.reason;
+      }
+
+      const newAlerts = alertsResult.value;
       setOnline(true);
       setError(null);
       setAlerts(newAlerts);
-      setLogs(newLogs);
-      setStats(newStats);
+      if (logsResult.status === "fulfilled") setLogs(logsResult.value);
+      if (statsResult.status === "fulfilled") setStats(statsResult.value);
       setLoading(false);
 
       const latest = newAlerts[0];

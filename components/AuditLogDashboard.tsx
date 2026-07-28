@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 import {
@@ -26,21 +25,22 @@ import AccessibleDialog from "@/components/AccessibleDialog";
 import {
   auditFiltersFromSearchParams,
   auditFiltersToSearchParams,
-  createAuditCsv,
   DEFAULT_AUDIT_FILTERS,
-  filterAndSortAuditLogs,
   formatAuditAction,
   formatAuditRole,
-  paginateAuditLogs,
   sanitizeAuditMetadata,
-  UNKNOWN_AUDIT_ACTOR,
 } from "@/lib/audit-log";
-import { ApiError, getAuditLogs } from "@/lib/api";
+import {
+  ApiError,
+  exportAuditLogs,
+  getAuditLogs,
+} from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { formatTimestamp } from "@/lib/format";
 import type {
   AuditLog,
   AuditLogFilters,
+  AuditLogListResponse,
   AuditLogStatus,
 } from "@/lib/types";
 
@@ -180,8 +180,10 @@ function hasSelectedFilters(filters: AuditLogFilters): boolean {
   return (
     Boolean(filters.search) ||
     Boolean(filters.actor_email) ||
+    Boolean(filters.actor_role) ||
     Boolean(filters.action) ||
     Boolean(filters.resource) ||
+    Boolean(filters.status) ||
     Boolean(filters.date_from) ||
     Boolean(filters.date_to) ||
     filters.sort_order !== "desc"
@@ -193,7 +195,7 @@ export default function AuditLogDashboard() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [page, setPage] = useState<AuditLogListResponse | null>(null);
   const [filters, setFilters] = useState<AuditLogFilters>(() =>
     auditFiltersFromSearchParams(searchParams)
   );
@@ -245,58 +247,35 @@ export default function AuditLogDashboard() {
     return () => clearTimeout(timer);
   }, [filters.search, searchInput, updateFilters]);
 
-  const loadLogs = useCallback(async () => {
+  const loadLogs = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setErrorStatus(null);
     try {
-      const response = await getAuditLogs();
-      setLogs(response);
+      const response = await getAuditLogs(filters, signal);
+      setPage(response);
       setLastUpdated(new Date().toISOString());
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setPage(null);
       setErrorStatus(error instanceof ApiError ? error.status : 500);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, []);
+  }, [filters]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const timer = setTimeout(() => {
-      void loadLogs();
+      void loadLogs(controller.signal);
     }, 0);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [loadLogs]);
 
-  const users = useMemo(
-    () =>
-      Array.from(
-        new Set(logs.map((log) => log.actor_email ?? UNKNOWN_AUDIT_ACTOR))
-      ).sort((a, b) => a.localeCompare(b)),
-    [logs]
-  );
-  const actions = useMemo(
-    () =>
-      Array.from(new Set(logs.map((log) => log.action))).sort((a, b) =>
-        formatAuditAction(a).localeCompare(formatAuditAction(b))
-      ),
-    [logs]
-  );
-  const resources = useMemo(
-    () =>
-      Array.from(new Set(logs.map((log) => log.resource))).sort((a, b) =>
-        a.localeCompare(b)
-      ),
-    [logs]
-  );
-  const filteredLogs = useMemo(
-    () => filterAndSortAuditLogs(logs, filters),
-    [filters, logs]
-  );
-  const page = useMemo(
-    () =>
-      paginateAuditLogs(filteredLogs, filters.page, filters.page_size),
-    [filteredLogs, filters.page, filters.page_size]
-  );
   const activeFilters = hasSelectedFilters(filters);
+  const records = page?.items ?? [];
 
   const resetFilters = () => {
     setSearchInput("");
@@ -305,19 +284,17 @@ export default function AuditLogDashboard() {
   };
 
   const handleExport = async () => {
-    if (exporting || filteredLogs.length === 0) return;
+    if (exporting || !page || page.total === 0) return;
     setExporting(true);
     setExportError(false);
     try {
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
-      const csv = createAuditCsv(filteredLogs);
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const { blob, filename } = await exportAuditLogs(filters);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `echosense-audit-history-${new Date()
-        .toISOString()
-        .slice(0, 10)}.csv`;
+      link.download =
+        filename ??
+        `echosense-audit-history-${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -366,8 +343,8 @@ export default function AuditLogDashboard() {
             <button
               type="button"
               onClick={() => void handleExport()}
-              disabled={loading || exporting || filteredLogs.length === 0}
-              aria-label="Export the filtered loaded audit records as CSV"
+              disabled={loading || exporting || !page || page.total === 0}
+              aria-label="Export all audit records matching the selected filters as CSV"
               aria-describedby="audit-export-help"
               className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-offset-slate-950"
             >
@@ -379,7 +356,7 @@ export default function AuditLogDashboard() {
               ) : (
                 <Download className="h-4 w-4" aria-hidden="true" />
               )}
-              {exporting ? "Preparing…" : "Export loaded CSV"}
+              {exporting ? "Preparing…" : "Export CSV"}
             </button>
           </div>
         </div>
@@ -387,8 +364,9 @@ export default function AuditLogDashboard() {
           id="audit-export-help"
           className="mt-2 text-xs text-slate-500 dark:text-slate-400"
         >
-          The current backend has no CSV export endpoint. This downloads all
-          filtered records returned by the backend, not only the current page.
+          Filters, sorting, pagination, and CSV export are applied by the
+          backend. Export includes the records matching the selected filters,
+          not only the page currently shown.
         </p>
         {exportError && (
           <p
@@ -406,10 +384,9 @@ export default function AuditLogDashboard() {
       >
         <Info className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
         <p>
-          The current backend returns up to 100 audit records without
-          server-side filters or pagination. Filters and pages below apply to
-          the loaded records. Role, status, descriptions, and request metadata
-          are shown as unavailable when the backend does not provide them.
+          Audit History is read-only and separate from Technical Logs. Missing
+          legacy values are displayed as unavailable rather than being
+          fabricated.
         </p>
       </div>
 
@@ -518,21 +495,16 @@ export default function AuditLogDashboard() {
             >
               User or email
             </label>
-            <select
+            <input
               id="audit-user"
+              type="text"
               value={filters.actor_email}
               onChange={(event) =>
                 updateFilters({ actor_email: event.target.value })
               }
+              placeholder="admin@school.edu"
               className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-            >
-              <option value="">All loaded users</option>
-              {users.map((user) => (
-                <option key={user} value={user}>
-                  {user === UNKNOWN_AUDIT_ACTOR ? "Unknown user" : user}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div>
@@ -542,21 +514,16 @@ export default function AuditLogDashboard() {
             >
               Action
             </label>
-            <select
+            <input
               id="audit-action"
+              type="text"
               value={filters.action}
               onChange={(event) =>
                 updateFilters({ action: event.target.value })
               }
+              placeholder="LOGIN"
               className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-            >
-              <option value="">All loaded actions</option>
-              {actions.map((action) => (
-                <option key={action} value={action}>
-                  {formatAuditAction(action)}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div>
@@ -566,21 +533,16 @@ export default function AuditLogDashboard() {
             >
               Resource
             </label>
-            <select
+            <input
               id="audit-resource"
+              type="text"
               value={filters.resource}
               onChange={(event) =>
                 updateFilters({ resource: event.target.value })
               }
+              placeholder="Authentication"
               className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-            >
-              <option value="">All loaded resources</option>
-              {resources.map((resource) => (
-                <option key={resource} value={resource}>
-                  {resource}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div>
@@ -614,18 +576,17 @@ export default function AuditLogDashboard() {
             </label>
             <select
               id="audit-role"
-              disabled
-              aria-describedby="audit-role-help"
-              className="min-h-11 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-500"
+              value={filters.actor_role}
+              onChange={(event) =>
+                updateFilters({ actor_role: event.target.value })
+              }
+              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             >
-              <option>Unavailable from backend</option>
+              <option value="">All roles</option>
+              <option value="admin">Administrator</option>
+              <option value="staff">Staff</option>
+              <option value="counselor">Counselor</option>
             </select>
-            <p
-              id="audit-role-help"
-              className="mt-1.5 text-xs text-slate-500 dark:text-slate-400"
-            >
-              Actor roles are not recorded per event.
-            </p>
           </div>
 
           <div>
@@ -637,18 +598,18 @@ export default function AuditLogDashboard() {
             </label>
             <select
               id="audit-status"
-              disabled
-              aria-describedby="audit-status-help"
-              className="min-h-11 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-500"
+              value={filters.status}
+              onChange={(event) =>
+                updateFilters({
+                  status: event.target.value as AuditLogStatus | "",
+                })
+              }
+              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             >
-              <option>Unavailable from backend</option>
+              <option value="">All statuses</option>
+              <option value="SUCCESS">Success</option>
+              <option value="FAILURE">Failure</option>
             </select>
-            <p
-              id="audit-status-help"
-              className="mt-1.5 text-xs text-slate-500 dark:text-slate-400"
-            >
-              Event outcomes are not returned.
-            </p>
           </div>
         </div>
       </section>
@@ -668,9 +629,9 @@ export default function AuditLogDashboard() {
             >
               {loading
                 ? "Loading records…"
-                : `${filteredLogs.length} matching record${
-                    filteredLogs.length === 1 ? "" : "s"
-                  } from ${logs.length} loaded`}
+                : `${page?.total ?? 0} matching record${
+                    page?.total === 1 ? "" : "s"
+                  }`}
             </p>
           </div>
           {lastUpdated && !loading && (
@@ -706,7 +667,7 @@ export default function AuditLogDashboard() {
               Retry
             </button>
           </div>
-        ) : filteredLogs.length === 0 ? (
+        ) : records.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
             <ClipboardList
               className="mx-auto h-8 w-8 text-slate-500"
@@ -761,7 +722,7 @@ export default function AuditLogDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {page.items.map((log) => (
+                  {records.map((log) => (
                     <tr
                       key={log.id}
                       className="align-top hover:bg-slate-50 dark:hover:bg-slate-800/40"
@@ -815,7 +776,7 @@ export default function AuditLogDashboard() {
             </div>
 
             <div className="grid gap-3 xl:hidden" aria-label="Audit records">
-              {page.items.map((log) => (
+              {records.map((log) => (
                 <article
                   key={log.id}
                   className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
@@ -869,10 +830,10 @@ export default function AuditLogDashboard() {
               className="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900"
             >
               <div className="text-sm text-slate-600 dark:text-slate-300">
-                Page <strong>{page.page}</strong> of{" "}
-                <strong>{page.total_pages}</strong> ·{" "}
-                <strong>{page.total_loaded}</strong> matching loaded record
-                {page.total_loaded === 1 ? "" : "s"}
+                Page <strong>{page?.page ?? 1}</strong> of{" "}
+                <strong>{Math.max(1, page?.total_pages ?? 0)}</strong> ·{" "}
+                <strong>{page?.total ?? 0}</strong> matching record
+                {page?.total === 1 ? "" : "s"}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <label
@@ -899,11 +860,11 @@ export default function AuditLogDashboard() {
                   type="button"
                   onClick={() =>
                     updateFilters(
-                      { page: page.page - 1 },
+                      { page: (page?.page ?? 1) - 1 },
                       { resetPage: false }
                     )
                   }
-                  disabled={page.page === 1}
+                  disabled={!page || page.page === 1}
                   aria-label="Go to previous audit history page"
                   className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
@@ -914,11 +875,15 @@ export default function AuditLogDashboard() {
                   type="button"
                   onClick={() =>
                     updateFilters(
-                      { page: page.page + 1 },
+                      { page: (page?.page ?? 1) + 1 },
                       { resetPage: false }
                     )
                   }
-                  disabled={page.page === page.total_pages}
+                  disabled={
+                    !page ||
+                    page.total_pages === 0 ||
+                    page.page >= page.total_pages
+                  }
                   aria-label="Go to next audit history page"
                   className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                 >

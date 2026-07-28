@@ -7,6 +7,7 @@ import {
   ArrowRight,
   BellRing,
   CheckCircle2,
+  CircleHelp,
   Clock3,
   RefreshCw,
   Wifi,
@@ -73,14 +74,16 @@ function DashboardMetric({
   );
 }
 
-function isDeviceConnected(heartbeat: HeartbeatStatus): boolean {
+function isDeviceConnected(heartbeat: HeartbeatStatus): boolean | null {
+  if (heartbeat.device_status === "online") return true;
+  if (heartbeat.device_status === "offline") return false;
   if (heartbeat.last_heartbeat) {
     const heartbeatTime = new Date(heartbeat.last_heartbeat).getTime();
     if (Number.isFinite(heartbeatTime)) {
       return Date.now() - heartbeatTime < 3 * 60 * 1000;
     }
   }
-  return heartbeat.device_status === "online";
+  return null;
 }
 
 export default function DashboardPage() {
@@ -89,15 +92,18 @@ export default function DashboardPage() {
   const [heartbeat, setHeartbeat] = useState<HeartbeatStatus | null>(null);
   const [deviceConnected, setDeviceConnected] = useState<boolean | null>(null);
   const [deviceLoading, setDeviceLoading] = useState(true);
+  const [deviceError, setDeviceError] = useState(false);
 
   const loadDeviceStatus = useCallback(async () => {
     try {
       const nextHeartbeat = await getHeartbeat();
       setHeartbeat(nextHeartbeat);
       setDeviceConnected(isDeviceConnected(nextHeartbeat));
+      setDeviceError(false);
     } catch {
       setHeartbeat(null);
-      setDeviceConnected(false);
+      setDeviceConnected(null);
+      setDeviceError(true);
     } finally {
       setDeviceLoading(false);
     }
@@ -201,6 +207,30 @@ export default function DashboardPage() {
         </section>
       )}
 
+      {!deviceLoading && deviceError && (
+        <section
+          aria-labelledby="device-unavailable-title"
+          className="mb-6 flex gap-3 rounded-2xl border border-slate-300 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+        >
+          <CircleHelp
+            className="mt-0.5 h-5 w-5 shrink-0 text-slate-700 dark:text-slate-200"
+            aria-hidden="true"
+          />
+          <div>
+            <h2
+              id="device-unavailable-title"
+              className="font-semibold text-slate-950 dark:text-white"
+            >
+              Classroom Device Status Unavailable
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-300">
+              EchoSense could not check the device right now. This does not
+              mean the classroom device is offline.
+            </p>
+          </div>
+        </section>
+      )}
+
       <section aria-labelledby="today-summary-title">
         <h2 id="today-summary-title" className="sr-only">
           Today&apos;s summary
@@ -240,7 +270,13 @@ export default function DashboardPage() {
                 ? `Last Device Check-in: ${formatTimestamp(heartbeat.last_heartbeat)}`
                 : "Last Device Check-in is unavailable."
             }
-            icon={deviceConnected ? Wifi : WifiOff}
+            icon={
+              deviceConnected
+                ? Wifi
+                : deviceConnected === false
+                  ? WifiOff
+                  : CircleHelp
+            }
             tone={
               deviceConnected
                 ? "emerald"

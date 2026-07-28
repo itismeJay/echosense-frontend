@@ -140,11 +140,11 @@ export interface AuditLogFilters {
   sort_order: "asc" | "desc";
 }
 
-export interface AuditLogClientPage {
+export interface AuditLogListResponse {
   items: AuditLog[];
   page: number;
   page_size: number;
-  total_loaded: number;
+  total: number;
   total_pages: number;
 }
 

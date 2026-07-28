@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+import { API_URL } from './config'
 
 export type AuthUser = {
   id: string
@@ -45,13 +44,36 @@ export async function login(email: string, password: string): Promise<AuthUser> 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
+      signal: AbortSignal.timeout(60_000),
     })
-  } catch {
-    throw new Error('Unable to reach server')
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      throw new Error('The server took too long to respond. Please try again.')
+    }
+    throw new Error('Unable to reach the EchoSense server')
   }
-  if (res.status === 401) throw new Error('Invalid credentials')
-  if (!res.ok) throw new Error('Unable to reach server')
-  const data = await res.json()
+  if (res.status === 401) throw new Error('Invalid email or password')
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { detail?: unknown }
+    throw new Error(
+      typeof body.detail === 'string'
+        ? body.detail
+        : 'Unable to sign in right now. Please try again.'
+    )
+  }
+  const data = await res.json() as {
+    access_token?: unknown
+    user?: { id?: unknown; email?: unknown; role?: unknown }
+  }
+  if (
+    typeof data.access_token !== 'string' ||
+    !data.user ||
+    typeof data.user.id !== 'string' ||
+    typeof data.user.email !== 'string' ||
+    !['admin', 'staff', 'counselor'].includes(String(data.user.role))
+  ) {
+    throw new Error('The server returned an invalid login response')
+  }
   setAuthCookie(data.access_token)
   return data.user as AuthUser
 }

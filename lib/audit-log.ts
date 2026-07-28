@@ -1,8 +1,142 @@
 import type {
   AuditLog,
-  AuditLogClientPage,
   AuditLogFilters,
+  AuditLogListResponse,
+  AuditLogStatus,
 } from "./types";
+
+export class ApiContractError extends Error {
+  public readonly endpoint: string;
+
+  constructor(endpoint: string, message: string) {
+    super(`Invalid response from ${endpoint}: ${message}`);
+    this.endpoint = endpoint;
+    this.name = "ApiContractError";
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readNullableString(
+  entry: Record<string, unknown>,
+  field: string,
+  index: number
+): string | null {
+  const value = entry[field];
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") {
+    throw new ApiContractError(
+      "/audit-logs",
+      `items[${index}].${field} must be a string or null`
+    );
+  }
+  return value;
+}
+
+function parseAuditLog(entry: unknown, index: number): AuditLog {
+  const endpoint = "/audit-logs";
+  if (!isRecord(entry)) {
+    throw new ApiContractError(endpoint, `items[${index}] is not an object`);
+  }
+
+  if (
+    typeof entry.id !== "string" ||
+    typeof entry.action !== "string" ||
+    typeof entry.resource !== "string"
+  ) {
+    throw new ApiContractError(
+      endpoint,
+      `items[${index}] is missing a valid id, action, or resource`
+    );
+  }
+
+  const rawStatus = entry.status;
+  if (
+    rawStatus !== undefined &&
+    rawStatus !== null &&
+    rawStatus !== "SUCCESS" &&
+    rawStatus !== "FAILURE"
+  ) {
+    throw new ApiContractError(
+      endpoint,
+      `items[${index}].status must be SUCCESS, FAILURE, or null`
+    );
+  }
+
+  const rawMetadata = entry.metadata;
+  if (
+    rawMetadata !== undefined &&
+    rawMetadata !== null &&
+    !isRecord(rawMetadata)
+  ) {
+    throw new ApiContractError(
+      endpoint,
+      `items[${index}].metadata must be an object or null`
+    );
+  }
+
+  return {
+    id: entry.id,
+    occurred_at: readNullableString(entry, "occurred_at", index),
+    actor_user_id: readNullableString(entry, "actor_user_id", index),
+    actor_email: readNullableString(entry, "actor_email", index),
+    actor_role: readNullableString(entry, "actor_role", index),
+    action: entry.action,
+    resource: entry.resource,
+    resource_id: readNullableString(entry, "resource_id", index),
+    target: readNullableString(entry, "target", index),
+    status: (rawStatus ?? null) as AuditLogStatus | null,
+    description: readNullableString(entry, "description", index),
+    ip_address: readNullableString(entry, "ip_address", index),
+    user_agent: readNullableString(entry, "user_agent", index),
+    request_id: readNullableString(entry, "request_id", index),
+    metadata: (rawMetadata ?? null) as Record<string, unknown> | null,
+    created_at: readNullableString(entry, "created_at", index),
+  };
+}
+
+export function parseAuditLogListResponse(
+  value: unknown
+): AuditLogListResponse {
+  const endpoint = "/audit-logs";
+  if (!isRecord(value)) {
+    throw new ApiContractError(endpoint, "expected a paginated object");
+  }
+  if (!Array.isArray(value.items)) {
+    throw new ApiContractError(endpoint, "items must be an array");
+  }
+
+  const paginationFields = [
+    "page",
+    "page_size",
+    "total",
+    "total_pages",
+  ] as const;
+  for (const field of paginationFields) {
+    const fieldValue = value[field];
+    const minimum = field === "page" || field === "page_size" ? 1 : 0;
+    if (
+      typeof fieldValue !== "number" ||
+      !Number.isInteger(fieldValue) ||
+      fieldValue < minimum
+    ) {
+      throw new ApiContractError(
+        endpoint,
+        `${field} must be an integer greater than or equal to ${minimum}`
+      );
+    }
+  }
+
+  return {
+    items: value.items.map(parseAuditLog),
+    page: value.page as number,
+    page_size: value.page_size as number,
+    total: value.total as number,
+    total_pages: value.total_pages as number,
+  };
+}
 
 export const DEFAULT_AUDIT_FILTERS: AuditLogFilters = {
   page: 1,
@@ -17,8 +151,6 @@ export const DEFAULT_AUDIT_FILTERS: AuditLogFilters = {
   date_to: "",
   sort_order: "desc",
 };
-
-export const UNKNOWN_AUDIT_ACTOR = "__unknown_actor__";
 
 const ACTION_LABELS: Record<string, string> = {
   LOGIN: "Login",
@@ -56,90 +188,6 @@ export function formatAuditRole(role: string | null): string {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-export function getAuditTimestamp(log: AuditLog): number | null {
-  if (!log.occurred_at?.trim()) return null;
-  const timestamp = Date.parse(log.occurred_at);
-  return Number.isNaN(timestamp) ? null : timestamp;
-}
-
-export function filterAndSortAuditLogs(
-  logs: AuditLog[],
-  filters: AuditLogFilters
-): AuditLog[] {
-  const normalizedSearch = filters.search.trim().toLowerCase();
-  const dateFrom = filters.date_from
-    ? new Date(`${filters.date_from}T00:00:00`).getTime()
-    : null;
-  const dateTo = filters.date_to
-    ? new Date(`${filters.date_to}T23:59:59.999`).getTime()
-    : null;
-
-  return logs
-    .filter((log) => {
-      const timestamp = getAuditTimestamp(log);
-      if ((dateFrom !== null || dateTo !== null) && timestamp === null) {
-        return false;
-      }
-      if (dateFrom !== null && timestamp !== null && timestamp < dateFrom) {
-        return false;
-      }
-      if (dateTo !== null && timestamp !== null && timestamp > dateTo) {
-        return false;
-      }
-      if (filters.actor_email) {
-        const actorValue = log.actor_email ?? UNKNOWN_AUDIT_ACTOR;
-        if (actorValue !== filters.actor_email) return false;
-      }
-      if (filters.actor_role && log.actor_role !== filters.actor_role) {
-        return false;
-      }
-      if (filters.action && log.action !== filters.action) return false;
-      if (filters.resource && log.resource !== filters.resource) return false;
-      if (filters.status && log.status !== filters.status) return false;
-      if (!normalizedSearch) return true;
-
-      return [
-        log.actor_email ?? "",
-        log.action,
-        formatAuditAction(log.action),
-        log.resource,
-        log.target ?? "",
-        log.description ?? "",
-      ].some((value) => value.toLowerCase().includes(normalizedSearch));
-    })
-    .sort((a, b) => {
-      const aTimestamp = getAuditTimestamp(a);
-      const bTimestamp = getAuditTimestamp(b);
-      if (aTimestamp === null && bTimestamp === null) {
-        return b.id.localeCompare(a.id, undefined, { numeric: true });
-      }
-      if (aTimestamp === null) return 1;
-      if (bTimestamp === null) return -1;
-      return filters.sort_order === "desc"
-        ? bTimestamp - aTimestamp
-        : aTimestamp - bTimestamp;
-    });
-}
-
-export function paginateAuditLogs(
-  logs: AuditLog[],
-  page: number,
-  pageSize: number
-): AuditLogClientPage {
-  const safePageSize = Math.max(1, pageSize);
-  const totalPages = Math.max(1, Math.ceil(logs.length / safePageSize));
-  const safePage = Math.min(Math.max(1, page), totalPages);
-  const start = (safePage - 1) * safePageSize;
-
-  return {
-    items: logs.slice(start, start + safePageSize),
-    page: safePage,
-    page_size: safePageSize,
-    total_loaded: logs.length,
-    total_pages: totalPages,
-  };
-}
-
 export function sanitizeAuditMetadata(
   value: unknown,
   depth = 0
@@ -168,62 +216,6 @@ export function sanitizeAuditMetadata(
   );
 }
 
-function csvEscape(value: unknown): string {
-  const raw = value === null || value === undefined ? "" : String(value);
-  const protectedValue = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
-  if (
-    protectedValue.includes(",") ||
-    protectedValue.includes('"') ||
-    protectedValue.includes("\n")
-  ) {
-    return `"${protectedValue.replace(/"/g, '""')}"`;
-  }
-  return protectedValue;
-}
-
-export function createAuditCsv(logs: AuditLog[]): string {
-  const headers = [
-    "Timestamp",
-    "User ID",
-    "User",
-    "Role",
-    "Action",
-    "Resource",
-    "Resource ID",
-    "Target",
-    "Status",
-    "Description",
-    "IP Address",
-    "User Agent",
-    "Request ID",
-    "Metadata",
-    "Created At",
-  ];
-  const rows = logs.map((log) => [
-    log.occurred_at,
-    log.actor_user_id,
-    log.actor_email,
-    log.actor_role,
-    log.action,
-    log.resource,
-    log.resource_id,
-    log.target,
-    log.status,
-    log.description,
-    log.ip_address,
-    log.user_agent,
-    log.request_id,
-    log.metadata
-      ? JSON.stringify(sanitizeAuditMetadata(log.metadata))
-      : "",
-    log.created_at,
-  ]);
-
-  return [headers, ...rows]
-    .map((row) => row.map(csvEscape).join(","))
-    .join("\n");
-}
-
 export function auditFiltersFromSearchParams(
   params: { get(name: string): string | null }
 ): AuditLogFilters {
@@ -237,8 +229,14 @@ export function auditFiltersFromSearchParams(
     page_size: [10, 25, 50].includes(pageSize) ? pageSize : 25,
     search: params.get("search") ?? "",
     actor_email: params.get("actor_email") ?? "",
+    actor_role: params.get("actor_role") ?? "",
     action: params.get("action") ?? "",
     resource: params.get("resource") ?? "",
+    status:
+      params.get("status") === "SUCCESS" ||
+      params.get("status") === "FAILURE"
+        ? (params.get("status") as "SUCCESS" | "FAILURE")
+        : "",
     date_from: params.get("date_from") ?? "",
     date_to: params.get("date_to") ?? "",
     sort_order: sortOrder === "asc" ? "asc" : "desc",
@@ -255,12 +253,37 @@ export function auditFiltersToSearchParams(
   }
   if (filters.search.trim()) params.set("search", filters.search.trim());
   if (filters.actor_email) params.set("actor_email", filters.actor_email);
+  if (filters.actor_role) params.set("actor_role", filters.actor_role);
   if (filters.action) params.set("action", filters.action);
   if (filters.resource) params.set("resource", filters.resource);
+  if (filters.status) params.set("status", filters.status);
   if (filters.date_from) params.set("date_from", filters.date_from);
   if (filters.date_to) params.set("date_to", filters.date_to);
   if (filters.sort_order !== "desc") {
     params.set("sort_order", filters.sort_order);
   }
+  return params;
+}
+
+export function auditFiltersToApiSearchParams(
+  filters: AuditLogFilters,
+  options: { includePagination?: boolean } = {}
+): URLSearchParams {
+  const params = new URLSearchParams();
+  if (options.includePagination !== false) {
+    params.set("page", String(filters.page));
+    params.set("page_size", String(filters.page_size));
+  }
+  if (filters.search.trim()) params.set("search", filters.search.trim());
+  if (filters.actor_email.trim()) {
+    params.set("actor_email", filters.actor_email.trim());
+  }
+  if (filters.actor_role) params.set("actor_role", filters.actor_role);
+  if (filters.action.trim()) params.set("action", filters.action.trim());
+  if (filters.resource.trim()) params.set("resource", filters.resource.trim());
+  if (filters.status) params.set("status", filters.status);
+  if (filters.date_from) params.set("date_from", filters.date_from);
+  if (filters.date_to) params.set("date_to", filters.date_to);
+  params.set("sort_order", filters.sort_order);
   return params;
 }

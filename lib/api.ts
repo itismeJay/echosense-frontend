@@ -1,6 +1,27 @@
-import type { Alert, LogsStats, Settings, User, DictionaryEntry, AuditLog, SystemSettings, Report, CategoryStats, AnalyticsSummary, HeartbeatStatus, PiLog, SystemLogsResponse } from "./types";
+import {
+  ApiContractError,
+  auditFiltersToApiSearchParams,
+  parseAuditLogListResponse,
+} from "./audit-log";
+import { API_URL } from "./config";
+import type {
+  Alert,
+  AnalyticsSummary,
+  AuditLogFilters,
+  AuditLogListResponse,
+  CategoryStats,
+  DictionaryEntry,
+  HeartbeatStatus,
+  LogsStats,
+  PiLog,
+  Report,
+  Settings,
+  SystemLogsResponse,
+  SystemSettings,
+  User,
+} from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_TIMEOUT_MS = 60_000;
 
 export class ApiError extends Error {
   public readonly status: number;
@@ -12,74 +33,8 @@ export class ApiError extends Error {
   }
 }
 
-export class ApiContractError extends Error {
-  public readonly endpoint: string;
-
-  constructor(endpoint: string, message: string) {
-    super(`Invalid response from ${endpoint}: ${message}`);
-    this.endpoint = endpoint;
-    this.name = "ApiContractError";
-  }
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-export function parseAuditLogs(value: unknown): AuditLog[] {
-  const endpoint = "/audit-logs";
-  if (!Array.isArray(value)) {
-    throw new ApiContractError(endpoint, "expected an array");
-  }
-
-  return value.map((entry, index) => {
-    if (!isRecord(entry)) {
-      throw new ApiContractError(endpoint, `entry ${index} is not an object`);
-    }
-    const performedAt = entry.performed_at;
-    if (
-      typeof entry.log_id !== "number" ||
-      (entry.user_id !== undefined &&
-        entry.user_id !== null &&
-        typeof entry.user_id !== "number") ||
-      (entry.actor_email !== undefined &&
-        entry.actor_email !== null &&
-        typeof entry.actor_email !== "string") ||
-      typeof entry.action !== "string" ||
-      typeof entry.module !== "string" ||
-      (entry.target !== undefined &&
-        entry.target !== null &&
-        typeof entry.target !== "string") ||
-      (performedAt !== undefined &&
-        performedAt !== null &&
-        typeof performedAt !== "string")
-    ) {
-      throw new ApiContractError(
-        endpoint,
-        `entry ${index} does not match the audit-log schema`
-      );
-    }
-    return {
-      id: String(entry.log_id),
-      occurred_at: typeof performedAt === "string" ? performedAt : null,
-      actor_user_id:
-        typeof entry.user_id === "number" ? String(entry.user_id) : null,
-      actor_email:
-        typeof entry.actor_email === "string" ? entry.actor_email : null,
-      actor_role: null,
-      action: entry.action,
-      resource: entry.module,
-      resource_id: null,
-      target: typeof entry.target === "string" ? entry.target : null,
-      status: null,
-      description: null,
-      ip_address: null,
-      user_agent: null,
-      request_id: null,
-      metadata: null,
-      created_at: null,
-    };
-  });
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function parseSystemLogsResponse(value: unknown): SystemLogsResponse {
@@ -129,26 +84,52 @@ function getToken(): string | undefined {
     ?.split("=")[1];
 }
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+function getRequestSignal(externalSignal?: AbortSignal | null): AbortSignal {
+  const timeoutSignal = AbortSignal.timeout(API_TIMEOUT_MS);
+  return externalSignal
+    ? AbortSignal.any([externalSignal, timeoutSignal])
+    : timeoutSignal;
+}
+
+async function getApiErrorMessage(res: Response): Promise<string> {
+  const body = await res.json().catch(() => null);
+  if (isRecord(body) && typeof body.detail === "string") {
+    return body.detail;
+  }
+  return `HTTP ${res.status}`;
+}
+
+function handleUnauthorizedResponse() {
+  if (typeof document === "undefined") return;
+  document.cookie = "echosense_token=; path=/; max-age=0";
+  window.location.href = "/login";
+}
+
+async function apiRequest(
+  path: string,
+  options?: RequestInit
+): Promise<Response> {
   const token = getToken();
+  const headers = new Headers(options?.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
   const res = await fetch(`${API_URL}${path}`, {
     cache: "no-store",
-    signal: AbortSignal.timeout(8000),
     ...options,
-    headers: {
-      ...(options?.headers as Record<string, string>),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    signal: getRequestSignal(options?.signal),
+    headers,
   });
   if (res.status === 401) {
-    document.cookie = "echosense_token=; path=/; max-age=0";
-    window.location.href = "/login";
+    handleUnauthorizedResponse();
     throw new ApiError(401, "Unauthorized");
   }
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { detail?: string };
-    throw new ApiError(res.status, body.detail ?? `HTTP ${res.status}`);
+    throw new ApiError(res.status, await getApiErrorMessage(res));
   }
+  return res;
+}
+
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await apiRequest(path, options);
   return res.json() as Promise<T>;
 }
 
@@ -164,7 +145,13 @@ export async function getAlerts(params?: {
   if (params?.severity) qs.set("severity", params.severity);
   if (params?.duration_gate) qs.set("duration_gate", params.duration_gate);
   const query = qs.toString();
-  return apiFetch<Alert[]>(`/alerts/${query ? `?${query}` : ""}`);
+  const value = await apiFetch<unknown>(
+    `/alerts/${query ? `?${query}` : ""}`
+  );
+  if (!Array.isArray(value)) {
+    throw new ApiContractError("/alerts/", "expected an array");
+  }
+  return value as Alert[];
 }
 
 export async function getCategoryStats(): Promise<CategoryStats> {
@@ -188,7 +175,11 @@ export async function createAlert(input: Omit<Alert, "id">): Promise<Alert> {
 }
 
 export async function getLogs(): Promise<Alert[]> {
-  return apiFetch<Alert[]>("/logs/");
+  const value = await apiFetch<unknown>("/logs/");
+  if (!Array.isArray(value)) {
+    throw new ApiContractError("/logs/", "expected an array");
+  }
+  return value as Alert[];
 }
 
 export async function getLogsStats(): Promise<LogsStats> {
@@ -238,29 +229,59 @@ export async function addDictionaryEntry(entry: {
 }
 
 export async function deleteDictionaryEntry(termId: number): Promise<void> {
-  const token = getToken();
-  const res = await fetch(`${API_URL}/dictionary/${termId}`, {
+  await apiRequest(`/dictionary/${termId}`, {
     method: "DELETE",
-    signal: AbortSignal.timeout(8000),
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (res.status === 401) {
-    document.cookie = "echosense_token=; path=/; max-age=0";
-    window.location.href = "/login";
-    throw new ApiError(401, "Unauthorized");
-  }
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { detail?: string };
-    throw new ApiError(res.status, body.detail ?? `HTTP ${res.status}`);
-  }
 }
 
-export async function getAuditLogs(): Promise<AuditLog[]> {
-  return parseAuditLogs(await apiFetch<unknown>("/audit-logs/"));
+export async function getAuditLogs(
+  filters: AuditLogFilters,
+  signal?: AbortSignal
+): Promise<AuditLogListResponse> {
+  const query = auditFiltersToApiSearchParams(filters).toString();
+  const value = await apiFetch<unknown>(`/audit-logs?${query}`, { signal });
+  return parseAuditLogListResponse(value);
+}
+
+export interface AuditLogExport {
+  blob: Blob;
+  filename: string | null;
+}
+
+function getDownloadFilename(response: Response): string | null {
+  const disposition = response.headers.get("content-disposition");
+  if (!disposition) return null;
+
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const simpleMatch = disposition.match(/filename="?([^";]+)"?/i);
+  const encodedFilename = utf8Match?.[1] ?? simpleMatch?.[1];
+  if (!encodedFilename) return null;
+
+  let filename = encodedFilename;
+  try {
+    filename = decodeURIComponent(encodedFilename);
+  } catch {
+    // Use the valid, undecoded header value.
+  }
+  const safeFilename = filename.split(/[\\/]/).pop()?.trim();
+  return safeFilename || null;
+}
+
+export async function exportAuditLogs(
+  filters: AuditLogFilters
+): Promise<AuditLogExport> {
+  const query = auditFiltersToApiSearchParams(filters, {
+    includePagination: false,
+  }).toString();
+  const response = await apiRequest(`/audit-logs/export?${query}`);
+  return {
+    blob: await response.blob(),
+    filename: getDownloadFilename(response),
+  };
 }
 
 export async function getSystemSettings(): Promise<SystemSettings> {
-  return apiFetch<SystemSettings>("/system-settings");
+  return apiFetch<SystemSettings>("/system-settings/");
 }
 
 export async function getReports(): Promise<Report[]> {
@@ -283,19 +304,7 @@ export async function getSystemLogs(): Promise<SystemLogsResponse> {
 }
 
 export async function deleteUser(userId: string): Promise<void> {
-  const token = getToken();
-  const res = await fetch(`${API_URL}/users/${userId}`, {
+  await apiRequest(`/users/${userId}`, {
     method: "DELETE",
-    signal: AbortSignal.timeout(8000),
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (res.status === 401) {
-    document.cookie = "echosense_token=; path=/; max-age=0";
-    window.location.href = "/login";
-    throw new ApiError(401, "Unauthorized");
-  }
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { detail?: string };
-    throw new ApiError(res.status, body.detail ?? `HTTP ${res.status}`);
-  }
 }
