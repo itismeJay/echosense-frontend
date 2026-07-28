@@ -91,10 +91,13 @@ export interface LogsStats {
 }
 
 export interface Settings {
+  confidence_threshold_percent: number;
+  aggression_duration_threshold: number;
+}
+
+export interface SystemSettingsUpdate {
   confidence_threshold: number;
-  duration_threshold: number;
-  notifications: boolean;
-  location: string;
+  aggression_duration_threshold: number;
 }
 
 export interface DictionaryEntry {
@@ -149,10 +152,15 @@ export interface AuditLogListResponse {
 }
 
 export interface SystemSettings {
+  setting_id: number;
+  confidence_threshold: number;
+  aggression_duration_threshold: number;
   device_status: "online" | "offline";
   last_heartbeat: string | null;
-  vosk_version?: string;
-  yamnet_version?: string;
+  vosk_version: string;
+  yamnet_version: string;
+  last_ota_update?: string | null;
+  updated_at?: string | null;
   cpu_usage?: number;
   temperature?: number;
   uptime_seconds?: number;

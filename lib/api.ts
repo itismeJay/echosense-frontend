@@ -4,6 +4,11 @@ import {
   parseAuditLogListResponse,
 } from "./audit-log";
 import { API_URL } from "./config";
+import {
+  parseSystemSettings,
+  settingsToUpdatePayload,
+  systemSettingsToForm,
+} from "./settings";
 import type {
   Alert,
   AnalyticsSummary,
@@ -187,15 +192,16 @@ export async function getLogsStats(): Promise<LogsStats> {
 }
 
 export async function getSettings(): Promise<Settings> {
-  return apiFetch<Settings>("/settings");
+  return systemSettingsToForm(await getSystemSettings());
 }
 
 export async function saveSettings(settings: Settings): Promise<Settings> {
-  return apiFetch<Settings>("/settings", {
-    method: "POST",
+  const response = await apiFetch<unknown>("/system-settings/", {
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(settings),
+    body: JSON.stringify(settingsToUpdatePayload(settings)),
   });
+  return systemSettingsToForm(parseSystemSettings(response));
 }
 
 export async function getUsers(): Promise<User[]> {
@@ -281,7 +287,9 @@ export async function exportAuditLogs(
 }
 
 export async function getSystemSettings(): Promise<SystemSettings> {
-  return apiFetch<SystemSettings>("/system-settings/");
+  return parseSystemSettings(
+    await apiFetch<unknown>("/system-settings/")
+  );
 }
 
 export async function getReports(): Promise<Report[]> {

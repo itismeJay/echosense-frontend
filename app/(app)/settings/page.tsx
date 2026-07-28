@@ -4,9 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
-  Bell,
   Loader2,
-  MapPin,
   RefreshCw,
   Save,
   SlidersHorizontal,
@@ -87,7 +85,7 @@ export default function SettingsPage() {
       {loading ? (
         <div role="status" className="space-y-4">
           <span className="sr-only">Loading system settings</span>
-          {[0, 1, 2, 3].map((item) => (
+          {[0, 1].map((item) => (
             <div
               key={item}
               className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
@@ -135,7 +133,7 @@ export default function SettingsPage() {
                     Alert Sensitivity
                   </label>
                   <span className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
-                    {settings.confidence_threshold}%
+                    {settings.confidence_threshold_percent}%
                   </span>
                 </div>
                 <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -148,9 +146,13 @@ export default function SettingsPage() {
               type="range"
               min={0}
               max={100}
-              value={settings.confidence_threshold}
+              step={1}
+              value={settings.confidence_threshold_percent}
               onChange={(event) =>
-                update("confidence_threshold", Number(event.target.value))
+                update(
+                  "confidence_threshold_percent",
+                  Number(event.target.value)
+                )
               }
               className="mt-5 h-11 w-full cursor-pointer accent-indigo-700"
             />
@@ -174,7 +176,7 @@ export default function SettingsPage() {
                     Minimum Alert Duration
                   </label>
                   <span className="text-lg font-bold text-violet-700 dark:text-violet-300">
-                    {settings.duration_threshold.toFixed(1)}s
+                    {settings.aggression_duration_threshold.toFixed(1)}s
                   </span>
                 </div>
                 <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -188,84 +190,15 @@ export default function SettingsPage() {
               min={1}
               max={10}
               step={0.5}
-              value={settings.duration_threshold}
+              value={settings.aggression_duration_threshold}
               onChange={(event) =>
-                update("duration_threshold", Number(event.target.value))
+                update(
+                  "aggression_duration_threshold",
+                  Number(event.target.value)
+                )
               }
               className="mt-5 h-11 w-full cursor-pointer accent-violet-700"
             />
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex gap-3">
-                <span className="rounded-xl bg-amber-50 p-2.5 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
-                  <Bell className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="font-bold text-slate-950 dark:text-white">
-                    Alert Notifications
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    Use the existing notification setting for new alerts.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={settings.notifications}
-                aria-label="Alert notifications"
-                onClick={() =>
-                  update("notifications", !settings.notifications)
-                }
-                className={`relative inline-flex h-11 w-14 shrink-0 items-center rounded-full focus-visible:ring-2 focus-visible:ring-indigo-600 ${
-                  settings.notifications
-                    ? "bg-indigo-700"
-                    : "bg-slate-300 dark:bg-slate-700"
-                }`}
-              >
-                <span
-                  className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    settings.notifications
-                      ? "translate-x-8"
-                      : "translate-x-1.5"
-                  }`}
-                />
-              </button>
-            </div>
-          </section>
-
-          <section
-            aria-labelledby="classroom-name-title"
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900"
-          >
-            <div className="flex gap-3">
-              <span className="rounded-xl bg-emerald-50 p-2.5 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200">
-                <MapPin className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <div className="flex-1">
-                <label
-                  id="classroom-name-title"
-                  htmlFor="classroom-name"
-                  className="font-bold text-slate-950 dark:text-white"
-                >
-                  Classroom Name
-                </label>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                  Name shown with alerts from the current monitored classroom.
-                </p>
-                <input
-                  id="classroom-name"
-                  type="text"
-                  value={settings.location}
-                  onChange={(event) =>
-                    update("location", event.target.value)
-                  }
-                  className="mt-4 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                />
-              </div>
-            </div>
           </section>
 
           <button
