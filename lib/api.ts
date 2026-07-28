@@ -3,7 +3,15 @@ import {
   auditFiltersToApiSearchParams,
   parseAuditLogListResponse,
 } from "./audit-log";
+import {
+  parseAlertListResponse,
+  parseAlertResponse,
+} from "./alert-contract";
 import { API_URL } from "./config";
+import {
+  parseDictionaryEntry,
+  parseDictionaryListResponse,
+} from "./dictionary-contract";
 import {
   parseSystemSettings,
   settingsToUpdatePayload,
@@ -11,6 +19,7 @@ import {
 } from "./settings";
 import type {
   Alert,
+  AlertLanguage,
   AnalyticsSummary,
   AuditLogFilters,
   AuditLogListResponse,
@@ -18,6 +27,7 @@ import type {
   DictionaryEntry,
   HeartbeatStatus,
   LogsStats,
+  MonitoredTermLanguage,
   PiLog,
   Report,
   Settings,
@@ -140,7 +150,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
 export async function getAlerts(params?: {
   category?: string;
-  language?: string;
+  language?: AlertLanguage;
   severity?: string;
   duration_gate?: string;
 }): Promise<Alert[]> {
@@ -153,10 +163,7 @@ export async function getAlerts(params?: {
   const value = await apiFetch<unknown>(
     `/alerts/${query ? `?${query}` : ""}`
   );
-  if (!Array.isArray(value)) {
-    throw new ApiContractError("/alerts/", "expected an array");
-  }
-  return value as Alert[];
+  return parseAlertListResponse(value, "/alerts/");
 }
 
 export async function getCategoryStats(): Promise<CategoryStats> {
@@ -172,19 +179,19 @@ export async function getHeartbeat(): Promise<HeartbeatStatus> {
 }
 
 export async function createAlert(input: Omit<Alert, "id">): Promise<Alert> {
-  return apiFetch<Alert>("/alerts/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
+  return parseAlertResponse(
+    await apiFetch<unknown>("/alerts/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }),
+    "/alerts/"
+  );
 }
 
 export async function getLogs(): Promise<Alert[]> {
   const value = await apiFetch<unknown>("/logs/");
-  if (!Array.isArray(value)) {
-    throw new ApiContractError("/logs/", "expected an array");
-  }
-  return value as Alert[];
+  return parseAlertListResponse(value, "/logs/");
 }
 
 export async function getLogsStats(): Promise<LogsStats> {
@@ -219,19 +226,23 @@ export async function registerUser(
 }
 
 export async function getDictionary(): Promise<DictionaryEntry[]> {
-  return apiFetch<DictionaryEntry[]>("/dictionary");
+  return parseDictionaryListResponse(
+    await apiFetch<unknown>("/dictionary")
+  );
 }
 
 export async function addDictionaryEntry(entry: {
   slur_text: string;
-  language: string;
+  language: MonitoredTermLanguage;
   severity_weight: number;
 }): Promise<DictionaryEntry> {
-  return apiFetch<DictionaryEntry>("/dictionary", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(entry),
-  });
+  return parseDictionaryEntry(
+    await apiFetch<unknown>("/dictionary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry),
+    })
+  );
 }
 
 export async function deleteDictionaryEntry(termId: number): Promise<void> {

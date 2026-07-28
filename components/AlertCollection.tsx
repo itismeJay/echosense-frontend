@@ -3,16 +3,21 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, Download, RefreshCw, Search } from "lucide-react";
 import { useAlerts } from "@/lib/AlertsProvider";
-import type { Severity } from "@/lib/types";
+import type { AlertLanguage, Severity } from "@/lib/types";
 import { alertStatusLabel } from "@/lib/alert-presentation";
-import { categoryLabel, csvEscape, languageLabel } from "@/lib/format";
+import {
+  categoryLabel,
+  csvEscape,
+  formatLanguageConfidence,
+  languageLabel,
+} from "@/lib/format";
 import AlertCard from "./AlertCard";
 import AlertListSkeleton from "./AlertListSkeleton";
 
 type PriorityFilter = "all" | Severity;
 type EmotionFilter = "all" | "angry" | "aggressive" | "distressed" | "upset" | "neutral";
 type CategoryFilter = "all" | "academic_shaming" | "appearance_shaming" | "body_shaming" | "emotional_taunting" | "threat";
-type LanguageFilter = "all" | "tl" | "ceb" | "en";
+type LanguageFilter = "all" | AlertLanguage;
 type TriggerFilter = "all" | "threat" | "hard" | "repeated" | "medium" | "soft";
 
 const PRIORITIES: { label: string; value: PriorityFilter }[] = [
@@ -33,9 +38,11 @@ const CATEGORY_OPTIONS: { label: string; value: CategoryFilter }[] = [
 
 const LANGUAGE_OPTIONS: { label: string; value: LanguageFilter }[] = [
   { label: "All languages", value: "all" },
-  { label: "Filipino", value: "tl" },
-  { label: "Bisaya", value: "ceb" },
+  { label: "Filipino", value: "fil" },
+  { label: "Bisaya/Cebuano", value: "ceb" },
   { label: "English", value: "en" },
+  { label: "Mixed language", value: "mixed" },
+  { label: "Language unavailable", value: "unknown" },
 ];
 
 const TRIGGER_OPTIONS: { label: string; value: TriggerFilter }[] = [
@@ -84,7 +91,20 @@ export default function AlertCollection({ mode }: AlertCollectionProps) {
           if (priority !== "all" && alert.severity !== priority) return false;
           if (search && !alert.location.toLowerCase().includes(search.toLowerCase())) return false;
           if (category !== "all" && !(alert.categories ?? []).includes(category)) return false;
-          if (language !== "all" && alert.language !== language) return false;
+          if (
+            language === "unknown" &&
+            alert.language != null &&
+            alert.language !== "unknown"
+          ) {
+            return false;
+          }
+          if (
+            language !== "all" &&
+            language !== "unknown" &&
+            alert.language !== language
+          ) {
+            return false;
+          }
           if (trigger !== "all" && alert.duration_gate !== trigger) return false;
           if (emotion !== "all" && (alert.emotion ?? "").toLowerCase() !== emotion) return false;
           return true;
@@ -108,6 +128,8 @@ export default function AlertCollection({ mode }: AlertCollectionProps) {
       "Classroom",
       "Status",
       "Language",
+      "Language Confidence",
+      "Possible Matched Terms",
       "Possible Concern Categories",
       "Possible Detected Phrase",
       "Created At",
@@ -118,6 +140,15 @@ export default function AlertCollection({ mode }: AlertCollectionProps) {
       csvEscape(alert.location),
       csvEscape(alertStatusLabel(alert)),
       languageLabel(alert.language),
+      formatLanguageConfidence(alert.language_confidence) ?? "",
+      csvEscape(
+        (alert.matched_terms ?? [])
+          .map(
+            (matchedTerm) =>
+              `${matchedTerm.term} [${languageLabel(matchedTerm.language)}]`
+          )
+          .join("; ")
+      ),
       csvEscape((alert.categories ?? []).map(categoryLabel).join("; ")),
       csvEscape(alert.transcribed_text ?? ""),
       alert.created_at,

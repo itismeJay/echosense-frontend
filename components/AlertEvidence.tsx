@@ -9,14 +9,21 @@ import {
   Clock3,
   Info,
   Quote,
+  Tags,
   Volume2,
   Waves,
 } from "lucide-react";
 import type { Alert } from "@/lib/types";
 import {
+  matchedTermEvidenceLabel,
+  NO_MATCHED_TERMS_MESSAGE,
+  UNVERIFIED_EVIDENCE_NOTICE,
+} from "@/lib/alert-presentation";
+import {
   categoryBadgeColor,
   categoryLabel,
   emotionBadgeColor,
+  formatLanguageConfidence,
 } from "@/lib/format";
 import DurationGateBadge from "./DurationGateBadge";
 import LanguageBadge from "./LanguageBadge";
@@ -73,7 +80,11 @@ export default function AlertEvidence({
       ? alert.detected_words ?? []
       : [];
   const categories = alert.categories ?? [];
+  const matchedTerms = alert.matched_terms ?? [];
   const waveform = alert.waveform_snapshot ?? [];
+  const languageConfidence = formatLanguageConfidence(
+    alert.language_confidence
+  );
 
   return (
     <div>
@@ -112,6 +123,57 @@ export default function AlertEvidence({
               <p>
                 Automatic transcription may be inaccurate because of overlapping voices or background noise.
               </p>
+            </div>
+          </section>
+
+          <section aria-labelledby={`matched-terms-${alert.id}`}>
+            <h2
+              id={`matched-terms-${alert.id}`}
+              className="text-base font-semibold text-slate-950 dark:text-white"
+            >
+              Possible Detected Terms
+            </h2>
+            {matchedTerms.length > 0 ? (
+              <ul className="mt-3 space-y-3">
+                {matchedTerms.map((matchedTerm, index) => (
+                  <li
+                    key={`${matchedTerm.term_id}-${matchedTerm.match_type}-${index}`}
+                    className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Tags
+                        className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300"
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          {matchedTermEvidenceLabel(matchedTerm.match_type)}
+                        </p>
+                        <p className="mt-1 break-words font-semibold text-slate-950 dark:text-white">
+                          {matchedTerm.term}
+                        </p>
+                        <div className="mt-2">
+                          <LanguageBadge
+                            language={matchedTerm.language}
+                            size="md"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                {NO_MATCHED_TERMS_MESSAGE}
+              </p>
+            )}
+            <div className="mt-3 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+              <Info
+                className="mt-1 h-4 w-4 shrink-0"
+                aria-hidden="true"
+              />
+              <p>{UNVERIFIED_EVIDENCE_NOTICE}</p>
             </div>
           </section>
 
@@ -162,6 +224,12 @@ export default function AlertEvidence({
             <div className="mt-3">
               <LanguageBadge language={alert.language} size="md" />
             </div>
+            {languageConfidence && (
+              <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+                <span className="font-medium">Language confidence:</span>{" "}
+                {languageConfidence}
+              </p>
+            )}
           </section>
 
           <details className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50">

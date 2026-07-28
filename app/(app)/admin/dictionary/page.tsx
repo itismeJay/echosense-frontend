@@ -25,7 +25,11 @@ import {
   getDictionary,
 } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
-import type { DictionaryEntry } from "@/lib/types";
+import { languageLabel } from "@/lib/format";
+import type {
+  DictionaryEntry,
+  MonitoredTermLanguage,
+} from "@/lib/types";
 
 const INPUT =
   "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
@@ -37,7 +41,8 @@ export default function DictionaryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [term, setTerm] = useState("");
-  const [language, setLanguage] = useState("Filipino");
+  const [language, setLanguage] =
+    useState<MonitoredTermLanguage>("fil");
   const [alertWeight, setAlertWeight] = useState(0.7);
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] =
@@ -71,16 +76,21 @@ export default function DictionaryPage() {
 
   const handleSave = async (event: FormEvent) => {
     event.preventDefault();
+    const normalizedTerm = term.trim();
+    if (!normalizedTerm) {
+      toast.error("Enter a monitored term.");
+      return;
+    }
     setSubmitting(true);
     try {
       const created = await addDictionaryEntry({
-        slur_text: term,
+        slur_text: normalizedTerm,
         language,
         severity_weight: alertWeight,
       });
       setEntries((current) => [created, ...current]);
       setTerm("");
-      setLanguage("Filipino");
+      setLanguage("fil");
       setAlertWeight(0.7);
       toast.success("Monitored term saved.");
     } catch {
@@ -174,13 +184,16 @@ export default function DictionaryPage() {
             </label>
             <select
               id="term-language"
+              required
               value={language}
-              onChange={(event) => setLanguage(event.target.value)}
+              onChange={(event) =>
+                setLanguage(event.target.value as MonitoredTermLanguage)
+              }
               className={INPUT}
             >
-              <option value="Filipino">Filipino</option>
-              <option value="Bisaya">Bisaya</option>
-              <option value="English">English</option>
+              <option value="fil">Filipino</option>
+              <option value="ceb">Bisaya/Cebuano</option>
+              <option value="en">English</option>
             </select>
           </div>
           <div>
@@ -289,7 +302,7 @@ export default function DictionaryPage() {
                     </h3>
                     <p className="mt-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                       <Globe2 className="h-4 w-4" aria-hidden="true" />
-                      {entry.language}
+                      {languageLabel(entry.language)}
                     </p>
                   </div>
                   <button

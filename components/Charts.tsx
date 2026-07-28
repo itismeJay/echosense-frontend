@@ -493,16 +493,23 @@ export function CategoryBarChart({ stats }: { stats: CategoryStats | null; loadi
 
 export function LanguageBreakdown({ alerts }: { alerts: Alert[] }) {
   const data = useMemo(() => {
-    const counts: Record<string, number> = { tl: 0, ceb: 0, en: 0, mixed: 0 };
+    const counts: Record<string, number> = {
+      fil: 0,
+      ceb: 0,
+      en: 0,
+      mixed: 0,
+      unknown: 0,
+    };
     for (const a of alerts) {
-      const k = a.language && ["tl", "ceb", "en"].includes(a.language) ? a.language : "mixed";
+      const k = a.language ?? "unknown";
       counts[k]++;
     }
     return [
-      { code: "tl",    label: "Filipino", count: counts.tl,    color: "#6366f1" },
-      { code: "ceb",   label: "Bisaya",   count: counts.ceb,   color: "#a855f7" },
-      { code: "en",    label: "English",  count: counts.en,    color: "#22d3ee" },
-      { code: "mixed", label: "Not available / Other", count: counts.mixed, color: "#6b7280" },
+      { code: "fil", label: "Filipino", count: counts.fil, color: "#6366f1" },
+      { code: "ceb", label: "Bisaya/Cebuano", count: counts.ceb, color: "#a855f7" },
+      { code: "en", label: "English", count: counts.en, color: "#22d3ee" },
+      { code: "mixed", label: "Mixed language", count: counts.mixed, color: "#f59e0b" },
+      { code: "unknown", label: "Language unavailable", count: counts.unknown, color: "#6b7280" },
     ].filter((d) => d.count > 0);
   }, [alerts]);
 

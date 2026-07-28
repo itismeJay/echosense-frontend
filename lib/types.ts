@@ -1,4 +1,13 @@
 export type Severity = "high" | "medium" | "low";
+export type AlertLanguage = "fil" | "ceb" | "en" | "mixed" | "unknown";
+export type MonitoredTermLanguage = "fil" | "ceb" | "en";
+
+export interface MatchedTerm {
+  term_id: number;
+  term: string;
+  language: MonitoredTermLanguage;
+  match_type: string;
+}
 
 export interface User {
   id: string;
@@ -33,9 +42,11 @@ export interface Alert {
   peak_to_average?: number;
   waveform_snapshot?: number[];
 
-  // ── Classification (new fields) ──
+  // ── Classification (optional for legacy alerts) ──
   categories?: string[];
-  language?: string | null;
+  language?: AlertLanguage | null;
+  language_confidence?: number | null;
+  matched_terms?: MatchedTerm[];
   hard_hits?: string[];
   soft_hits?: string[];
   duration_gate?: string | null;
@@ -103,7 +114,7 @@ export interface SystemSettingsUpdate {
 export interface DictionaryEntry {
   term_id: number;
   slur_text: string;
-  language: string;
+  language: MonitoredTermLanguage;
   severity_weight: number;
   added_at?: string;
 }

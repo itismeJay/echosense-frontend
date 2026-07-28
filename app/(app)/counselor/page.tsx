@@ -118,12 +118,12 @@ export default function CounselorPage() {
   const languageCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const alert of weekAlerts) {
-      const key = alert.language ?? "";
+      const key = languageLabel(alert.language);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     return [...counts.entries()]
       .map(([language, count]) => ({
-        language: languageLabel(language),
+        language,
         count,
       }))
       .sort((a, b) => b.count - a.count);

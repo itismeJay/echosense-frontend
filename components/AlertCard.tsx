@@ -1,10 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Clock3, MapPin } from "lucide-react";
+import {
+  ArrowRight,
+  Clock3,
+  Globe2,
+  Info,
+  MapPin,
+  Tags,
+} from "lucide-react";
 import type { Alert } from "@/lib/types";
-import { alertStatusLabel, alertSummary } from "@/lib/alert-presentation";
-import { formatDate, formatTime } from "@/lib/format";
+import {
+  alertStatusLabel,
+  alertSummary,
+  matchedTermsCountLabel,
+} from "@/lib/alert-presentation";
+import {
+  formatDate,
+  formatLanguageConfidence,
+  formatTime,
+  languageLabel,
+} from "@/lib/format";
 import SeverityBadge from "./SeverityBadge";
 
 interface AlertCardProps {
@@ -13,6 +29,10 @@ interface AlertCardProps {
 }
 
 export default function AlertCard({ alert, compact = false }: AlertCardProps) {
+  const languageConfidence = formatLanguageConfidence(
+    alert.language_confidence
+  );
+
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -40,6 +60,32 @@ export default function AlertCard({ alert, compact = false }: AlertCardProps) {
 
       <p className="mt-4 text-sm leading-6 text-slate-700 dark:text-slate-200">
         {alertSummary(alert)}
+      </p>
+
+      <dl className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+        <div className="flex flex-wrap items-center gap-2">
+          <Globe2 className="h-4 w-4" aria-hidden="true" />
+          <dt className="font-medium">Language:</dt>
+          <dd>{languageLabel(alert.language)}</dd>
+        </div>
+        {languageConfidence && (
+          <div className="flex flex-wrap items-center gap-2 pl-6">
+            <dt className="font-medium">Language confidence:</dt>
+            <dd>{languageConfidence}</dd>
+          </div>
+        )}
+        {(alert.matched_terms?.length ?? 0) > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Tags className="h-4 w-4" aria-hidden="true" />
+            <dt className="sr-only">Possible detected terms:</dt>
+            <dd>{matchedTermsCountLabel(alert.matched_terms)}</dd>
+          </div>
+        )}
+      </dl>
+
+      <p className="mt-3 flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+        <Info className="h-4 w-4" aria-hidden="true" />
+        Automated evidence is unverified.
       </p>
 
       <div className="mt-5 flex justify-end">

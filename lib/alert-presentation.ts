@@ -1,4 +1,10 @@
-import type { Alert, Severity } from "./types";
+import type { Alert, MatchedTerm, Severity } from "./types";
+
+export const UNVERIFIED_EVIDENCE_NOTICE =
+  "Automated and unverified evidence. The transcript and matched terms may be inaccurate.";
+
+export const NO_MATCHED_TERMS_MESSAGE =
+  "No matched monitored terms available.";
 
 export function priorityLabel(severity: Severity): string {
   return `${severity} priority`;
@@ -17,6 +23,7 @@ export function alertSummary(alert: Alert): string {
     modelClass.includes("yell") ||
     modelClass.includes("scream");
   const hasDetectedTerms =
+    (alert.matched_terms?.length ?? 0) > 0 ||
     (alert.hard_hits?.length ?? 0) > 0 ||
     (alert.soft_hits?.length ?? 0) > 0 ||
     (alert.detected_words?.length ?? 0) > 0;
@@ -38,6 +45,20 @@ export function alertSummary(alert: Alert): string {
     return "Possible concerning speech was detected.";
   }
   return "The classroom monitoring system noticed a possible concerning sound.";
+}
+
+export function matchedTermsCountLabel(
+  matchedTerms?: MatchedTerm[]
+): string {
+  const count = matchedTerms?.length ?? 0;
+  if (count === 0) return NO_MATCHED_TERMS_MESSAGE;
+  return `${count} possible matched term${count === 1 ? "" : "s"}`;
+}
+
+export function matchedTermEvidenceLabel(matchType: string): string {
+  return matchType.toLowerCase() === "phrase"
+    ? "Possible matched phrase"
+    : "Possible detected term";
 }
 
 export function localDateKey(value: Date): string {

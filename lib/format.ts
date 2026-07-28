@@ -1,4 +1,4 @@
-import type { Severity } from "./types";
+import type { AlertLanguage, Severity } from "./types";
 
 export function formatConfidence(n: number): string {
   return `${Math.round(n * 100)}%`;
@@ -206,18 +206,31 @@ export function categoryLabel(cat: string): string {
   return CATEGORY_LABELS[cat] ?? cat.replace(/_/g, " ");
 }
 
-export function languageLabel(lang?: string | null): string {
+export function languageLabel(lang?: AlertLanguage | null): string {
   switch (lang) {
-    case "tl":  return "Filipino";
-    case "ceb": return "Bisaya";
-    case "en":  return "English";
+    case "fil": return "Filipino";
+    case "ceb": return "Bisaya/Cebuano";
+    case "en": return "English";
+    case "mixed": return "Mixed language";
+    case "unknown":
     case null:
     case undefined:
-    case "":
-      return "Not available";
-    default:
-      return "Mixed / Other";
+      return "Language unavailable";
   }
+}
+
+export function formatLanguageConfidence(
+  confidence?: number | null
+): string | null {
+  if (
+    typeof confidence !== "number" ||
+    !Number.isFinite(confidence) ||
+    confidence < 0 ||
+    confidence > 1
+  ) {
+    return null;
+  }
+  return formatConfidence(confidence);
 }
 
 export function csvEscape(field: string): string {

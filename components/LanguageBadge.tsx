@@ -1,7 +1,8 @@
 import { languageLabel } from "@/lib/format";
+import type { AlertLanguage } from "@/lib/types";
 
 interface LanguageBadgeProps {
-  language?: string | null;
+  language?: AlertLanguage | null;
   size?: "sm" | "md";
 }
 
