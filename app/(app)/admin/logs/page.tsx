@@ -7,7 +7,14 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw, Search, Terminal, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Search,
+  Terminal,
+  X,
+} from "lucide-react";
 import { getSystemLogs } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { formatTimestamp } from "@/lib/format";
@@ -23,6 +30,8 @@ const LOG_TYPES = [
   { value: "error", label: "Error" },
 ];
 
+const LOGS_PER_PAGE = 20;
+
 export default function TechnicalLogsPage() {
   const currentUser = useCurrentUser();
   const router = useRouter();
@@ -32,6 +41,7 @@ export default function TechnicalLogsPage() {
   const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (currentUser && currentUser.role !== "admin") {
@@ -46,6 +56,7 @@ export default function TechnicalLogsPage() {
       const response = await getSystemLogs();
       setLogs(response.lines);
       setReportedTotal(response.total);
+      setPage(1);
     } catch {
       setError(true);
     } finally {
@@ -71,6 +82,26 @@ export default function TechnicalLogsPage() {
       );
     });
   }, [logs, search, typeFilter]);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredLogs.length / LOGS_PER_PAGE)
+  );
+  const currentPage = Math.min(page, totalPages);
+  const firstVisibleIndex = (currentPage - 1) * LOGS_PER_PAGE;
+  const pageLogs = filteredLogs.slice(
+    firstVisibleIndex,
+    firstVisibleIndex + LOGS_PER_PAGE
+  );
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleTypeChange = (value: string) => {
+    setTypeFilter(value);
+    setPage(1);
+  };
 
   if (currentUser && currentUser.role !== "admin") return null;
 
@@ -125,13 +156,13 @@ export default function TechnicalLogsPage() {
               id="technical-log-search"
               type="search"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => handleSearchChange(event.target.value)}
               className="min-h-11 w-full rounded-xl border border-slate-300 bg-white py-2 pl-10 pr-11 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             />
             {search && (
               <button
                 type="button"
-                onClick={() => setSearch("")}
+                onClick={() => handleSearchChange("")}
                 aria-label="Clear technical log search"
                 className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:hover:text-white"
               >
@@ -150,7 +181,7 @@ export default function TechnicalLogsPage() {
           <select
             id="technical-log-type"
             value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value)}
+            onChange={(event) => handleTypeChange(event.target.value)}
             className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           >
             {LOG_TYPES.map((type) => (
@@ -171,8 +202,19 @@ export default function TechnicalLogsPage() {
             <Terminal className="h-5 w-5" aria-hidden="true" />
             Diagnostic messages
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
-            {filteredLogs.length} shown · {reportedTotal} returned
+          <p
+            className="text-sm text-slate-600 dark:text-slate-300"
+            aria-live="polite"
+          >
+            {filteredLogs.length === 0
+              ? "No messages shown"
+              : `${firstVisibleIndex + 1}–${Math.min(
+                  firstVisibleIndex + LOGS_PER_PAGE,
+                  filteredLogs.length
+                )} of ${filteredLogs.length} shown`}
+            {reportedTotal !== logs.length
+              ? ` · ${reportedTotal} reported by backend`
+              : ""}
           </p>
         </div>
 
@@ -207,10 +249,13 @@ export default function TechnicalLogsPage() {
                 : "No technical messages match the selected filters."}
             </p>
           ) : (
-            <ol className="max-h-[38rem] divide-y divide-slate-200 overflow-y-auto dark:divide-slate-800">
-              {filteredLogs.map((log, index) => (
+            <ol className="divide-y divide-slate-200 dark:divide-slate-800">
+              {pageLogs.map((log, index) => (
                 <li
-                  key={log.id ?? `${log.timestamp}-${index}`}
+                  key={
+                    log.id ??
+                    `${log.timestamp}-${firstVisibleIndex + index}`
+                  }
                   className="p-4"
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
@@ -234,6 +279,42 @@ export default function TechnicalLogsPage() {
             </ol>
           )}
         </div>
+
+        {!loading && !error && filteredLogs.length > 0 && (
+          <nav
+            aria-label="Technical logs pagination"
+            className="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900"
+          >
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Page <strong>{currentPage}</strong> of{" "}
+              <strong>{totalPages}</strong> · {LOGS_PER_PAGE} messages per page
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={currentPage === 1}
+                aria-label="Go to previous technical logs page"
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setPage((current) => Math.min(totalPages, current + 1))
+                }
+                disabled={currentPage === totalPages}
+                aria-label="Go to next technical logs page"
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+          </nav>
+        )}
       </section>
     </div>
   );
