@@ -71,3 +71,12 @@ test("protected alert routes and 401 cleanup remain configured", async () => {
   assert.match(api, /echosense_token=; path=\/; max-age=0/);
   assert.doesNotMatch(api, /console\.(log|debug)\([^)]*token/i);
 });
+
+test("dictionary collection calls use the deployed canonical route", async () => {
+  const api = await readSource("lib/api.ts");
+  const dictionaryCollectionCalls = api.match(
+    /apiFetch<unknown>\("\/dictionary\/"/g
+  );
+
+  assert.equal(dictionaryCollectionCalls?.length, 2);
+});

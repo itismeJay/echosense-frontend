@@ -238,7 +238,7 @@ export async function registerUser(
 
 export async function getDictionary(): Promise<DictionaryEntry[]> {
   return parseDictionaryListResponse(
-    await apiFetch<unknown>("/dictionary")
+    await apiFetch<unknown>("/dictionary/")
   );
 }
 
@@ -248,7 +248,7 @@ export async function addDictionaryEntry(entry: {
   severity_weight: number;
 }): Promise<DictionaryEntry> {
   return parseDictionaryEntry(
-    await apiFetch<unknown>("/dictionary", {
+    await apiFetch<unknown>("/dictionary/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(entry),
