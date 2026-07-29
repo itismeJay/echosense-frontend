@@ -29,11 +29,11 @@ const BASE_NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/alerts",    icon: BellRing,        label: "Alerts" },
   { href: "/logs",      icon: FileClock,       label: "History" },
+  { href: "/settings",  icon: Settings,        label: "Settings" },
   { href: "/profile",   icon: UserRound,       label: "Profile" },
 ];
 
 const ADMIN_NAV_ITEMS = [
-  { href: "/settings",         icon: Settings,      label: "System Settings" },
   { href: "/users",            icon: Users,         label: "User Accounts" },
   { href: "/admin/heartbeat",  icon: HeartPulse,    label: "Device Status" },
   { href: "/admin/dictionary", icon: BookOpen,      label: "Monitored Terms" },

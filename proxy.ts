@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const ADMIN_ONLY_PATHS = ['/settings', '/users', '/admin']
+const ADMIN_ONLY_PATHS = ['/users', '/admin']
 const COUNSELOR_PATHS = ['/counselor', '/analytics']
 
 function getRoleFromToken(token: string): string | null {

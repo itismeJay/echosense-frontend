@@ -1,4 +1,6 @@
 export type Severity = "high" | "medium" | "low";
+export type AlertSeverity = Severity | "unknown";
+export type AlertStatus = "active" | "resolved" | "unknown";
 export type AlertLanguage = "fil" | "ceb" | "en" | "mixed" | "unknown";
 export type MonitoredTermLanguage = "fil" | "ceb" | "en";
 
@@ -23,11 +25,12 @@ export interface LoginResponse {
 
 export interface Alert {
   id: number;
-  severity: Severity;
+  event_id?: string | null;
+  severity: AlertSeverity;
   confidence: number;
   duration: number;
   location: string;
-  status: "active" | "resolved";
+  status: AlertStatus;
   created_at: string;
 
   // ── Rich evidence (all optional — backend may omit on older alerts) ──
@@ -35,6 +38,7 @@ export interface Alert {
   detected_words?: string[] | null;
   yamnet_class?: string | null;
   yamnet_score?: number | null;
+  yamnet_ran?: boolean | null;
   emotion?: string | null;
   rms?: number | null;
   energy_variance?: number | null;
@@ -46,7 +50,7 @@ export interface Alert {
   categories?: string[] | null;
   language?: AlertLanguage | null;
   language_confidence?: number | null;
-  matched_terms?: MatchedTerm[];
+  matched_terms?: MatchedTerm[] | null;
   hard_hits?: string[] | null;
   soft_hits?: string[] | null;
   duration_gate?: string | null;

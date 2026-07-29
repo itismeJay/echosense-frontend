@@ -1,4 +1,4 @@
-import type { AlertLanguage, Severity } from "./types";
+import type { AlertLanguage, AlertSeverity } from "./types";
 
 export function formatConfidence(n: number): string {
   return `${Math.round(n * 100)}%`;
@@ -139,10 +139,11 @@ export function formatUptime(ms: number): string {
   return `${minutes}m`;
 }
 
-export function severityColor(s: Severity): string {
+export function severityColor(s: AlertSeverity): string {
   if (s === "high")   return "bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/25";
   if (s === "medium") return "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/25";
-  return                     "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25";
+  if (s === "low") return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25";
+  return "bg-slate-500/10 text-slate-700 border-slate-500/20 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/25";
 }
 
 export function capitalize(s: string): string {

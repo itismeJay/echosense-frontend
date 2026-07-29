@@ -71,7 +71,7 @@ interface AlertCollectionProps {
 }
 
 export default function AlertCollection({ mode }: AlertCollectionProps) {
-  const { alerts, loading, error, refresh } = useAlerts();
+  const { alerts, loading, error, errorStatus, refresh } = useAlerts();
   const [priority, setPriority] = useState<PriorityFilter>("all");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<CategoryFilter>("all");
@@ -138,7 +138,7 @@ export default function AlertCollection({ mode }: AlertCollectionProps) {
       alert.id,
       alert.severity,
       csvEscape(alert.location),
-      csvEscape(alertStatusLabel(alert)),
+      csvEscape(alertStatusLabel()),
       languageLabel(alert.language),
       formatLanguageConfidence(alert.language_confidence) ?? "",
       csvEscape(
@@ -186,11 +186,17 @@ export default function AlertCollection({ mode }: AlertCollectionProps) {
         >
           <div>
             <p className="font-semibold text-red-900 dark:text-red-100">
-              We couldn&apos;t load classroom alerts.
+              {errorStatus === 403
+                ? "You do not have permission to view classroom alerts."
+                : "We couldn’t load classroom alerts."}
             </p>
-            <p className="mt-1 text-sm text-red-800 dark:text-red-200">Please try again.</p>
+            <p className="mt-1 text-sm text-red-800 dark:text-red-200">
+              {errorStatus === 403
+                ? "Contact an administrator if you believe you should have access."
+                : "The service may be temporarily unavailable. Please try again."}
+            </p>
           </div>
-          <button
+          {errorStatus !== 403 && <button
             type="button"
             onClick={() => void refresh()}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
@@ -198,6 +204,7 @@ export default function AlertCollection({ mode }: AlertCollectionProps) {
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Retry
           </button>
+          }
         </div>
       )}
 

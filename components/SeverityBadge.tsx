@@ -1,9 +1,9 @@
-import type { Severity } from "@/lib/types";
+import type { AlertSeverity } from "@/lib/types";
 import { severityColor } from "@/lib/format";
 import { priorityLabel } from "@/lib/alert-presentation";
 
 interface SeverityBadgeProps {
-  severity: Severity;
+  severity: AlertSeverity;
   dot?: boolean;
 }
 

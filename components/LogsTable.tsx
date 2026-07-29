@@ -46,7 +46,11 @@ export default function LogsTable({
     if (!sortable) return rows;
     return [...rows].sort((a, b) => {
       let cmp = 0;
-      if (sortKey === "severity") cmp = SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity];
+      if (sortKey === "severity") {
+        cmp =
+          (SEVERITY_ORDER[a.severity] ?? 3) -
+          (SEVERITY_ORDER[b.severity] ?? 3);
+      }
       else if (sortKey === "confidence") cmp = a.confidence - b.confidence;
       else if (sortKey === "duration") cmp = a.duration - b.duration;
       else cmp = a.created_at.localeCompare(b.created_at);

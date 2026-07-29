@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   Loader2,
@@ -9,23 +8,18 @@ import {
   Save,
   SlidersHorizontal,
 } from "lucide-react";
+import NotificationSettings from "@/components/NotificationSettings";
 import { getSettings, saveSettings } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import type { Settings } from "@/lib/types";
 
 export default function SettingsPage() {
   const currentUser = useCurrentUser();
-  const router = useRouter();
+  const isAdmin = currentUser?.role === "admin";
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (currentUser && currentUser.role !== "admin") {
-      router.replace("/dashboard");
-    }
-  }, [currentUser, router]);
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
@@ -40,11 +34,16 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    if (!currentUser) return;
+    if (!isAdmin) {
+      const timer = setTimeout(() => setLoading(false), 0);
+      return () => clearTimeout(timer);
+    }
     const timer = setTimeout(() => {
       void loadSettings();
     }, 0);
     return () => clearTimeout(timer);
-  }, [loadSettings]);
+  }, [currentUser, isAdmin, loadSettings]);
 
   const update = <K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings((current) =>
@@ -65,24 +64,25 @@ export default function SettingsPage() {
     }
   };
 
-  if (currentUser && currentUser.role !== "admin") return null;
-
   return (
     <div className="mx-auto max-w-3xl p-4 md:p-6 lg:p-8">
       <header className="mb-6">
         <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
-          Administrator
+          {isAdmin ? "Administrator" : "Preferences"}
         </p>
         <h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
-          System Settings
+          Settings
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-          Manage the existing classroom alert settings. Changes are saved to the
-          current monitoring system.
+          Manage browser notifications
+          {isAdmin ? " and classroom alert controls" : ""}.
         </p>
       </header>
 
-      {loading ? (
+      <div className="space-y-6">
+        <NotificationSettings />
+
+      {isAdmin && (loading ? (
         <div role="status" className="space-y-4">
           <span className="sr-only">Loading system settings</span>
           {[0, 1].map((item) => (
@@ -216,7 +216,8 @@ export default function SettingsPage() {
             {saving ? "Saving…" : "Save Settings"}
           </button>
         </div>
-      )}
+      ))}
+      </div>
     </div>
   );
 }

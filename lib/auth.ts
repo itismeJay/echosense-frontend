@@ -53,13 +53,11 @@ export async function login(email: string, password: string): Promise<AuthUser> 
     throw new Error('Unable to reach the EchoSense server')
   }
   if (res.status === 401) throw new Error('Invalid email or password')
+  if (res.status === 403) {
+    throw new Error('This account is not authorized to access EchoSense')
+  }
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { detail?: unknown }
-    throw new Error(
-      typeof body.detail === 'string'
-        ? body.detail
-        : 'Unable to sign in right now. Please try again.'
-    )
+    throw new Error('Unable to sign in right now. Please try again.')
   }
   const data = await res.json() as {
     access_token?: unknown

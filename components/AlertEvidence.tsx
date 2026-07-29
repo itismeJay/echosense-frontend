@@ -8,16 +8,19 @@ import {
   ChevronUp,
   Clock3,
   Info,
-  Quote,
   Tags,
   Volume2,
   Waves,
 } from "lucide-react";
 import type { Alert } from "@/lib/types";
 import {
+  exactTranscript,
+  HUMAN_REVIEW_NOTE,
   matchedTermEvidenceLabel,
   NO_MATCHED_TERMS_MESSAGE,
-  UNVERIFIED_EVIDENCE_NOTICE,
+  REQUIRED_REVIEW_NOTICE,
+  uniqueMatchedTerms,
+  yamnetRanExplanation,
 } from "@/lib/alert-presentation";
 import {
   categoryBadgeColor,
@@ -80,11 +83,12 @@ export default function AlertEvidence({
       ? alert.detected_words ?? []
       : [];
   const categories = alert.categories ?? [];
-  const matchedTerms = alert.matched_terms ?? [];
+  const matchedTerms = uniqueMatchedTerms(alert.matched_terms);
   const waveform = alert.waveform_snapshot ?? [];
   const languageConfidence = formatLanguageConfidence(
     alert.language_confidence
   );
+  const yamnetExplanation = yamnetRanExplanation(alert.yamnet_ran);
 
   return (
     <div>
@@ -104,24 +108,23 @@ export default function AlertEvidence({
         <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <section aria-labelledby={`phrase-${alert.id}`}>
             <h2 id={`phrase-${alert.id}`} className="text-base font-semibold text-slate-950 dark:text-white">
-              Possible Detected Phrase
+              Detected transcript
             </h2>
             {alert.transcribed_text ? (
-              <div className="mt-3 flex gap-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-900/70 dark:bg-indigo-950/30">
-                <Quote className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
-                <p className="text-sm italic leading-6 text-slate-800 dark:text-slate-100">
-                  &ldquo;{alert.transcribed_text}&rdquo;
+              <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-900/70 dark:bg-indigo-950/30">
+                <p className="select-text whitespace-pre-wrap break-words text-sm leading-6 text-slate-800 dark:text-slate-100">
+                  {exactTranscript(alert)}
                 </p>
               </div>
             ) : (
               <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                No possible phrase was included with this alert.
+                {exactTranscript(alert)}
               </p>
             )}
             <div className="mt-3 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
               <Info className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
               <p>
-                Automatic transcription may be inaccurate because of overlapping voices or background noise.
+                {HUMAN_REVIEW_NOTE}
               </p>
             </div>
           </section>
@@ -131,7 +134,7 @@ export default function AlertEvidence({
               id={`matched-terms-${alert.id}`}
               className="text-base font-semibold text-slate-950 dark:text-white"
             >
-              Possible Detected Terms
+              Detected monitored terms
             </h2>
             {matchedTerms.length > 0 ? (
               <ul className="mt-3 space-y-3">
@@ -173,7 +176,7 @@ export default function AlertEvidence({
                 className="mt-1 h-4 w-4 shrink-0"
                 aria-hidden="true"
               />
-              <p>{UNVERIFIED_EVIDENCE_NOTICE}</p>
+              <p>{REQUIRED_REVIEW_NOTICE}</p>
             </div>
           </section>
 
@@ -232,6 +235,20 @@ export default function AlertEvidence({
             )}
           </section>
 
+          {yamnetExplanation && (
+            <section aria-labelledby={`yamnet-ran-${alert.id}`}>
+              <h2
+                id={`yamnet-ran-${alert.id}`}
+                className="text-base font-semibold text-slate-950 dark:text-white"
+              >
+                Acoustic classification
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                {yamnetExplanation}
+              </p>
+            </section>
+          )}
+
           <details className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50">
             <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-semibold text-slate-800 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-slate-100">
               <ChevronDown className="h-4 w-4" aria-hidden="true" />
@@ -248,21 +265,31 @@ export default function AlertEvidence({
                   <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
                   Duration: {alert.duration.toFixed(1)}s
                 </span>
+                {alert.required_duration != null && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                    Required duration: {alert.required_duration.toFixed(1)}s
+                  </span>
+                )}
                 {alert.duration_gate && <DurationGateBadge gate={alert.duration_gate} size="md" />}
               </div>
 
-              {(alert.emotion || alert.yamnet_class) && (
+              {(alert.emotion ||
+                alert.yamnet_class ||
+                alert.yamnet_score != null) && (
                 <div className="flex flex-wrap gap-2">
                   {alert.emotion && (
                     <span className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase ${emotionBadgeColor(alert.emotion)}`}>
                       Possible vocal tone: {alert.emotion}
                     </span>
                   )}
-                  {alert.yamnet_class && (
+                  {(alert.yamnet_class || alert.yamnet_score != null) && (
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-medium text-cyan-900 dark:border-cyan-900 dark:bg-cyan-950/30 dark:text-cyan-100">
                       <Waves className="h-3.5 w-3.5" aria-hidden="true" />
-                      Sound Detection Model: {alert.yamnet_class}
-                      {alert.yamnet_score != null && ` (${alert.yamnet_score.toFixed(2)})`}
+                      Stored acoustic model result:{" "}
+                      {alert.yamnet_class ?? "Class unavailable"}
+                      {alert.yamnet_score != null &&
+                        ` · Score ${alert.yamnet_score.toFixed(2)}`}
                     </span>
                   )}
                 </div>

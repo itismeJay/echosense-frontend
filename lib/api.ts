@@ -8,6 +8,7 @@ import {
   parseAlertResponse,
 } from "./alert-contract";
 import { API_URL } from "./config";
+import { buildApiHeaders } from "./api-headers";
 import {
   parseDictionaryEntry,
   parseDictionaryListResponse,
@@ -106,12 +107,11 @@ function getRequestSignal(externalSignal?: AbortSignal | null): AbortSignal {
     : timeoutSignal;
 }
 
-async function getApiErrorMessage(res: Response): Promise<string> {
-  const body = await res.json().catch(() => null);
-  if (isRecord(body) && typeof body.detail === "string") {
-    return body.detail;
-  }
-  return `HTTP ${res.status}`;
+function getApiErrorMessage(status: number): string {
+  if (status === 403) return "You do not have permission to perform this action.";
+  if (status === 404) return "The requested record was not found.";
+  if (status >= 500) return "The EchoSense service is temporarily unavailable.";
+  return "The request could not be completed.";
 }
 
 function handleUnauthorizedResponse() {
@@ -125,8 +125,7 @@ async function apiRequest(
   options?: RequestInit
 ): Promise<Response> {
   const token = getToken();
-  const headers = new Headers(options?.headers);
-  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const headers = buildApiHeaders(token, options?.headers);
   const res = await fetch(`${API_URL}${path}`, {
     cache: "no-store",
     ...options,
@@ -138,7 +137,7 @@ async function apiRequest(
     throw new ApiError(401, "Unauthorized");
   }
   if (!res.ok) {
-    throw new ApiError(res.status, await getApiErrorMessage(res));
+    throw new ApiError(res.status, getApiErrorMessage(res.status));
   }
   return res;
 }
@@ -164,6 +163,14 @@ export async function getAlerts(params?: {
     `/alerts/${query ? `?${query}` : ""}`
   );
   return parseAlertListResponse(value, "/alerts/");
+}
+
+export async function getAlert(alertId: number): Promise<Alert> {
+  const endpoint = `/alerts/${alertId}`;
+  return parseAlertResponse(
+    await apiFetch<unknown>(endpoint),
+    endpoint
+  );
 }
 
 export async function getCategoryStats(): Promise<CategoryStats> {

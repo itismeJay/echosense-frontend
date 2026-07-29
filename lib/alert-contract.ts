@@ -1,4 +1,10 @@
-import type { Alert, AlertLanguage, MatchedTerm } from "./types";
+import type {
+  Alert,
+  AlertLanguage,
+  AlertSeverity,
+  AlertStatus,
+  MatchedTerm,
+} from "./types";
 
 export class AlertContractError extends Error {
   public readonly endpoint: string;
@@ -25,6 +31,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+export function normalizeAlertSeverity(value: string): AlertSeverity {
+  return value === "high" || value === "medium" || value === "low"
+    ? value
+    : "unknown";
+}
+
+export function normalizeAlertStatus(value: string): AlertStatus {
+  return value === "active" || value === "resolved"
+    ? value
+    : "unknown";
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value
+  );
 }
 
 function validateOptionalString(
@@ -125,10 +149,10 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
   if (!Number.isInteger(value.id)) {
     throw new AlertContractError(endpoint, `${path}.id must be an integer`);
   }
-  if (!["high", "medium", "low"].includes(String(value.severity))) {
+  if (typeof value.severity !== "string" || value.severity.trim() === "") {
     throw new AlertContractError(
       endpoint,
-      `${path}.severity must be high, medium, or low`
+      `${path}.severity must be a non-empty string`
     );
   }
   if (
@@ -149,12 +173,34 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
   }
   if (
     typeof value.location !== "string" ||
-    (value.status !== "active" && value.status !== "resolved") ||
-    typeof value.created_at !== "string"
+    typeof value.status !== "string" ||
+    typeof value.created_at !== "string" ||
+    Number.isNaN(Date.parse(value.created_at))
   ) {
     throw new AlertContractError(
       endpoint,
       `${path} is missing a valid location, status, or created_at`
+    );
+  }
+
+  if (
+    value.event_id !== undefined &&
+    value.event_id !== null &&
+    (typeof value.event_id !== "string" || !isUuid(value.event_id))
+  ) {
+    throw new AlertContractError(
+      endpoint,
+      `${path}.event_id must be a UUID string or null`
+    );
+  }
+  if (
+    value.yamnet_ran !== undefined &&
+    value.yamnet_ran !== null &&
+    typeof value.yamnet_ran !== "boolean"
+  ) {
+    throw new AlertContractError(
+      endpoint,
+      `${path}.yamnet_ran must be a boolean or null`
     );
   }
 
@@ -229,7 +275,7 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
       `${path}.language_confidence must be between 0 and 1 or null`
     );
   }
-  if (value.matched_terms !== undefined) {
+  if (value.matched_terms !== undefined && value.matched_terms !== null) {
     if (!Array.isArray(value.matched_terms)) {
       throw new AlertContractError(
         endpoint,
@@ -241,7 +287,11 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
     );
   }
 
-  return value as unknown as Alert;
+  return {
+    ...value,
+    severity: normalizeAlertSeverity(value.severity),
+    status: normalizeAlertStatus(value.status),
+  } as unknown as Alert;
 }
 
 export function parseAlertListResponse(

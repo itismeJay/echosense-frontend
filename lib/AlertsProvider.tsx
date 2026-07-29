@@ -11,11 +11,13 @@ import React, {
 import toast from "react-hot-toast";
 import type { Alert, LogsStats } from "./types";
 import {
+  ApiError,
   checkBackendHealth,
   getAlerts,
   getLogs,
   getLogsStats,
 } from "./api";
+import { showAlertBrowserNotification } from "./notifications";
 
 const EMPTY_STATS: LogsStats = {
   total_alerts: 0,
@@ -33,6 +35,7 @@ interface AlertsContextValue {
   flashKey: number;
   loading: boolean;
   error: string | null;
+  errorStatus: number | null;
   refresh: () => Promise<void>;
 }
 
@@ -45,6 +48,7 @@ const AlertsContext = createContext<AlertsContextValue>({
   flashKey: 0,
   loading: true,
   error: null,
+  errorStatus: null,
   refresh: async () => {},
 });
 
@@ -63,6 +67,7 @@ export default function AlertsProvider({
   const [loading, setLoading]   = useState(true);
   const [online, setOnline]     = useState(false);
   const [error, setError]       = useState<string | null>(null);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [flashKey, setFlashKey] = useState(0);
   const [uptimeMs, setUptimeMs] = useState(0);
 
@@ -84,6 +89,11 @@ export default function AlertsProvider({
 
       if (alertsResult.status === "rejected") {
         const backendReachable = healthResult.status === "fulfilled";
+        setErrorStatus(
+          alertsResult.reason instanceof ApiError
+            ? alertsResult.reason.status
+            : 500
+        );
         setOnline(backendReachable);
         setError(
           backendReachable
@@ -99,6 +109,7 @@ export default function AlertsProvider({
       const newAlerts = alertsResult.value;
       setOnline(true);
       setError(null);
+      setErrorStatus(null);
       setAlerts(newAlerts);
       if (logsResult.status === "fulfilled") setLogs(logsResult.value);
       if (statsResult.status === "fulfilled") setStats(statsResult.value);
@@ -111,6 +122,7 @@ export default function AlertsProvider({
         } else if (latest.id !== seenLatestHighId.current) {
           seenLatestHighId.current = latest.id;
           if (latest.severity === "high") {
+            showAlertBrowserNotification(latest);
             toast.error(`High priority possible alert — ${latest.location}`, {
               duration: 6000,
               style: {
@@ -127,6 +139,7 @@ export default function AlertsProvider({
       }
     } catch (err) {
       setOnline(false);
+      setErrorStatus(err instanceof ApiError ? err.status : 500);
       setError(err instanceof Error ? err.message : "Classroom alerts are unavailable");
       setLoading(false);
     } finally {
@@ -164,7 +177,18 @@ export default function AlertsProvider({
 
   return (
     <AlertsContext.Provider
-      value={{ alerts, logs, stats, online, uptimeMs, flashKey, loading, error, refresh: poll }}
+      value={{
+        alerts,
+        logs,
+        stats,
+        online,
+        uptimeMs,
+        flashKey,
+        loading,
+        error,
+        errorStatus,
+        refresh: poll,
+      }}
     >
       {children}
     </AlertsContext.Provider>
