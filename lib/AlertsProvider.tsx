@@ -12,12 +12,16 @@ import toast from "react-hot-toast";
 import type { Alert, LogsStats } from "./types";
 import {
   ApiError,
-  checkBackendHealth,
-  getAlerts,
+  getAlertsWithMetadata,
   getLogs,
   getLogsStats,
 } from "./api";
 import { showAlertBrowserNotification } from "./notifications";
+import {
+  newlyObservedAlerts,
+  runWithoutOverlap,
+  shouldMarkRetainedAlertsStale,
+} from "./alert-polling";
 
 const EMPTY_STATS: LogsStats = {
   total_alerts: 0,
@@ -36,6 +40,9 @@ interface AlertsContextValue {
   loading: boolean;
   error: string | null;
   errorStatus: number | null;
+  warning: string | null;
+  lastUpdated: Date | null;
+  isStale: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -49,6 +56,9 @@ const AlertsContext = createContext<AlertsContextValue>({
   loading: true,
   error: null,
   errorStatus: null,
+  warning: null,
+  lastUpdated: null,
+  isStale: false,
   refresh: async () => {},
 });
 
@@ -68,62 +78,69 @@ export default function AlertsProvider({
   const [online, setOnline]     = useState(false);
   const [error, setError]       = useState<string | null>(null);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isStale, setIsStale] = useState(false);
   const [flashKey, setFlashKey] = useState(0);
   const [uptimeMs, setUptimeMs] = useState(0);
 
   const uptimeStartRef   = useRef<number>(0);
-  const seenLatestHighId = useRef<number | null>(null);
+  const seenAlertIdsRef = useRef<Set<number> | null>(null);
+  const alertsRef = useRef<Alert[]>([]);
   const pollInFlightRef = useRef(false);
+  const optionalRefreshInFlightRef = useRef(false);
+
+  const refreshOptionalData = useCallback(async () => {
+    await runWithoutOverlap(optionalRefreshInFlightRef, async () => {
+      const [logsResult, statsResult] = await Promise.allSettled([
+        getLogs(),
+        getLogsStats(),
+      ]);
+      if (logsResult.status === "fulfilled") setLogs(logsResult.value);
+      if (statsResult.status === "fulfilled") setStats(statsResult.value);
+    });
+  }, []);
 
   const poll = useCallback(async () => {
-    if (pollInFlightRef.current) return;
-    pollInFlightRef.current = true;
+    await runWithoutOverlap(pollInFlightRef, async () => {
     try {
-      const [alertsResult, logsResult, statsResult, healthResult] =
-        await Promise.allSettled([
-          getAlerts(),
-          getLogs(),
-          getLogsStats(),
-          checkBackendHealth(),
-        ]);
-
-      if (alertsResult.status === "rejected") {
-        const backendReachable = healthResult.status === "fulfilled";
-        setErrorStatus(
-          alertsResult.reason instanceof ApiError
-            ? alertsResult.reason.status
-            : 500
-        );
-        setOnline(backendReachable);
-        setError(
-          backendReachable
-            ? "Backend connected, but alert data is temporarily unavailable."
-            : alertsResult.reason instanceof Error
-              ? alertsResult.reason.message
-              : "Classroom alerts are unavailable"
-        );
-        setLoading(false);
-        return;
-      }
-
-      const newAlerts = alertsResult.value;
+      const result = await getAlertsWithMetadata();
+      const newAlerts = result.alerts;
       setOnline(true);
       setError(null);
       setErrorStatus(null);
+      setWarning(result.warning);
+      setIsStale(false);
+      setLastUpdated(new Date());
+      alertsRef.current = newAlerts;
       setAlerts(newAlerts);
-      if (logsResult.status === "fulfilled") setLogs(logsResult.value);
-      if (statsResult.status === "fulfilled") setStats(statsResult.value);
       setLoading(false);
 
-      const latest = newAlerts[0];
-      if (latest) {
-        if (seenLatestHighId.current === null) {
-          seenLatestHighId.current = latest.id;
-        } else if (latest.id !== seenLatestHighId.current) {
-          seenLatestHighId.current = latest.id;
-          if (latest.severity === "high") {
-            showAlertBrowserNotification(latest);
-            toast.error(`High priority possible alert — ${latest.location}`, {
+      if (seenAlertIdsRef.current === null) {
+        seenAlertIdsRef.current = new Set(newAlerts.map((alert) => alert.id));
+      } else {
+        const newlyObserved = newlyObservedAlerts(
+          newAlerts,
+          seenAlertIdsRef.current
+        );
+        newAlerts.forEach((alert) => seenAlertIdsRef.current?.add(alert.id));
+        const latestHigh = newlyObserved.find((alert) => alert.severity === "high");
+        if (latestHigh) {
+          showAlertBrowserNotification(latestHigh);
+          if (latestHigh.test_mode || latestHigh.trigger_type === "TEST") {
+            toast(`TEST alert — high-priority synthetic test — ${latestHigh.location}`, {
+              duration: 6000,
+              icon: "🧪",
+              style: {
+                background: "#eff6ff",
+                color: "#1e3a8a",
+                border: "2px solid #3b82f6",
+                fontWeight: "700",
+                borderRadius: "12px",
+              },
+            });
+          } else {
+            toast.error(`High priority possible alert — ${latestHigh.location}`, {
               duration: 6000,
               style: {
                 background: "#fff7ed",
@@ -133,24 +150,31 @@ export default function AlertsProvider({
                 borderRadius: "12px",
               },
             });
-            setFlashKey((k) => k + 1);
           }
+          setFlashKey((k) => k + 1);
         }
       }
     } catch (err) {
       setOnline(false);
+      setIsStale(
+        (current) =>
+          current || shouldMarkRetainedAlertsStale(alertsRef.current)
+      );
       setErrorStatus(err instanceof ApiError ? err.status : 500);
       setError(err instanceof Error ? err.message : "Classroom alerts are unavailable");
       setLoading(false);
-    } finally {
-      pollInFlightRef.current = false;
     }
+    });
   }, []);
 
   useEffect(() => {
     uptimeStartRef.current = Date.now();
     const initialTimer = setTimeout(() => { void poll(); }, 0);
-    const intervalId = setInterval(() => { void poll(); }, 3000);
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") void poll();
+    }, 3000);
+    const optionalTimer = setTimeout(() => { void refreshOptionalData(); }, 0);
+    const optionalIntervalId = setInterval(() => { void refreshOptionalData(); }, 30_000);
 
     // Re-poll immediately when the tab becomes visible so background-tab
     // throttling never causes a stale / offline view.
@@ -164,9 +188,11 @@ export default function AlertsProvider({
     return () => {
       clearTimeout(initialTimer);
       clearInterval(intervalId);
+      clearTimeout(optionalTimer);
+      clearInterval(optionalIntervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [poll]);
+  }, [poll, refreshOptionalData]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -187,6 +213,9 @@ export default function AlertsProvider({
         loading,
         error,
         errorStatus,
+        warning,
+        lastUpdated,
+        isStale,
         refresh: poll,
       }}
     >

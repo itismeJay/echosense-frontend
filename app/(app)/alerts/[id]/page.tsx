@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -16,7 +16,14 @@ import AlertListSkeleton from "@/components/AlertListSkeleton";
 import SeverityBadge from "@/components/SeverityBadge";
 import {
   REQUIRED_REVIEW_NOTICE,
+  classroomLabel,
+  deliveryStatusLabel,
+  isTestAlert,
+  pushStatusLabel,
   reviewStatusLabel,
+  schoolLabel,
+  severitySummary,
+  triggerTypeLabel,
 } from "@/lib/alert-presentation";
 import { ApiError, getAlert } from "@/lib/api";
 import { useAlerts } from "@/lib/AlertsProvider";
@@ -32,23 +39,35 @@ export default function AlertDetailPage() {
     : undefined;
   const [alert, setAlert] = useState<Alert | undefined>(providerAlert);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const requestInFlightRef = useRef(false);
+  const alertRef = useRef<Alert | undefined>(providerAlert);
 
   const loadAlert = useCallback(async () => {
+    if (requestInFlightRef.current) return;
     if (!Number.isInteger(alertId) || alertId < 1) {
       setAlert(undefined);
       setErrorStatus(404);
       setLoading(false);
       return;
     }
-    setLoading(true);
+    requestInFlightRef.current = true;
+    if (alertRef.current) setRefreshing(true);
+    else setLoading(true);
     setErrorStatus(null);
     try {
-      setAlert(await getAlert(alertId));
+      const nextAlert = await getAlert(alertId);
+      alertRef.current = nextAlert;
+      setAlert(nextAlert);
+      setLastUpdated(new Date());
     } catch (error) {
       setErrorStatus(error instanceof ApiError ? error.status : 500);
     } finally {
       setLoading(false);
+      setRefreshing(false);
+      requestInFlightRef.current = false;
     }
   }, [alertId]);
 
@@ -56,7 +75,13 @@ export default function AlertDetailPage() {
     const timer = setTimeout(() => {
       void loadAlert();
     }, 0);
-    return () => clearTimeout(timer);
+    const interval = setInterval(() => {
+      void loadAlert();
+    }, 10_000);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [loadAlert]);
 
   if (loading && !alert) {
@@ -149,6 +174,19 @@ export default function AlertDetailPage() {
         Back to Alerts
       </Link>
 
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+        <span>{lastUpdated ? `Last refreshed ${lastUpdated.toLocaleTimeString()}` : "Refreshing current status…"}</span>
+        <button
+          type="button"
+          onClick={() => void loadAlert()}
+          disabled={refreshing}
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+          Refresh status
+        </button>
+      </div>
+
       {errorStatus !== null && (
         <div
           role="alert"
@@ -156,6 +194,13 @@ export default function AlertDetailPage() {
         >
           The latest alert details could not be refreshed. The validated
           evidence shown below came from the alert list.
+        </div>
+      )}
+
+      {isTestAlert(alert) && (
+        <div className="mt-4 rounded-2xl border-4 border-blue-600 bg-blue-50 p-5 text-blue-950 dark:bg-blue-950/50 dark:text-blue-100">
+          <p className="text-lg font-black tracking-wide">TEST ALERT — NOT A REAL INCIDENT</p>
+          <p className="mt-1 text-sm">Synthetic test data for end-to-end delivery verification.</p>
         </div>
       )}
 
@@ -168,6 +213,9 @@ export default function AlertDetailPage() {
             <h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
               Possible aggression alert
             </h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              {severitySummary(alert.severity)}
+            </p>
           </div>
           <SeverityBadge severity={alert.severity} dot />
         </div>
@@ -184,19 +232,17 @@ export default function AlertDetailPage() {
               </p>
             </div>
           </div>
-          {alert.event_id && (
-            <div className="flex gap-3 rounded-xl bg-slate-50 p-4 dark:bg-slate-950/60">
-              <Fingerprint className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Event ID
-                </p>
-                <p className="mt-1 break-all font-mono text-sm font-semibold text-slate-950 dark:text-white">
-                  {alert.event_id}
-                </p>
-              </div>
+          <div className="flex gap-3 rounded-xl bg-slate-50 p-4 dark:bg-slate-950/60">
+            <Fingerprint className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Event ID
+              </p>
+              <p className="mt-1 break-all font-mono text-sm font-semibold text-slate-950 dark:text-white">
+                {alert.event_id ?? "Not recorded for this alert"}
+              </p>
             </div>
-          )}
+          </div>
           <div className="flex gap-3 rounded-xl bg-slate-50 p-4 dark:bg-slate-950/60">
             <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
             <div>
@@ -204,7 +250,7 @@ export default function AlertDetailPage() {
                 Classroom
               </p>
               <p className="mt-1 font-semibold text-slate-950 dark:text-white">
-                {alert.location}
+                {classroomLabel(alert)}
               </p>
             </div>
           </div>
@@ -215,7 +261,7 @@ export default function AlertDetailPage() {
                 Detection Time
               </p>
               <p className="mt-1 font-semibold text-slate-950 dark:text-white">
-                {formatTimestamp(alert.created_at)}
+                {formatTimestamp(alert.trigger_timestamp ?? alert.event_start_timestamp ?? alert.created_at)}
               </p>
             </div>
           </div>
@@ -223,12 +269,43 @@ export default function AlertDetailPage() {
 
         <div className="mt-4 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
           <p className="text-sm font-semibold text-slate-950 dark:text-white">
-            {REQUIRED_REVIEW_NOTICE}
+            {alert.review_message || REQUIRED_REVIEW_NOTICE}
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
             Review status: {reviewStatusLabel(alert)}
           </p>
         </div>
+
+        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+            <dt className="font-semibold text-slate-950 dark:text-white">Trigger information</dt>
+            <dd className="mt-1 text-slate-700 dark:text-slate-200">{triggerTypeLabel(alert)} · Schema version {alert.schema_version ?? "legacy"}</dd>
+          </div>
+          <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+            <dt className="font-semibold text-slate-950 dark:text-white">Trusted school</dt>
+            <dd className="mt-1 text-slate-700 dark:text-slate-200">{schoolLabel(alert)}</dd>
+          </div>
+          <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+            <dt className="font-semibold text-slate-950 dark:text-white">Trusted device</dt>
+            <dd className="mt-1 text-slate-700 dark:text-slate-200">
+              {alert.device_display_name || alert.device_code || alert.device_id || "Device identity unavailable"}
+              {alert.device_code && alert.device_display_name ? ` · ${alert.device_code}` : ""}
+            </dd>
+          </div>
+          <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+            <dt className="font-semibold text-slate-950 dark:text-white">Delivery and push state</dt>
+            <dd className="mt-1 text-slate-700 dark:text-slate-200">Delivery: {deliveryStatusLabel(alert)} · Push: {pushStatusLabel(alert)}</dd>
+          </div>
+        </dl>
+
+        <section className="mt-4 rounded-xl border border-slate-200 p-4 dark:border-slate-700" aria-labelledby="event-timeline-title">
+          <h2 id="event-timeline-title" className="text-sm font-semibold text-slate-950 dark:text-white">Event timeline</h2>
+          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+            <div><dt className="font-medium">Event start</dt><dd className="mt-1 text-slate-600 dark:text-slate-300">{alert.event_start_timestamp ? formatTimestamp(alert.event_start_timestamp) : "Not recorded"}</dd></div>
+            <div><dt className="font-medium">Trigger time</dt><dd className="mt-1 text-slate-600 dark:text-slate-300">{alert.trigger_timestamp ? formatTimestamp(alert.trigger_timestamp) : "Not recorded"}</dd></div>
+            <div><dt className="font-medium">Event end</dt><dd className="mt-1 text-slate-600 dark:text-slate-300">{alert.event_end_timestamp ? formatTimestamp(alert.event_end_timestamp) : "Not recorded"}</dd></div>
+          </dl>
+        </section>
       </header>
 
       <section className="mt-6" aria-label="Alert information">

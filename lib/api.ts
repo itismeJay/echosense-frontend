@@ -5,8 +5,10 @@ import {
 } from "./audit-log";
 import {
   parseAlertListResponse,
+  parseAlertListResult,
   parseAlertResponse,
 } from "./alert-contract";
+import type { AlertListParseResult } from "./alert-contract";
 import { API_URL } from "./config";
 import { buildApiHeaders } from "./api-headers";
 import {
@@ -36,6 +38,7 @@ import type {
   SystemSettings,
   User,
 } from "./types";
+import { parseValidJwtClaims } from "./auth-token";
 
 const API_TIMEOUT_MS = 60_000;
 
@@ -94,10 +97,15 @@ function parseSystemLogsResponse(value: unknown): SystemLogsResponse {
 
 function getToken(): string | undefined {
   if (typeof document === "undefined") return undefined;
-  return document.cookie
+  const token = document.cookie
     .split("; ")
     .find(r => r.startsWith("echosense_token="))
     ?.split("=")[1];
+  if (token && !parseValidJwtClaims(token)) {
+    document.cookie = "echosense_token=; path=/; max-age=0";
+    return undefined;
+  }
+  return token;
 }
 
 function getRequestSignal(externalSignal?: AbortSignal | null): AbortSignal {
@@ -153,6 +161,15 @@ export async function getAlerts(params?: {
   severity?: string;
   duration_gate?: string;
 }): Promise<Alert[]> {
+  return (await getAlertsWithMetadata(params)).alerts;
+}
+
+export async function getAlertsWithMetadata(params?: {
+  category?: string;
+  language?: AlertLanguage;
+  severity?: string;
+  duration_gate?: string;
+}): Promise<AlertListParseResult> {
   const qs = new URLSearchParams();
   if (params?.category) qs.set("category", params.category);
   if (params?.language) qs.set("language", params.language);
@@ -162,7 +179,7 @@ export async function getAlerts(params?: {
   const value = await apiFetch<unknown>(
     `/alerts/${query ? `?${query}` : ""}`
   );
-  return parseAlertListResponse(value, "/alerts/");
+  return parseAlertListResult(value, "/alerts/");
 }
 
 export async function getAlert(alertId: number): Promise<Alert> {

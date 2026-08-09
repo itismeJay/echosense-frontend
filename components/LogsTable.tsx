@@ -51,8 +51,8 @@ export default function LogsTable({
           (SEVERITY_ORDER[a.severity] ?? 3) -
           (SEVERITY_ORDER[b.severity] ?? 3);
       }
-      else if (sortKey === "confidence") cmp = a.confidence - b.confidence;
-      else if (sortKey === "duration") cmp = a.duration - b.duration;
+      else if (sortKey === "confidence") cmp = (a.confidence ?? -1) - (b.confidence ?? -1);
+      else if (sortKey === "duration") cmp = (a.duration ?? -1) - (b.duration ?? -1);
       else cmp = a.created_at.localeCompare(b.created_at);
       return sortDir === "asc" ? cmp : -cmp;
     });
@@ -150,16 +150,16 @@ export default function LogsTable({
                         <div className="w-14 bg-gray-100 dark:bg-white/5 rounded-full h-1.5 hidden sm:block shrink-0">
                           <div
                             className="h-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
-                            style={{ width: `${Math.round(row.confidence * 100)}%` }}
+                            style={{ width: `${Math.round((row.confidence ?? 0) * 100)}%` }}
                           />
                         </div>
                         <span className="text-gray-600 dark:text-gray-300 text-xs font-mono">
-                          {formatConfidence(row.confidence)}
+                          {row.confidence != null ? formatConfidence(row.confidence) : "—"}
                         </span>
                       </div>
                     </td>
                     <td className="py-3 px-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
-                      {row.duration.toFixed(1)}s
+                      {row.duration != null ? `${row.duration.toFixed(1)}s` : "—"}
                     </td>
                     <td className="py-3 px-3 hidden lg:table-cell">
                       {firstCat ? (

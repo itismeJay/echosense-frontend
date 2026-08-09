@@ -4,13 +4,18 @@ import { useMemo, useState } from "react";
 import { ChevronDown, Download, RefreshCw, Search } from "lucide-react";
 import { useAlerts } from "@/lib/AlertsProvider";
 import type { AlertLanguage, Severity } from "@/lib/types";
-import { alertStatusLabel } from "@/lib/alert-presentation";
 import {
-  categoryLabel,
-  csvEscape,
-  formatLanguageConfidence,
-  languageLabel,
-} from "@/lib/format";
+  classroomLabel,
+  deliveryStatusLabel,
+  eventTime,
+  isTestAlert,
+  monitoredTermCount,
+  pushStatusLabel,
+  reviewStatusLabel,
+  schoolLabel,
+  triggerTypeLabel,
+} from "@/lib/alert-presentation";
+import { csvEscape } from "@/lib/format";
 import AlertCard from "./AlertCard";
 import AlertListSkeleton from "./AlertListSkeleton";
 
@@ -22,9 +27,9 @@ type TriggerFilter = "all" | "threat" | "hard" | "repeated" | "medium" | "soft";
 
 const PRIORITIES: { label: string; value: PriorityFilter }[] = [
   { label: "All priorities", value: "all" },
-  { label: "High", value: "high" },
-  { label: "Medium", value: "medium" },
-  { label: "Low", value: "low" },
+  { label: "HIGH", value: "high" },
+  { label: "MEDIUM", value: "medium" },
+  { label: "LOW", value: "low" },
 ];
 
 const CATEGORY_OPTIONS: { label: string; value: CategoryFilter }[] = [
@@ -71,7 +76,16 @@ interface AlertCollectionProps {
 }
 
 export default function AlertCollection({ mode }: AlertCollectionProps) {
-  const { alerts, loading, error, errorStatus, refresh } = useAlerts();
+  const {
+    alerts,
+    loading,
+    error,
+    errorStatus,
+    warning,
+    isStale,
+    lastUpdated,
+    refresh,
+  } = useAlerts();
   const [priority, setPriority] = useState<PriorityFilter>("all");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<CategoryFilter>("all");
@@ -125,33 +139,28 @@ export default function AlertCollection({ mode }: AlertCollectionProps) {
     const headers = [
       "ID",
       "Priority",
+      "Trigger Type",
+      "Test Alert",
       "Classroom",
-      "Status",
-      "Language",
-      "Language Confidence",
-      "Possible Matched Terms",
-      "Possible Concern Categories",
-      "Possible Detected Phrase",
-      "Created At",
+      "School",
+      "Review Status",
+      "Monitored-term Occurrences",
+      "Delivery Status",
+      "Push Status",
+      "Event Time",
     ];
     const rows = filtered.map((alert) => [
       alert.id,
       alert.severity,
-      csvEscape(alert.location),
-      csvEscape(alertStatusLabel()),
-      languageLabel(alert.language),
-      formatLanguageConfidence(alert.language_confidence) ?? "",
-      csvEscape(
-        (alert.matched_terms ?? [])
-          .map(
-            (matchedTerm) =>
-              `${matchedTerm.term} [${languageLabel(matchedTerm.language)}]`
-          )
-          .join("; ")
-      ),
-      csvEscape((alert.categories ?? []).map(categoryLabel).join("; ")),
-      csvEscape(alert.transcribed_text ?? ""),
-      alert.created_at,
+      csvEscape(triggerTypeLabel(alert)),
+      isTestAlert(alert) ? "YES — TEST DATA" : "No",
+      csvEscape(classroomLabel(alert)),
+      csvEscape(schoolLabel(alert)),
+      csvEscape(reviewStatusLabel(alert)),
+      monitoredTermCount(alert),
+      csvEscape(deliveryStatusLabel(alert)),
+      csvEscape(pushStatusLabel(alert)),
+      eventTime(alert),
     ]);
     const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -205,6 +214,17 @@ export default function AlertCollection({ mode }: AlertCollectionProps) {
             Retry
           </button>
           }
+        </div>
+      )}
+
+      {(warning || isStale) && (
+        <div
+          role="status"
+          className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100"
+        >
+          {isStale
+            ? `Showing retained alert data because the latest poll failed${lastUpdated ? ` (last updated ${lastUpdated.toLocaleTimeString()})` : ""}.`
+            : warning}
         </div>
       )}
 
@@ -307,7 +327,7 @@ export default function AlertCollection({ mode }: AlertCollectionProps) {
 
       {loading && alerts.length === 0 ? (
         <AlertListSkeleton count={isHistory ? 6 : 4} />
-      ) : visible.length === 0 ? (
+      ) : error && alerts.length === 0 ? null : visible.length === 0 ? (
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center dark:border-slate-700 dark:bg-slate-900">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
             {filtered.length === 0 && alerts.length > 0

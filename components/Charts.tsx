@@ -88,7 +88,7 @@ function getConfidenceOverTime(alerts: Alert[]) {
     .slice(-20)
     .map((a, i) => ({
       index: i + 1,
-      confidence: Math.round(a.confidence * 100),
+      confidence: a.confidence == null ? null : Math.round(a.confidence * 100),
     }));
 }
 

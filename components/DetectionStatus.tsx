@@ -81,13 +81,13 @@ export default function DetectionStatus({
               <span className="text-gray-400 dark:text-gray-500">
                 Detection Confidence:{" "}
                 <span className="text-red-500 dark:text-red-300 font-bold">
-                  {formatConfidence(latest.confidence)}
+                  {latest.confidence != null ? formatConfidence(latest.confidence) : "Unavailable"}
                 </span>
               </span>
               <span className="text-gray-400 dark:text-gray-500">
                 Duration:{" "}
                 <span className="text-red-500 dark:text-red-300 font-bold">
-                  {latest.duration.toFixed(1)}s
+                  {latest.duration != null ? `${latest.duration.toFixed(1)}s` : "Unavailable"}
                 </span>
               </span>
             </div>
@@ -114,7 +114,7 @@ export default function DetectionStatus({
                 {formatTimestamp(latest.created_at)}
               </span>
               <span className="text-xs text-gray-300 dark:text-gray-600">
-                · {formatConfidence(latest.confidence)}
+                · {latest.confidence != null ? formatConfidence(latest.confidence) : "Confidence unavailable"}
               </span>
             </div>
           </div>

@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   Clock3,
+  CircleHelp,
   Info,
   Tags,
   Volume2,
@@ -15,10 +16,17 @@ import {
 import type { Alert } from "@/lib/types";
 import {
   exactTranscript,
+  HISTORICAL_SEVERITY_EVIDENCE_MESSAGE,
   HUMAN_REVIEW_NOTE,
   matchedTermEvidenceLabel,
+  monitoredTermSummary,
   NO_MATCHED_TERMS_MESSAGE,
   REQUIRED_REVIEW_NOTICE,
+  severityReasonLabel,
+  storedTranscript,
+  supportingEvidenceLabel,
+  termCategoryEvidenceLabel,
+  UNAVAILABLE_SEVERITY_EVIDENCE_MESSAGE,
   uniqueMatchedTerms,
   yamnetRanExplanation,
 } from "@/lib/alert-presentation";
@@ -31,6 +39,7 @@ import {
 import DurationGateBadge from "./DurationGateBadge";
 import LanguageBadge from "./LanguageBadge";
 import WaveformDisplay from "./WaveformDisplay";
+import StructuredEvidence from "./StructuredEvidence";
 
 interface AlertEvidenceProps {
   alert: Alert;
@@ -89,6 +98,16 @@ export default function AlertEvidence({
     alert.language_confidence
   );
   const yamnetExplanation = yamnetRanExplanation(alert.yamnet_ran);
+  const severityEvidence = alert.severity_evidence;
+  const severityReasons =
+    alert.severity_reasons.length > 0
+      ? alert.severity_reasons
+      : severityEvidence?.reasons ?? [];
+  const severityTermCategories = Object.entries(
+    severityEvidence?.term_categories ?? {}
+  );
+  const supportingEvidence = severityEvidence?.supporting_evidence ?? [];
+  const transcript = storedTranscript(alert);
 
   return (
     <div>
@@ -106,11 +125,116 @@ export default function AlertEvidence({
 
       {isOpen && (
         <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <section aria-labelledby={`severity-explanation-${alert.id}`}>
+            <div className="flex items-start gap-3">
+              <CircleHelp
+                className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300"
+                aria-hidden="true"
+              />
+              <div>
+                <h2
+                  id={`severity-explanation-${alert.id}`}
+                  className="text-base font-semibold text-slate-950 dark:text-white"
+                >
+                  Why this alert received this severity
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  Severity helps staff prioritize review. It does not verify
+                  aggression or determine intent.
+                </p>
+              </div>
+            </div>
+
+            {severityEvidence || severityReasons.length > 0 ? (
+              <div className="mt-4 space-y-5 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-950 dark:text-white">
+                    Primary reasons
+                  </h3>
+                  <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                    {severityReasons.map((reason, index) => (
+                      <li
+                        key={`${reason}-${index}`}
+                        className="flex items-start gap-2"
+                      >
+                        <span
+                          className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-600 dark:bg-indigo-300"
+                          aria-hidden="true"
+                        />
+                        <span>{severityReasonLabel(reason)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {severityTermCategories.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">
+                      Matched evidence categories
+                    </h3>
+                    <div className="mt-2 space-y-3">
+                      {severityTermCategories.map(([category, terms]) => (
+                        <div
+                          key={category}
+                          className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+                        >
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                            {termCategoryEvidenceLabel(category)}
+                          </p>
+                          {terms.length > 0 && (
+                            <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                              {terms.map((term, index) => (
+                                <li
+                                  key={`${category}-${term}-${index}`}
+                                  className="break-words"
+                                >
+                                  Matched phrase: “{term}”
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {supportingEvidence.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">
+                      Supporting acoustic or context evidence
+                    </h3>
+                    <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                      {supportingEvidence.map((evidence, index) => (
+                        <li
+                          key={`${evidence}-${index}`}
+                          className="flex items-start gap-2"
+                        >
+                          <span
+                            className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-600 dark:bg-cyan-300"
+                            aria-hidden="true"
+                          />
+                          <span>{supportingEvidenceLabel(evidence)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100">
+                {severityEvidence === null
+                  ? HISTORICAL_SEVERITY_EVIDENCE_MESSAGE
+                  : UNAVAILABLE_SEVERITY_EVIDENCE_MESSAGE}
+              </div>
+            )}
+          </section>
+
           <section aria-labelledby={`phrase-${alert.id}`}>
             <h2 id={`phrase-${alert.id}`} className="text-base font-semibold text-slate-950 dark:text-white">
               Detected transcript
             </h2>
-            {alert.transcribed_text ? (
+            {transcript ? (
               <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-900/70 dark:bg-indigo-950/30">
                 <p className="select-text whitespace-pre-wrap break-words text-sm leading-6 text-slate-800 dark:text-slate-100">
                   {exactTranscript(alert)}
@@ -127,6 +251,10 @@ export default function AlertEvidence({
                 {HUMAN_REVIEW_NOTE}
               </p>
             </div>
+            <p className="mt-3 text-sm text-slate-700 dark:text-slate-200">
+              <span className="font-medium">Transcription status:</span>{" "}
+              {alert.transcription_status ?? "Not recorded"}
+            </p>
           </section>
 
           <section aria-labelledby={`matched-terms-${alert.id}`}>
@@ -179,6 +307,50 @@ export default function AlertEvidence({
               <p>{REQUIRED_REVIEW_NOTICE}</p>
             </div>
           </section>
+
+          <section aria-labelledby={`finalized-terms-${alert.id}`}>
+            <h2 id={`finalized-terms-${alert.id}`} className="text-base font-semibold text-slate-950 dark:text-white">
+              Finalized monitored-term evidence
+            </h2>
+            <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+              {monitoredTermSummary(alert)}
+            </p>
+            {alert.monitored_terms.length > 0 && (
+              <StructuredEvidence
+                evidence={{ monitored_terms: alert.monitored_terms }}
+              />
+            )}
+            {alert.monitored_word_occurrences.length > 0 && (
+              <div className="mt-3 space-y-3">
+                {alert.monitored_word_occurrences.map((occurrence, index) => (
+                  <div key={index}>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Occurrence {index + 1}
+                    </p>
+                    <StructuredEvidence evidence={occurrence} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {([
+            ["Acoustic trigger evidence", alert.acoustic_trigger_evidence],
+            ["Detailed acoustic evidence", alert.detailed_acoustic_evidence],
+            ["Tone evidence", alert.tone_evidence],
+            ["Repetition evidence", alert.repetition_evidence],
+            ["Direct-address evidence", alert.direct_address_evidence],
+            ["Laughter context", alert.laughter_context],
+          ] as const).map(([label, evidence]) => (
+            <section key={label} aria-label={label}>
+              <h2 className="text-base font-semibold text-slate-950 dark:text-white">{label}</h2>
+              {evidence ? (
+                <StructuredEvidence evidence={evidence} />
+              ) : (
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">No recorded details.</p>
+              )}
+            </section>
+          ))}
 
           {(hardHits.length > 0 || softHits.length > 0 || fallbackWords.length > 0) && (
             <section aria-labelledby={`terms-${alert.id}`}>
@@ -235,19 +407,34 @@ export default function AlertEvidence({
             )}
           </section>
 
-          {yamnetExplanation && (
-            <section aria-labelledby={`yamnet-ran-${alert.id}`}>
-              <h2
-                id={`yamnet-ran-${alert.id}`}
-                className="text-base font-semibold text-slate-950 dark:text-white"
-              >
-                Acoustic classification
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
-                {yamnetExplanation}
-              </p>
-            </section>
-          )}
+          <section aria-labelledby={`yamnet-ran-${alert.id}`}>
+            <h2
+              id={`yamnet-ran-${alert.id}`}
+              className="text-base font-semibold text-slate-950 dark:text-white"
+            >
+              Acoustic model (YAMNet)
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+              {yamnetExplanation ??
+                "The acoustic classification status was not recorded for this alert."}
+            </p>
+            {(alert.yamnet_class || alert.yamnet_score != null) && (
+              <dl className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2 dark:text-slate-200">
+                {alert.yamnet_class && (
+                  <div>
+                    <dt className="font-medium">Stored class</dt>
+                    <dd className="mt-1 break-words">{alert.yamnet_class}</dd>
+                  </div>
+                )}
+                {alert.yamnet_score != null && (
+                  <div>
+                    <dt className="font-medium">Stored score</dt>
+                    <dd className="mt-1">{alert.yamnet_score.toFixed(2)}</dd>
+                  </div>
+                )}
+              </dl>
+            )}
+          </section>
 
           <details className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50">
             <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-semibold text-slate-800 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-slate-100">
@@ -257,14 +444,14 @@ export default function AlertEvidence({
 
             <div className="mt-4 space-y-5 border-t border-slate-200 pt-4 dark:border-slate-800">
               <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200">
+                {alert.confidence != null && <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200">
                   <BarChart2 className="h-3.5 w-3.5" aria-hidden="true" />
                   Detection Confidence: {Math.round(alert.confidence * 100)}%
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                </span>}
+                {alert.duration != null && <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
                   <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
                   Duration: {alert.duration.toFixed(1)}s
-                </span>
+                </span>}
                 {alert.required_duration != null && (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
                     <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />

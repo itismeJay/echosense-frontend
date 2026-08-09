@@ -28,10 +28,13 @@ export default function AlertBanner({ alert }: AlertBannerProps) {
         <p className="text-sm font-semibold text-red-700 dark:text-red-300">
           Possible Aggression Alert — {alert.location}
         </p>
-        <p className="text-xs text-red-500/70 dark:text-red-400/70 mt-0.5">
-          Detection Confidence: {formatConfidence(alert.confidence)} · Duration:{" "}
-          {alert.duration.toFixed(1)}s
-        </p>
+        {(alert.confidence != null || alert.duration != null) && (
+          <p className="text-xs text-red-500/70 dark:text-red-400/70 mt-0.5">
+            {alert.confidence != null && `Detection Confidence: ${formatConfidence(alert.confidence)}`}
+            {alert.confidence != null && alert.duration != null && " · "}
+            {alert.duration != null && `Duration: ${alert.duration.toFixed(1)}s`}
+          </p>
+        )}
       </div>
       <button
         type="button"

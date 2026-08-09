@@ -1,8 +1,47 @@
 export type Severity = "high" | "medium" | "low";
 export type AlertSeverity = Severity | "unknown";
+export type CanonicalSeverity = "LOW" | "MEDIUM" | "HIGH";
 export type AlertStatus = "active" | "resolved" | "unknown";
+export type AlertTriggerType = "KEYWORD" | "ACOUSTIC" | "TEST" | "UNKNOWN";
+export type DeliveryStatus = "stored" | "unknown";
+export type PushStatus =
+  | "pending"
+  | "accepted"
+  | "partial"
+  | "rejected"
+  | "failed"
+  | "skipped"
+  | "unknown";
 export type AlertLanguage = "fil" | "ceb" | "en" | "mixed" | "unknown";
 export type MonitoredTermLanguage = "fil" | "ceb" | "en";
+
+export type EvidenceValue =
+  | string
+  | number
+  | boolean
+  | null
+  | EvidenceValue[]
+  | { [key: string]: EvidenceValue };
+export type EvidenceObject = Record<string, EvidenceValue>;
+
+/** Raw network DTO. Every property remains unknown until alert-contract validates it. */
+export interface RawAlertDto {
+  [key: string]: unknown;
+  id?: unknown;
+  event_id?: unknown;
+  schema_version?: unknown;
+  trigger_type?: unknown;
+  severity?: unknown;
+  severity_level?: unknown;
+  created_at?: unknown;
+}
+
+export interface SeverityEvidence {
+  level: CanonicalSeverity;
+  reasons: string[];
+  term_categories?: Record<string, string[]>;
+  supporting_evidence?: string[];
+}
 
 export interface MatchedTerm {
   term_id: number;
@@ -26,15 +65,48 @@ export interface LoginResponse {
 export interface Alert {
   id: number;
   event_id?: string | null;
+  schema_version: number | null;
+  trigger_type: AlertTriggerType;
   severity: AlertSeverity;
-  confidence: number;
-  duration: number;
+  severity_level: CanonicalSeverity;
+  severity_reasons: string[];
+  severity_evidence?: SeverityEvidence | null;
+  review_message: string;
+  review_notice?: string | null;
+  confidence?: number | null;
+  duration?: number | null;
   location: string;
+  classroom_name?: string | null;
+  school_name?: string | null;
+  device_id?: string | null;
+  device_code?: string | null;
+  device_display_name?: string | null;
+  device_identifier?: string | null;
+  device_source?: EvidenceObject | null;
   status: AlertStatus;
   created_at: string;
+  event_start_timestamp?: string | null;
+  event_end_timestamp?: string | null;
+  trigger_timestamp?: string | null;
+  test_mode: boolean;
+  delivery_status: DeliveryStatus;
+  push_status: PushStatus;
+  push_attempt_count?: number | null;
+  push_submitted_at?: string | null;
 
   // ── Rich evidence (all optional — backend may omit on older alerts) ──
+  transcript?: string | null;
   transcribed_text?: string | null;
+  transcription_status?: string | null;
+  monitored_terms: EvidenceValue[];
+  monitored_word_detected?: boolean | null;
+  monitored_word_occurrences: EvidenceObject[];
+  acoustic_trigger_evidence?: EvidenceObject | null;
+  detailed_acoustic_evidence?: EvidenceObject | null;
+  tone_evidence?: EvidenceObject | null;
+  repetition_evidence?: EvidenceObject | null;
+  direct_address_evidence?: EvidenceObject | null;
+  laughter_context?: EvidenceObject | null;
   detected_words?: string[] | null;
   yamnet_class?: string | null;
   yamnet_score?: number | null;

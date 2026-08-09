@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EchoSense frontend
 
-## Getting Started
+EchoSense is a Next.js reviewer interface for unverified possible-aggression alerts. Alert evidence is available only to authenticated `admin`, `staff`, and `counselor` users.
 
-First, run the development server:
+## API configuration
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+`NEXT_PUBLIC_API_URL` is the authoritative backend origin. It is normalized at runtime, so a trailing slash is optional. The Render backend remains a deliberate fallback only when the variable is absent.
+
+Copy `.env.example` to `.env.local`, then choose one backend origin:
+
+```dotenv
+# Backend running on the same computer as the browser
+NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# Backend on the EchoSense LAN host (current Phase 3 development setup)
+NEXT_PUBLIC_API_URL=http://192.168.1.92:8000
+
+# Production
+NEXT_PUBLIC_API_URL=https://echosense-backend-75h3.onrender.com
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Restart `npm run dev` after changing a public environment variable. For LAN testing, start Next.js on a LAN-accessible interface and open the computer's LAN URL from the test device.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Backend CORS allowlist
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The backend must allow the exact browser origin in use (scheme, host, and port):
 
-## Learn More
+- Local browser: `http://localhost:3000`
+- LAN browser on the current Phase 3 host: `http://192.168.1.92:3000`
+- Deployed Vercel frontend: `https://echosense-frontend.vercel.app`
 
-To learn more about Next.js, take a look at the following resources:
+Do not use the API origin as the frontend CORS origin. If a custom production domain is attached, allow that exact HTTPS origin as well. If both `localhost` and `127.0.0.1` are used during development, allow both explicitly.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Development
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm install
+npm run dev
+```
 
-## Deploy on Vercel
+The alert list polls `GET /alerts/` every three seconds. Notification deep links at `/alert/<positive-id>` redirect to the canonical authenticated `/alerts/<positive-id>` detail page.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Verification
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm test
+npm run lint
+./node_modules/.bin/tsc --noEmit --incremental false
+npm run build
+git diff --check
+```

@@ -1,54 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server";
+import { parseValidJwtClaims } from "./lib/auth-token";
 
-const ADMIN_ONLY_PATHS = ['/users', '/admin']
-const COUNSELOR_PATHS = ['/counselor', '/analytics']
+const ADMIN_ONLY_PATHS = ["/users", "/admin"];
+const COUNSELOR_PATHS = ["/counselor", "/analytics"];
 
-function getRoleFromToken(token: string): string | null {
-  try {
-    const base64url = token.split('.')[1]
-    const normalized = base64url.replace(/-/g, '+').replace(/_/g, '/')
-    const base64 = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
-    const payload = JSON.parse(atob(base64)) as { role?: unknown }
-    return typeof payload.role === 'string' ? payload.role : null
-  } catch {
-    return null
-  }
+function redirectAndClearToken(request: NextRequest, destination: string) {
+  const response = NextResponse.redirect(new URL(destination, request.url));
+  response.cookies.delete("echosense_token");
+  return response;
+}
+
+function continueAndClearToken() {
+  const response = NextResponse.next();
+  response.cookies.delete("echosense_token");
+  return response;
 }
 
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get('echosense_token')?.value
-  const { pathname } = request.nextUrl
-  const isLogin = pathname === '/login'
+  const token = request.cookies.get("echosense_token")?.value;
+  const claims = token ? parseValidJwtClaims(token) : null;
+  const { pathname } = request.nextUrl;
+  const isLogin = pathname === "/login";
 
-  if (isLogin && token) return NextResponse.redirect(new URL('/dashboard', request.url))
-  if (!isLogin && !token) return NextResponse.redirect(new URL('/login', request.url))
+  if (isLogin) {
+    return claims
+      ? NextResponse.redirect(new URL("/dashboard", request.url))
+      : token
+        ? continueAndClearToken()
+        : NextResponse.next();
+  }
+  if (!claims) return redirectAndClearToken(request, "/login");
 
-  if (token && ADMIN_ONLY_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
-    const role = getRoleFromToken(token)
-    if (role !== 'admin') return NextResponse.redirect(new URL('/dashboard', request.url))
+  if (
+    ADMIN_ONLY_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`)) &&
+    claims.role !== "admin"
+  ) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if (token && COUNSELOR_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
-    const role = getRoleFromToken(token)
-    if (role !== 'admin' && role !== 'counselor') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
+  if (
+    COUNSELOR_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`)) &&
+    claims.role !== "admin" &&
+    claims.role !== "counselor"
+  ) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  return NextResponse.next()
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/alerts/:path*',
-    '/analytics/:path*',
-    '/logs/:path*',
-    '/profile/:path*',
-    '/counselor/:path*',
-    '/admin/:path*',
-    '/settings/:path*',
-    '/users/:path*',
-    '/login',
+    "/dashboard/:path*",
+    "/alert/:path*",
+    "/alerts/:path*",
+    "/analytics/:path*",
+    "/logs/:path*",
+    "/profile/:path*",
+    "/counselor/:path*",
+    "/admin/:path*",
+    "/settings/:path*",
+    "/users/:path*",
+    "/login",
   ],
-}
+};

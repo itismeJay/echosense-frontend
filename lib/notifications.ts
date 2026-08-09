@@ -71,8 +71,12 @@ export function showAlertBrowserNotification(alert: Alert): void {
     return;
   }
 
-  new Notification("High priority possible alert", {
-    body: `${alert.location} · Automated and unverified`,
+  const isTest = alert.test_mode || alert.trigger_type === "TEST";
+  new Notification(
+    isTest ? "TEST ALERT — synthetic notification" : "High priority possible alert",
+    {
+    body: `${alert.location} · ${isTest ? "Test data only" : "Automated and unverified"}`,
     tag: `echosense-alert-${alert.id}`,
-  });
+    }
+  );
 }
