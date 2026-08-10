@@ -84,6 +84,18 @@ function nullableString(value: unknown): string | null | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+function nullableUuid(
+  value: unknown,
+  path: string,
+  endpoint: string
+): string | null | undefined {
+  if (value === undefined || value === null) return value;
+  if (typeof value !== "string" || !isUuid(value)) {
+    throw new AlertContractError(endpoint, `${path} must be a UUID string or null`);
+  }
+  return value;
+}
+
 function validTimestamp(value: unknown): string | undefined {
   return typeof value === "string" && !Number.isNaN(Date.parse(value))
     ? value
@@ -347,6 +359,8 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
     confidence,
     duration,
     location: normalizedClassroom ?? "Classroom unavailable",
+    classroom_id: nullableUuid(value.classroom_id, `${path}.classroom_id`, endpoint),
+    school_id: nullableUuid(value.school_id, `${path}.school_id`, endpoint),
     classroom_name: classroomName,
     school_name: nullableString(value.school_name),
     device_id: nullableString(value.device_id),

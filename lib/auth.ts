@@ -8,6 +8,8 @@ export type AuthUser = {
   id: string
   email: string
   role: 'admin' | 'staff' | 'counselor'
+  school_id: string | null
+  is_super_admin: boolean
 }
 
 let currentUserRequest: {
@@ -36,7 +38,13 @@ function getTokenFromCookie(): string | undefined {
 function decodeToken(token: string): AuthUser | null {
   const payload = parseValidJwtClaims(token)
   return payload
-    ? { id: payload.sub, email: payload.email, role: payload.role }
+    ? {
+        id: payload.sub,
+        email: payload.email,
+        role: payload.role,
+        school_id: null,
+        is_super_admin: false,
+      }
     : null
 }
 
@@ -45,13 +53,27 @@ function parseAuthUser(value: unknown): AuthUser | null {
     return null
   }
   const user = value as Record<string, unknown>
-  return (
+  const validSchoolId =
+    user.school_id === undefined ||
+    user.school_id === null ||
+    (typeof user.school_id === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(user.school_id))
+  if (
     typeof user.id === 'string' &&
     typeof user.email === 'string' &&
-    ['admin', 'staff', 'counselor'].includes(String(user.role))
-  )
-    ? user as AuthUser
-    : null
+    ['admin', 'staff', 'counselor'].includes(String(user.role)) &&
+    validSchoolId &&
+    (user.is_super_admin === undefined || typeof user.is_super_admin === 'boolean')
+  ) {
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role as AuthUser['role'],
+      school_id: typeof user.school_id === 'string' ? user.school_id : null,
+      is_super_admin: user.is_super_admin === true,
+    }
+  }
+  return null
 }
 
 function redirectInvalidSession() {
@@ -126,29 +148,27 @@ export async function login(email: string, password: string): Promise<AuthUser> 
   }
   const data = await res.json() as {
     access_token?: unknown
-    user?: { id?: unknown; email?: unknown; role?: unknown }
+    user?: unknown
   }
+  const user = parseAuthUser(data.user)
   if (
     typeof data.access_token !== 'string' ||
-    !data.user ||
-    typeof data.user.id !== 'string' ||
-    typeof data.user.email !== 'string' ||
-    !['admin', 'staff', 'counselor'].includes(String(data.user.role))
+    !user
   ) {
     throw new Error('The server returned an invalid login response')
   }
   const claims = parseValidJwtClaims(data.access_token)
   if (
     !claims ||
-    claims.sub !== data.user.id ||
-    claims.email !== data.user.email ||
-    claims.role !== data.user.role
+    claims.sub !== user.id ||
+    claims.email !== user.email ||
+    claims.role !== user.role
   ) {
     throw new Error('The server returned an invalid or expired login token')
   }
   setAuthCookie(data.access_token)
   currentUserRequest = null
-  return data.user as AuthUser
+  return user
 }
 
 export function logout() {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   Clock3,
+  Cpu,
   Info,
   MapPin,
   School,
@@ -75,6 +76,15 @@ export default function AlertCard({ alert, compact = false }: AlertCardProps) {
           <School className="h-4 w-4" aria-hidden="true" />
           <dt className="font-medium">School:</dt>
           <dd>{schoolLabel(alert)}</dd>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Cpu className="h-4 w-4" aria-hidden="true" />
+          <dt className="font-medium">Device:</dt>
+          <dd>
+            {alert.device_display_name?.trim() ||
+              alert.device_code?.trim() ||
+              "Device unavailable"}
+          </dd>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Tags className="h-4 w-4" aria-hidden="true" />

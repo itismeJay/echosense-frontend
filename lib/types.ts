@@ -54,6 +54,8 @@ export interface User {
   id: string;
   email: string;
   role: "admin" | "staff" | "counselor";
+  school_id?: string | null;
+  is_super_admin?: boolean;
 }
 
 export interface LoginResponse {
@@ -76,6 +78,8 @@ export interface Alert {
   confidence?: number | null;
   duration?: number | null;
   location: string;
+  classroom_id?: string | null;
+  school_id?: string | null;
   classroom_name?: string | null;
   school_name?: string | null;
   device_id?: string | null;
@@ -127,6 +131,107 @@ export interface Alert {
   soft_hits?: string[] | null;
   duration_gate?: string | null;
   required_duration?: number | null;
+}
+
+export interface SchoolSummary {
+  id: string;
+  name: string;
+}
+
+export interface ClassroomDeviceSummary {
+  id: string;
+  device_code: string;
+  display_name: string;
+  is_active: boolean;
+}
+
+export interface Classroom {
+  id: string;
+  school_id: string;
+  school_name: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  devices: ClassroomDeviceSummary[];
+}
+
+export type DeviceAssignmentState = "assigned" | "unassigned";
+
+export interface EdgeDevice {
+  id: string;
+  device_code: string;
+  display_name: string;
+  school_id: string | null;
+  school_name: string | null;
+  classroom_id: string | null;
+  classroom_name: string | null;
+  assignment_state: DeviceAssignmentState;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  last_seen_at: string | null;
+  assigned_at: string | null;
+  key_rotated_at: string | null;
+}
+
+export interface ClassroomCreateRequest {
+  school_id: string;
+  name: string;
+}
+
+export interface ClassroomUpdateRequest {
+  name?: string;
+  is_active?: boolean;
+}
+
+export interface DeviceCreateRequest {
+  device_code: string;
+  display_name: string;
+  school_id?: string;
+  classroom_id?: string;
+}
+
+export interface DeviceUpdateRequest {
+  display_name?: string;
+}
+
+export interface DeviceAssignmentRequest {
+  classroom_id: string;
+  expected_current_classroom_id?: string | null;
+}
+
+export interface DeviceRegistrationResult {
+  device: EdgeDevice;
+  device_key: string;
+  warning: "Store this key securely. It will not be shown again.";
+}
+
+export type DeviceRotationResult = DeviceRegistrationResult;
+
+export interface ClassroomFilters {
+  school_id?: string;
+  is_active?: boolean;
+}
+
+export interface DeviceFilters {
+  school_id?: string;
+  classroom_id?: string;
+  is_active?: boolean;
+  unassigned?: boolean;
+}
+
+export interface AlertFilters {
+  event_id?: string;
+  classroom_id?: string;
+  school_id?: string;
+  device_id?: string;
+  category?: string;
+  language?: AlertLanguage;
+  severity?: string;
+  duration_gate?: string;
+  skip?: number;
+  limit?: number;
 }
 
 export interface CategoryStats {
