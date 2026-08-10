@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseValidJwtClaims } from "./lib/auth-token";
 
-const ADMIN_ONLY_PATHS = ["/users", "/admin"];
+const ADMIN_ONLY_PATHS = ["/users", "/admin", "/classrooms", "/devices"];
 const COUNSELOR_PATHS = ["/counselor", "/analytics"];
 
 function redirectAndClearToken(request: NextRequest, destination: string) {
@@ -61,6 +61,8 @@ export const config = {
     "/admin/:path*",
     "/settings/:path*",
     "/users/:path*",
+    "/classrooms/:path*",
+    "/devices/:path*",
     "/login",
   ],
 };

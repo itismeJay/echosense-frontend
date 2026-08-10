@@ -19,6 +19,8 @@ import {
   UserRoundCheck,
   UserRound,
   Terminal,
+  DoorOpen,
+  Cpu,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCurrentUser } from "@/lib/auth";
@@ -34,6 +36,8 @@ const BASE_NAV_ITEMS = [
 ];
 
 const ADMIN_NAV_ITEMS = [
+  { href: "/classrooms",      icon: DoorOpen,      label: "Classrooms" },
+  { href: "/devices",         icon: Cpu,           label: "Edge Devices" },
   { href: "/users",            icon: Users,         label: "User Accounts" },
   { href: "/admin/heartbeat",  icon: HeartPulse,    label: "Device Status" },
   { href: "/admin/dictionary", icon: BookOpen,      label: "Monitored Terms" },
