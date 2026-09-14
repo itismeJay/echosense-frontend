@@ -23,34 +23,34 @@ const FEATURES = [
     icon: MapPin,
     title: "Classroom context first",
     description:
-      "Focus on where and when a possible concern occurred instead of technical model measurements.",
+      "Focus on where and when a possible concern happened, not confusing technical numbers.",
   },
   {
     icon: ShieldCheck,
     title: "For authorized school staff",
     description:
-      "The dashboard supports teachers, guidance counselors, and administrators with role-appropriate navigation.",
+      "Teachers, counselors, and administrators each see the menu options built for their job.",
   },
 ];
 
 const STEPS = [
   {
     number: "1",
-    title: "The classroom device monitors sound patterns",
+    title: "The classroom device listens for certain sounds",
     description:
-      "It looks for signals that may need the attention of authorized school staff.",
+      "It listens for sounds that may need a staff member's attention.",
   },
   {
     number: "2",
     title: "A possible alert is recorded",
     description:
-      "The alert includes its priority, classroom, time, and available supporting information.",
+      "The alert includes how urgent it is, the classroom, the time, and any extra details.",
   },
   {
     number: "3",
     title: "School staff view the alert",
     description:
-      "Staff use classroom context and school procedures before drawing any conclusion.",
+      "Staff use what they know about the classroom and follow school procedures before deciding what to do.",
   },
 ];
 
@@ -116,8 +116,8 @@ export default function LandingPage() {
                 Possible classroom concerns, shown clearly.
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg dark:text-slate-300">
-                EchoSense helps authorized school personnel see possible aggression
-                alerts with the classroom, time, priority, and available context.
+                EchoSense helps school staff see possible aggression
+                alerts with the classroom, time, priority, and any extra details.
                 Automated alerts are unverified and require human judgment.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
