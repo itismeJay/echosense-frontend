@@ -1,7 +1,11 @@
 "use client";
 
-import { Mail, Palette, ShieldCheck, UserRound } from "lucide-react";
+import toast from "react-hot-toast";
+import { KeyRound, Mail, Palette, ShieldCheck, UserRound } from "lucide-react";
+import ChangePasswordForm from "@/components/ChangePasswordForm";
+import NotificationSettings from "@/components/NotificationSettings";
 import ThemeToggle from "@/components/ThemeToggle";
+import { isSuperAdmin } from "@/lib/access";
 import { useCurrentUser } from "@/lib/auth";
 
 const ROLE_LABELS = {
@@ -64,13 +68,35 @@ export default function ProfilePage() {
                   Access level
                 </dt>
                 <dd className="mt-1 font-medium text-slate-950 dark:text-white">
-                  {ROLE_LABELS[user.role]}
+                  {isSuperAdmin(user) ? "Super Administrator" : ROLE_LABELS[user.role]}
                 </dd>
               </div>
             </div>
           </dl>
         )}
       </section>
+
+      <section
+        aria-labelledby="change-password-title"
+        className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900"
+      >
+        <div className="mb-5 flex gap-3">
+          <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
+          <div>
+            <h2 id="change-password-title" className="font-bold text-slate-950 dark:text-white">
+              Change password
+            </h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              Enter your current password, then choose a new one.
+            </p>
+          </div>
+        </div>
+        <ChangePasswordForm onChanged={() => void toast.success("Password changed.")} />
+      </section>
+
+      <div className="mt-5">
+        <NotificationSettings />
+      </div>
 
       <section
         aria-labelledby="appearance-title"
@@ -94,7 +120,7 @@ export default function ProfilePage() {
 
       <p className="mt-5 flex gap-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
         <UserRound className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        Account changes are managed by an administrator.
+        Email address and access level are managed by an administrator.
       </p>
     </div>
   );
