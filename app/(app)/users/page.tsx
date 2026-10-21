@@ -4,10 +4,15 @@ import {
   FormEvent,
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import toast from "react-hot-toast";
 import {
+  AlertCircle,
+  Building2,
+  Info,
+  KeyRound,
   Loader2,
   Mail,
   RefreshCw,
@@ -19,11 +24,19 @@ import {
 import AccessibleDialog from "@/components/AccessibleDialog";
 import {
   ApiError,
+  createUser,
   deleteUser,
   getUsers,
-  registerUser,
 } from "@/lib/api";
+import { canFilterBySchool, isSuperAdmin } from "@/lib/access";
 import { useCurrentUser } from "@/lib/auth";
+import {
+  buildNewUserPayload,
+  selectableSchools,
+  userCreateErrorMessage,
+  type NewUserRole,
+} from "@/lib/user-admin";
+import { useSchools } from "@/lib/useSchools";
 import type { User } from "@/lib/types";
 
 const ROLE_LABELS: Record<User["role"], string> = {
@@ -35,19 +48,44 @@ const ROLE_LABELS: Record<User["role"], string> = {
 const INPUT =
   "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
 
+function roleLabel(user: User): string {
+  return isSuperAdmin(user) ? "Super Administrator" : ROLE_LABELS[user.role];
+}
+
 export default function UsersPage() {
   const currentUser = useCurrentUser();
+  const creatorIsSuperAdmin = isSuperAdmin(currentUser);
+  const showSchoolFilter = canFilterBySchool(currentUser);
+  const { schools } = useSchools(creatorIsSuperAdmin);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [schoolFilter, setSchoolFilter] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<User["role"]>("staff");
+  const [role, setRole] = useState<NewUserRole>("staff");
+  const [schoolId, setSchoolId] = useState("");
+  const [newSuperAdmin, setNewSuperAdmin] = useState(false);
+  const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const schoolNames = useMemo(
+    () => new Map(schools.map((school) => [school.id, school.name])),
+    [schools]
+  );
+  // GET /users has no school filter, so the super-admin filter runs on the loaded list.
+  const visibleUsers = useMemo(
+    () =>
+      showSchoolFilter && schoolFilter
+        ? users.filter((user) =>
+            schoolFilter === "none" ? !user.school_id : user.school_id === schoolFilter
+          )
+        : users,
+    [schoolFilter, showSchoolFilter, users]
+  );
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -72,25 +110,35 @@ export default function UsersPage() {
     setEmail("");
     setPassword("");
     setRole("staff");
+    setSchoolId(showSchoolFilter && schoolFilter !== "none" ? schoolFilter : "");
+    setNewSuperAdmin(false);
+    setFormError("");
     setShowCreate(true);
   };
 
   const handleCreate = async (event: FormEvent) => {
     event.preventDefault();
+    const built = buildNewUserPayload(
+      { email, password, role, schoolId, superAdmin: newSuperAdmin },
+      creatorIsSuperAdmin
+    );
+    if ("error" in built) {
+      setFormError(built.error);
+      return;
+    }
+    setFormError("");
     setSubmitting(true);
     try {
-      await registerUser({ email, password, role });
+      await createUser(built.payload);
       setShowCreate(false);
       await loadUsers();
-      toast.success("User account created.");
+      toast.success("User account created. They must change the password on first sign-in.");
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        toast.error("That email address is already registered.");
-      } else if (err instanceof ApiError && err.status === 403) {
-        toast.error("You don’t have permission to create this account.");
-      } else {
-        toast.error("We couldn’t create the user account.");
-      }
+      setFormError(
+        err instanceof ApiError
+          ? userCreateErrorMessage(err.status, err.message)
+          : "We couldn’t create the user account."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -117,6 +165,7 @@ export default function UsersPage() {
     }
   };
 
+  const creatingSuperAdmin = creatorIsSuperAdmin && newSuperAdmin && role === "admin";
 
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">
@@ -130,8 +179,9 @@ export default function UsersPage() {
               User Accounts
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              View authorized users, assign roles when creating accounts, and
-              remove accounts using the current account system.
+              {creatorIsSuperAdmin
+                ? "View accounts in every school, create accounts for a chosen school, and remove accounts."
+                : "View the accounts in your school, create new ones, and remove accounts."}
             </p>
           </div>
           <button
@@ -144,6 +194,32 @@ export default function UsersPage() {
           </button>
         </div>
       </header>
+
+      {showSchoolFilter && (
+        <div className="mb-5 max-w-xs">
+          <label
+            htmlFor="users-school-filter"
+            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+          >
+            School
+          </label>
+          <select
+            id="users-school-filter"
+            value={schoolFilter}
+            onChange={(event) => setSchoolFilter(event.target.value)}
+            className={INPUT}
+          >
+            <option value="">All schools</option>
+            {schools.map((school) => (
+              <option key={school.id} value={school.id}>
+                {school.name}
+                {school.is_active ? "" : " (inactive)"}
+              </option>
+            ))}
+            <option value="none">No school (super administrators)</option>
+          </select>
+        </div>
+      )}
 
       {loading ? (
         <div role="status" className="grid gap-4 sm:grid-cols-2">
@@ -175,7 +251,7 @@ export default function UsersPage() {
             Retry
           </button>
         </div>
-      ) : users.length === 0 ? (
+      ) : visibleUsers.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
           <Users className="mx-auto h-7 w-7 text-slate-500" aria-hidden="true" />
           <h2 className="mt-3 font-bold text-slate-950 dark:text-white">
@@ -185,10 +261,10 @@ export default function UsersPage() {
       ) : (
         <section aria-label="User accounts">
           <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">
-            {users.length} account{users.length === 1 ? "" : "s"}
+            {visibleUsers.length} account{visibleUsers.length === 1 ? "" : "s"}
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
-            {users.map((user) => (
+            {visibleUsers.map((user) => (
               <article
                 key={user.id}
                 className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
@@ -230,10 +306,29 @@ export default function UsersPage() {
                       Access level
                     </dt>
                     <dd className="mt-1 text-sm text-slate-700 dark:text-slate-200">
-                      {ROLE_LABELS[user.role]}
+                      {roleLabel(user)}
                     </dd>
                   </div>
+                  {showSchoolFilter && (
+                    <div>
+                      <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        <Building2 className="h-4 w-4" aria-hidden="true" />
+                        School
+                      </dt>
+                      <dd className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+                        {user.school_id
+                          ? schoolNames.get(user.school_id) ?? "Unknown school"
+                          : "No school"}
+                      </dd>
+                    </div>
+                  )}
                 </dl>
+                {user.must_change_password && (
+                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                    <KeyRound className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    Temporary password: not changed yet
+                  </p>
+                )}
               </article>
             ))}
           </div>
@@ -243,11 +338,15 @@ export default function UsersPage() {
       {showCreate && (
         <AccessibleDialog
           title="Add User Account"
-          description="Create an account for authorized school personnel."
+          description={
+            creatorIsSuperAdmin
+              ? "Create an account for a school, or another super administrator."
+              : "Create an account in your school."
+          }
           onClose={() => setShowCreate(false)}
           closeDisabled={submitting}
         >
-          <form onSubmit={(event) => void handleCreate(event)} className="space-y-4">
+          <form onSubmit={(event) => void handleCreate(event)} className="space-y-4" noValidate>
             <div>
               <label
                 htmlFor="new-user-email"
@@ -276,11 +375,20 @@ export default function UsersPage() {
                 id="new-user-password"
                 type="password"
                 required
+                minLength={8}
                 autoComplete="new-password"
+                aria-describedby="new-user-password-hint"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 className={INPUT}
               />
+              <p
+                id="new-user-password-hint"
+                className="mt-1.5 flex items-start gap-1.5 text-xs text-slate-600 dark:text-slate-300"
+              >
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                At least 8 characters. User must change this password on first login.
+              </p>
             </div>
             <div>
               <label
@@ -292,9 +400,7 @@ export default function UsersPage() {
               <select
                 id="new-user-role"
                 value={role}
-                onChange={(event) =>
-                  setRole(event.target.value as User["role"])
-                }
+                onChange={(event) => setRole(event.target.value as NewUserRole)}
                 className={INPUT}
               >
                 <option value="staff">Teacher / Staff</option>
@@ -302,6 +408,55 @@ export default function UsersPage() {
                 <option value="admin">Administrator</option>
               </select>
             </div>
+            {creatorIsSuperAdmin && role === "admin" && (
+              <label className="flex min-h-11 items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={newSuperAdmin}
+                  onChange={(event) => setNewSuperAdmin(event.target.checked)}
+                  className="h-5 w-5 rounded border-slate-300 accent-indigo-700"
+                />
+                Super administrator (all schools, no school assigned)
+              </label>
+            )}
+            {creatorIsSuperAdmin && !creatingSuperAdmin && (
+              <div>
+                <label
+                  htmlFor="new-user-school"
+                  className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+                >
+                  School
+                </label>
+                <select
+                  id="new-user-school"
+                  required
+                  value={schoolId}
+                  onChange={(event) => setSchoolId(event.target.value)}
+                  className={INPUT}
+                >
+                  <option value="">Select a school</option>
+                  {selectableSchools(schools).map((school) => (
+                    <option key={school.id} value={school.id}>
+                      {school.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {!creatorIsSuperAdmin && (
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                The account is created in your school.
+              </p>
+            )}
+            {formError && (
+              <p
+                role="alert"
+                className="flex items-start gap-2 text-sm font-medium text-red-700 dark:text-red-300"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                {formError}
+              </p>
+            )}
             <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
