@@ -13,7 +13,7 @@ const SYSTEM_SETTINGS_RESPONSE = {
   aggression_duration_threshold: 2,
   device_status: "online",
   last_heartbeat: "2026-07-28T02:00:00Z",
-  vosk_version: "1.0",
+  stt_model_version: "faster-whisper small int8",
   yamnet_version: "1.0",
   last_ota_update: null,
   updated_at: "2026-07-28T02:00:00Z",

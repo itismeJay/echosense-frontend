@@ -64,8 +64,14 @@ export function parseSystemSettings(value: unknown): SystemSettings {
       "device_status must be online or offline"
     );
   }
+  // stt_model_version replaced vosk_version (backend migration 20261021_0012). The old
+  // field is accepted only as a fallback for a backend that has not been migrated yet.
+  const sttModelVersion =
+    typeof value.stt_model_version === "string"
+      ? value.stt_model_version
+      : value.vosk_version;
   if (
-    typeof value.vosk_version !== "string" ||
+    typeof sttModelVersion !== "string" ||
     typeof value.yamnet_version !== "string"
   ) {
     throw new SettingsContractError(
@@ -80,7 +86,7 @@ export function parseSystemSettings(value: unknown): SystemSettings {
     device_status: value.device_status,
     last_heartbeat:
       readNullableString(value.last_heartbeat, "last_heartbeat") ?? null,
-    vosk_version: value.vosk_version,
+    stt_model_version: sttModelVersion,
     yamnet_version: value.yamnet_version,
     last_ota_update: readNullableString(
       value.last_ota_update,

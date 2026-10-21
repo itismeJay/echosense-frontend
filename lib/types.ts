@@ -56,6 +56,7 @@ export interface User {
   role: "admin" | "staff" | "counselor";
   school_id?: string | null;
   is_super_admin?: boolean;
+  must_change_password?: boolean;
 }
 
 export interface LoginResponse {
@@ -349,7 +350,7 @@ export interface SystemSettings {
   aggression_duration_threshold: number;
   device_status: "online" | "offline";
   last_heartbeat: string | null;
-  vosk_version: string;
+  stt_model_version: string;
   yamnet_version: string;
   last_ota_update?: string | null;
   updated_at?: string | null;

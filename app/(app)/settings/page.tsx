@@ -3,20 +3,29 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
+  Cpu,
+  Info,
   Loader2,
   RefreshCw,
   Save,
   SlidersHorizontal,
 } from "lucide-react";
-import NotificationSettings from "@/components/NotificationSettings";
-import { getSettings, saveSettings } from "@/lib/api";
+import { getSystemSettings, saveSettings } from "@/lib/api";
+import { canEditGlobalConfig } from "@/lib/access";
 import { useCurrentUser } from "@/lib/auth";
-import type { Settings } from "@/lib/types";
+import { systemSettingsToForm } from "@/lib/settings";
+import type { Settings, SystemSettings } from "@/lib/types";
 
 export default function SettingsPage() {
   const currentUser = useCurrentUser();
-  const isAdmin = currentUser?.role === "admin";
+  // The (app) page guard limits this page to administrators; only super admins may
+  // change the global values (the backend returns 403 to everyone else).
+  const canEdit = canEditGlobalConfig(currentUser);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [models, setModels] = useState<Pick<
+    SystemSettings,
+    "stt_model_version" | "yamnet_version"
+  > | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -25,7 +34,12 @@ export default function SettingsPage() {
     setLoading(true);
     setLoadError(false);
     try {
-      setSettings(await getSettings());
+      const current = await getSystemSettings();
+      setSettings(systemSettingsToForm(current));
+      setModels({
+        stt_model_version: current.stt_model_version,
+        yamnet_version: current.yamnet_version,
+      });
     } catch {
       setLoadError(true);
     } finally {
@@ -35,24 +49,21 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!currentUser) return;
-    if (!isAdmin) {
-      const timer = setTimeout(() => setLoading(false), 0);
-      return () => clearTimeout(timer);
-    }
     const timer = setTimeout(() => {
       void loadSettings();
     }, 0);
     return () => clearTimeout(timer);
-  }, [currentUser, isAdmin, loadSettings]);
+  }, [currentUser, loadSettings]);
 
   const update = <K extends keyof Settings>(key: K, value: Settings[K]) => {
+    if (!canEdit) return;
     setSettings((current) =>
       current ? { ...current, [key]: value } : current
     );
   };
 
   const handleSave = async () => {
-    if (!settings) return;
+    if (!settings || !canEdit) return;
     setSaving(true);
     try {
       setSettings(await saveSettings(settings));
@@ -68,21 +79,31 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-3xl p-4 md:p-6 lg:p-8">
       <header className="mb-6">
         <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
-          {isAdmin ? "Administrator" : "Preferences"}
+          {canEdit ? "Super administrator" : "Administrator"}
         </p>
         <h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
           Settings
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-          Manage browser notifications
-          {isAdmin ? " and classroom alert controls" : ""}.
+          Classroom alert controls shared by every school. Browser notification
+          preferences are on your Profile page.
         </p>
       </header>
 
-      <div className="space-y-6">
-        <NotificationSettings />
+      {!canEdit && currentUser && (
+        <div
+          role="note"
+          className="mb-6 flex gap-3 rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm leading-6 text-indigo-950 dark:border-indigo-900/70 dark:bg-indigo-950/30 dark:text-indigo-100"
+        >
+          <Info className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+          <p>
+            These settings are read-only for school administrators. Only a super
+            administrator can change them.
+          </p>
+        </div>
+      )}
 
-      {isAdmin && (loading ? (
+      {loading ? (
         <div role="status" className="space-y-4">
           <span className="sr-only">Loading system settings</span>
           {[0, 1].map((item) => (
@@ -148,13 +169,14 @@ export default function SettingsPage() {
               max={100}
               step={1}
               value={settings.confidence_threshold_percent}
+              disabled={!canEdit}
               onChange={(event) =>
                 update(
                   "confidence_threshold_percent",
                   Number(event.target.value)
                 )
               }
-              className="mt-5 h-11 w-full cursor-pointer accent-indigo-700"
+              className="mt-5 h-11 w-full cursor-pointer accent-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </section>
 
@@ -191,33 +213,69 @@ export default function SettingsPage() {
               max={10}
               step={0.5}
               value={settings.aggression_duration_threshold}
+              disabled={!canEdit}
               onChange={(event) =>
                 update(
                   "aggression_duration_threshold",
                   Number(event.target.value)
                 )
               }
-              className="mt-5 h-11 w-full cursor-pointer accent-violet-700"
+              className="mt-5 h-11 w-full cursor-pointer accent-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </section>
 
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={saving}
-            aria-busy={saving}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-700 px-5 py-3 font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <Save className="h-4 w-4" aria-hidden="true" />
-            )}
-            {saving ? "Saving…" : "Save Settings"}
-          </button>
+          {models && (
+            <section
+              aria-labelledby="models-title"
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900"
+            >
+              <div className="flex items-center gap-3">
+                <span className="rounded-xl bg-slate-100 p-2.5 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  <Cpu className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <h2 id="models-title" className="font-bold text-slate-950 dark:text-white">
+                  Detection models
+                </h2>
+              </div>
+              <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-950/60">
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Speech recognition model
+                  </dt>
+                  <dd className="mt-1 break-all font-mono text-sm text-slate-900 dark:text-slate-100">
+                    {models.stt_model_version}
+                  </dd>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-950/60">
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Sound detection model
+                  </dt>
+                  <dd className="mt-1 break-all font-mono text-sm text-slate-900 dark:text-slate-100">
+                    {models.yamnet_version}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          )}
+
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saving}
+              aria-busy={saving}
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-700 px-5 py-3 font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Save className="h-4 w-4" aria-hidden="true" />
+              )}
+              {saving ? "Saving…" : "Save Settings"}
+            </button>
+          )}
         </div>
-      ))}
-      </div>
+      )}
     </div>
   );
 }

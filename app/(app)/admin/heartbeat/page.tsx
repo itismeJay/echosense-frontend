@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   Clock3,
@@ -13,7 +12,6 @@ import {
   WifiOff,
 } from "lucide-react";
 import { getSystemSettings } from "@/lib/api";
-import { useCurrentUser } from "@/lib/auth";
 import { formatTimestamp } from "@/lib/format";
 import type { SystemSettings } from "@/lib/types";
 
@@ -27,18 +25,11 @@ function formatUptime(seconds: number): string {
 }
 
 export default function HeartbeatPage() {
-  const currentUser = useCurrentUser();
-  const router = useRouter();
   const [data, setData] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
-  useEffect(() => {
-    if (currentUser && currentUser.role !== "admin") {
-      router.replace("/dashboard");
-    }
-  }, [currentUser, router]);
 
   const loadStatus = useCallback(async () => {
     setError(false);
@@ -65,7 +56,6 @@ export default function HeartbeatPage() {
     };
   }, [loadStatus]);
 
-  if (currentUser && currentUser.role !== "admin") return null;
 
   const connected = data?.device_status === "online";
 
@@ -233,15 +223,15 @@ export default function HeartbeatPage() {
               </div>
             </dl>
 
-            {(data.vosk_version || data.yamnet_version) && (
+            {(data.stt_model_version || data.yamnet_version) && (
               <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-                {data.vosk_version && (
+                {data.stt_model_version && (
                   <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
                     <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Speech model version
+                      Speech recognition model
                     </dt>
                     <dd className="mt-2 break-all font-mono text-sm text-slate-800 dark:text-slate-100">
-                      {data.vosk_version}
+                      {data.stt_model_version}
                     </dd>
                   </div>
                 )}
