@@ -1,52 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
+import { decideProxy } from "./lib/access";
 import { parseValidJwtClaims } from "./lib/auth-token";
-
-const ADMIN_ONLY_PATHS = ["/users", "/admin", "/classrooms", "/devices"];
-const COUNSELOR_PATHS = ["/counselor", "/analytics"];
-
-function redirectAndClearToken(request: NextRequest, destination: string) {
-  const response = NextResponse.redirect(new URL(destination, request.url));
-  response.cookies.delete("echosense_token");
-  return response;
-}
-
-function continueAndClearToken() {
-  const response = NextResponse.next();
-  response.cookies.delete("echosense_token");
-  return response;
-}
+import { PASSWORD_CHANGE_COOKIE } from "./lib/session-errors";
 
 export function proxy(request: NextRequest) {
   const token = request.cookies.get("echosense_token")?.value;
   const claims = token ? parseValidJwtClaims(token) : null;
-  const { pathname } = request.nextUrl;
-  const isLogin = pathname === "/login";
+  const decision = decideProxy({
+    pathname: request.nextUrl.pathname,
+    jwtRole: claims?.role ?? null,
+    hadToken: Boolean(token),
+    mustChangePassword: request.cookies.get(PASSWORD_CHANGE_COOKIE)?.value === "1",
+  });
 
-  if (isLogin) {
-    return claims
-      ? NextResponse.redirect(new URL("/dashboard", request.url))
-      : token
-        ? continueAndClearToken()
-        : NextResponse.next();
+  const response =
+    decision.kind === "redirect"
+      ? NextResponse.redirect(new URL(decision.to, request.url))
+      : NextResponse.next();
+  if (decision.clearToken) {
+    response.cookies.delete("echosense_token");
+    response.cookies.delete(PASSWORD_CHANGE_COOKIE);
   }
-  if (!claims) return redirectAndClearToken(request, "/login");
-
-  if (
-    ADMIN_ONLY_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`)) &&
-    claims.role !== "admin"
-  ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  if (
-    COUNSELOR_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`)) &&
-    claims.role !== "admin" &&
-    claims.role !== "counselor"
-  ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
@@ -63,6 +38,8 @@ export const config = {
     "/users/:path*",
     "/classrooms/:path*",
     "/devices/:path*",
+    "/change-password",
+    "/no-access",
     "/login",
   ],
 };

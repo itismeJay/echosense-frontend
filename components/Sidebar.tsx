@@ -21,35 +21,32 @@ import {
   Terminal,
   DoorOpen,
   Cpu,
+  Building2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCurrentUser } from "@/lib/auth";
+import { accessRoleOf, navSectionsFor, type NavIconKey } from "@/lib/access";
 
 const SIDEBAR_STORAGE_KEY = "echosense.sidebar.collapsed.v2";
 
-const BASE_NAV_ITEMS = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/alerts",    icon: BellRing,        label: "Alerts" },
-  { href: "/logs",      icon: FileClock,       label: "History" },
-  { href: "/settings",  icon: Settings,        label: "Settings" },
-  { href: "/profile",   icon: UserRound,       label: "Profile" },
-];
-
-const ADMIN_NAV_ITEMS = [
-  { href: "/classrooms",      icon: DoorOpen,      label: "Classrooms" },
-  { href: "/devices",         icon: Cpu,           label: "Edge Devices" },
-  { href: "/users",            icon: Users,         label: "User Accounts" },
-  { href: "/admin/heartbeat",  icon: HeartPulse,    label: "Device Status" },
-  { href: "/admin/dictionary", icon: BookOpen,      label: "Monitored Terms" },
-  { href: "/admin/audit",      icon: ClipboardList, label: "Audit History" },
-  { href: "/admin/logs",       icon: Terminal,      label: "Technical Logs" },
-  { href: "/admin/heatmap",    icon: Grid3X3,       label: "Classroom Area Map" },
-];
-
-const COUNSELOR_NAV_ITEMS = [
-  { href: "/counselor", icon: UserRoundCheck, label: "Counselor Overview" },
-  { href: "/analytics", icon: BarChart3, label: "Reports and Trends" },
-];
+const NAV_ICONS: Record<NavIconKey, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  alerts: BellRing,
+  history: FileClock,
+  settings: Settings,
+  profile: UserRound,
+  counselor: UserRoundCheck,
+  reports: BarChart3,
+  classrooms: DoorOpen,
+  devices: Cpu,
+  users: Users,
+  heartbeat: HeartPulse,
+  dictionary: BookOpen,
+  audit: ClipboardList,
+  logs: Terminal,
+  heatmap: Grid3X3,
+  schools: Building2,
+};
 
 type NavItem = {
   href: string;
@@ -186,15 +183,13 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const drawerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
   const user = useCurrentUser();
-  const navSections: NavSection[] = [
-    { items: BASE_NAV_ITEMS },
-    ...(user?.role === "admin" || user?.role === "counselor"
-      ? [{ label: "Guidance", items: COUNSELOR_NAV_ITEMS }]
-      : []),
-    ...(user?.role === "admin"
-      ? [{ label: "Admin", items: ADMIN_NAV_ITEMS }]
-      : []),
-  ];
+  // Until /auth/me answers, show nothing role-specific rather than guessing.
+  const navSections: NavSection[] = user
+    ? navSectionsFor(accessRoleOf(user)).map((section) => ({
+        label: section.label,
+        items: section.items.map((item) => ({ ...item, icon: NAV_ICONS[item.icon] })),
+      }))
+    : [];
 
   // Read localStorage after mount — use setTimeout to avoid setState-in-effect lint
   useEffect(() => {

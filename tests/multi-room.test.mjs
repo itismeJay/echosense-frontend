@@ -196,12 +196,12 @@ test("alerts use server-side room filters while preserving existing human-review
 });
 
 test("management routes remain admin-only and API errors distinguish permission and conflict", async () => {
-  const [proxy, api] = await Promise.all([
-    readSource("proxy.ts"),
+  const [access, api] = await Promise.all([
+    readSource("lib/access.ts"),
     readSource("lib/api.ts"),
   ]);
-  assert.match(proxy, /"\/classrooms"/);
-  assert.match(proxy, /"\/devices"/);
+  assert.match(access, /\{ prefix: "\/classrooms", roles: ADMINS \}/);
+  assert.match(access, /\{ prefix: "\/devices", roles: ADMINS \}/);
   assert.match(api, /status === 403/);
   assert.match(api, /status === 409/);
   assert.match(api, /status === 422/);

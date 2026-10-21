@@ -1,21 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Info, MapPinned } from "lucide-react";
-import { useCurrentUser } from "@/lib/auth";
 
 export default function HeatmapPage() {
-  const currentUser = useCurrentUser();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (currentUser && currentUser.role !== "admin") {
-      router.replace("/dashboard");
-    }
-  }, [currentUser, router]);
-
-  if (currentUser && currentUser.role !== "admin") return null;
 
   return (
     <div className="mx-auto max-w-3xl p-4 md:p-6 lg:p-8">

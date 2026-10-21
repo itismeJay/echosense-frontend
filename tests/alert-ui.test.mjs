@@ -97,16 +97,20 @@ test("alert review UI does not add raw-audio controls or prohibited claims", asy
 });
 
 test("protected alert routes and 401 cleanup remain configured", async () => {
-  const [proxy, api] = await Promise.all([
+  const [proxy, access, api, session] = await Promise.all([
     readSource("proxy.ts"),
+    readSource("lib/access.ts"),
     readSource("lib/api.ts"),
+    readSource("lib/session.ts"),
   ]);
 
   assert.match(proxy, /["']\/alerts\/:path\*["']/);
   assert.match(proxy, /["']\/alert\/:path\*["']/);
-  assert.match(proxy, /redirectAndClearToken\(request, ["']\/login["']\)/);
+  assert.match(proxy, /decideProxy\(/);
+  assert.match(access, /kind: "redirect", to: "\/login", clearToken: true/);
   assert.match(api, /res\.status === 401/);
-  assert.match(api, /echosense_token=; path=\/; max-age=0/);
+  assert.match(api, /clearSessionCookies\(\)/);
+  assert.match(session, /\$\{AUTH_COOKIE\}=; path=\/; max-age=0/);
   assert.doesNotMatch(api, /console\.(log|debug)\([^)]*token/i);
 });
 
@@ -131,12 +135,13 @@ test("auth clears invalid or expired cookies and HTTPS cookies are Secure", asyn
     readSource("proxy.ts"),
   ]);
   assert.match(auth, /window\.location\.protocol === 'https:'/);
-  assert.match(auth, /if \(!decoded\) \{\s*clearAuthCookie\(\)/);
+  assert.match(auth, /if \(!token \|\| !decoded\) \{\s*if \(token\) clearAuthCookie\(\)/);
   assert.match(auth, /`\$\{API_URL\}\/auth\/me`/);
   assert.match(auth, /Authorization: `Bearer \$\{token\}`/);
-  assert.match(auth, /response\.status === 401 \|\| response\.status === 403/);
+  assert.match(auth, /response\.status === 401\) \{\s*redirectInvalidSession\(\)/);
+  assert.match(auth, /response\.status === 403\) \{\s*if \(handleForbiddenResponse/);
   assert.match(auth, /currentUserRequest\?\.token === token/);
-  assert.match(proxy, /continueAndClearToken\(\)/);
+  assert.match(proxy, /decision\.clearToken/);
   assert.match(proxy, /parseValidJwtClaims/);
 });
 

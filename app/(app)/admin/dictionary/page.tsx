@@ -6,7 +6,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   BookOpen,
@@ -36,7 +35,6 @@ const INPUT =
 
 export default function DictionaryPage() {
   const currentUser = useCurrentUser();
-  const router = useRouter();
   const [entries, setEntries] = useState<DictionaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -49,11 +47,6 @@ export default function DictionaryPage() {
     useState<DictionaryEntry | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    if (currentUser && currentUser.role !== "admin") {
-      router.replace("/dashboard");
-    }
-  }, [currentUser, router]);
 
   const loadEntries = useCallback(async () => {
     setLoading(true);
@@ -117,7 +110,6 @@ export default function DictionaryPage() {
     }
   };
 
-  if (currentUser && currentUser.role !== "admin") return null;
 
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">

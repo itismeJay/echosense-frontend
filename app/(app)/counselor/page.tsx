@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   BarChart3,
@@ -17,7 +16,6 @@ import AlertCard from "@/components/AlertCard";
 import AlertListSkeleton from "@/components/AlertListSkeleton";
 import { localDateKey } from "@/lib/alert-presentation";
 import { useAlerts } from "@/lib/AlertsProvider";
-import { useCurrentUser } from "@/lib/auth";
 import { categoryLabel, languageLabel } from "@/lib/format";
 
 const CATEGORY_KEYS = [
@@ -62,23 +60,12 @@ function SummaryCard({
 }
 
 export default function CounselorPage() {
-  const currentUser = useCurrentUser();
-  const router = useRouter();
   const { alerts, loading, error, refresh } = useAlerts();
   const [todayKey] = useState(() => localDateKey(new Date()));
   const [weekCutoff] = useState(
     () => Date.now() - 7 * 24 * 60 * 60 * 1000
   );
 
-  useEffect(() => {
-    if (
-      currentUser &&
-      currentUser.role !== "admin" &&
-      currentUser.role !== "counselor"
-    ) {
-      router.replace("/dashboard");
-    }
-  }, [currentUser, router]);
 
   const todayAlerts = useMemo(
     () =>
@@ -129,13 +116,6 @@ export default function CounselorPage() {
       .sort((a, b) => b.count - a.count);
   }, [weekAlerts]);
 
-  if (
-    currentUser &&
-    currentUser.role !== "admin" &&
-    currentUser.role !== "counselor"
-  ) {
-    return null;
-  }
 
   const waitingToday = todayAlerts.filter(
     (alert) => alert.status === "active"

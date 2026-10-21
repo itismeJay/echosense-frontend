@@ -6,7 +6,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   Loader2,
@@ -38,7 +37,6 @@ const INPUT =
 
 export default function UsersPage() {
   const currentUser = useCurrentUser();
-  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -50,11 +48,6 @@ export default function UsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    if (currentUser && currentUser.role !== "admin") {
-      router.replace("/dashboard");
-    }
-  }, [currentUser, router]);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -124,7 +117,6 @@ export default function UsersPage() {
     }
   };
 
-  if (currentUser && currentUser.role !== "admin") return null;
 
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">

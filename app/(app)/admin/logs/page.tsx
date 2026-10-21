@@ -6,7 +6,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,7 +15,6 @@ import {
   X,
 } from "lucide-react";
 import { getSystemLogs } from "@/lib/api";
-import { useCurrentUser } from "@/lib/auth";
 import { formatTimestamp } from "@/lib/format";
 import type { PiLog } from "@/lib/types";
 
@@ -33,8 +31,6 @@ const LOG_TYPES = [
 const LOGS_PER_PAGE = 20;
 
 export default function TechnicalLogsPage() {
-  const currentUser = useCurrentUser();
-  const router = useRouter();
   const [logs, setLogs] = useState<PiLog[]>([]);
   const [reportedTotal, setReportedTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -43,11 +39,6 @@ export default function TechnicalLogsPage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    if (currentUser && currentUser.role !== "admin") {
-      router.replace("/dashboard");
-    }
-  }, [currentUser, router]);
 
   const loadLogs = useCallback(async () => {
     setLoading(true);
@@ -103,7 +94,6 @@ export default function TechnicalLogsPage() {
     setPage(1);
   };
 
-  if (currentUser && currentUser.role !== "admin") return null;
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6 lg:p-8">

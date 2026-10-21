@@ -35,7 +35,6 @@ import {
   exportAuditLogs,
   getAuditLogs,
 } from "@/lib/api";
-import { useCurrentUser } from "@/lib/auth";
 import { formatTimestamp } from "@/lib/format";
 import type {
   AuditLog,
@@ -191,7 +190,6 @@ function hasSelectedFilters(filters: AuditLogFilters): boolean {
 }
 
 export default function AuditLogDashboard() {
-  const currentUser = useCurrentUser();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -207,11 +205,6 @@ export default function AuditLogDashboard() {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(false);
 
-  useEffect(() => {
-    if (currentUser && currentUser.role !== "admin") {
-      router.replace("/dashboard");
-    }
-  }, [currentUser, router]);
 
   const replaceFilterUrl = useCallback(
     (nextFilters: AuditLogFilters) => {
@@ -306,7 +299,6 @@ export default function AuditLogDashboard() {
     }
   };
 
-  if (currentUser && currentUser.role !== "admin") return null;
 
   return (
     <div className="mx-auto max-w-[100rem] p-4 md:p-6 lg:p-8">
