@@ -64,3 +64,29 @@ export function parseDictionaryListResponse(value: unknown): DictionaryEntry[] {
     parseDictionaryEntry(entry, endpoint, `items[${index}]`)
   );
 }
+
+export const DICTIONARY_PAGE_SIZE = 24;
+
+/** Query string for GET /dictionary/ paging; without it the backend returns every term. */
+export function dictionaryQueryParams(query: {
+  search?: string;
+  language?: string;
+  skip: number;
+  limit: number;
+}): URLSearchParams {
+  const params = new URLSearchParams();
+  const search = query.search?.trim().slice(0, 100);
+  if (search) params.set("search", search);
+  if (query.language && DICTIONARY_LANGUAGES.has(query.language)) {
+    params.set("language", query.language);
+  }
+  params.set("skip", String(Math.max(0, Math.floor(query.skip))));
+  params.set("limit", String(Math.min(500, Math.max(1, Math.floor(query.limit)))));
+  return params;
+}
+
+/** Reads X-Total-Count; a missing or malformed header falls back to the page length. */
+export function parseTotalCount(header: string | null, fallback: number): number {
+  if (header === null || !/^\d+$/.test(header.trim())) return fallback;
+  return Number(header.trim());
+}
