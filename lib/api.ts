@@ -57,6 +57,11 @@ import type {
   User,
 } from "./types";
 import { parseValidJwtClaims } from "./auth-token";
+import { clearSessionCookies, handleForbiddenResponse } from "./session";
+import {
+  PASSWORD_CHANGE_MESSAGE,
+  SCHOOL_INACTIVE_MESSAGE,
+} from "./session-errors";
 
 const API_TIMEOUT_MS = 60_000;
 
@@ -120,7 +125,7 @@ function getToken(): string | undefined {
     .find(r => r.startsWith("echosense_token="))
     ?.split("=")[1];
   if (token && !parseValidJwtClaims(token)) {
-    document.cookie = "echosense_token=; path=/; max-age=0";
+    clearSessionCookies();
     return undefined;
   }
   return token;
@@ -134,6 +139,7 @@ function getRequestSignal(externalSignal?: AbortSignal | null): AbortSignal {
 }
 
 function getApiErrorMessage(status: number): string {
+  if (status === 400) return "The request could not be completed.";
   if (status === 403) return "You do not have permission to perform this action.";
   if (status === 404) return "The requested record was not found.";
   if (status === 409) return "The request conflicts with a recent change.";
@@ -142,32 +148,36 @@ function getApiErrorMessage(status: number): string {
   return "The request could not be completed.";
 }
 
-async function responseErrorMessage(response: Response): Promise<string> {
-  const fallback = getApiErrorMessage(response.status);
-  if (![403, 404, 409, 422].includes(response.status)) return fallback;
+async function readResponseBody(response: Response): Promise<unknown> {
   try {
-    const value = (await response.json()) as unknown;
-    if (!isRecord(value)) return fallback;
-    if (typeof value.detail === "string" && value.detail.trim()) {
-      return value.detail.trim().slice(0, 300);
-    }
-    if (response.status === 422 && Array.isArray(value.detail)) {
-      const messages = value.detail
-        .map((item) =>
-          isRecord(item) && typeof item.msg === "string" ? item.msg.trim() : ""
-        )
-        .filter(Boolean);
-      if (messages.length > 0) return messages.slice(0, 3).join(" ").slice(0, 300);
-    }
+    return (await response.json()) as unknown;
   } catch {
-    // Fall back to the status-specific safe message.
+    return undefined;
+  }
+}
+
+function responseErrorMessage(status: number, value: unknown): string {
+  const fallback = getApiErrorMessage(status);
+  if (![400, 403, 404, 409, 422].includes(status) || !isRecord(value)) return fallback;
+  if (typeof value.detail === "string" && value.detail.trim()) {
+    return value.detail.trim().slice(0, 300);
+  }
+  if (status === 422 && Array.isArray(value.detail)) {
+    const messages = value.detail
+      .map((item) =>
+        isRecord(item) && typeof item.msg === "string"
+          ? item.msg.replace(/^Value error, /, "").trim()
+          : ""
+      )
+      .filter(Boolean);
+    if (messages.length > 0) return messages.slice(0, 3).join(" ").slice(0, 300);
   }
   return fallback;
 }
 
 function handleUnauthorizedResponse() {
   if (typeof document === "undefined") return;
-  document.cookie = "echosense_token=; path=/; max-age=0";
+  clearSessionCookies();
   window.location.href = "/login";
 }
 
@@ -197,7 +207,17 @@ async function apiRequest(
     throw new ApiError(401, "Unauthorized");
   }
   if (!res.ok) {
-    throw new ApiError(res.status, await responseErrorMessage(res));
+    const body = res.status === 204 ? undefined : await readResponseBody(res);
+    if (res.status === 403) {
+      const kind = handleForbiddenResponse(isRecord(body) ? body.detail : undefined);
+      if (kind === "password_change_required") {
+        throw new ApiError(403, PASSWORD_CHANGE_MESSAGE);
+      }
+      if (kind === "school_inactive") {
+        throw new ApiError(403, SCHOOL_INACTIVE_MESSAGE);
+      }
+    }
+    throw new ApiError(res.status, responseErrorMessage(res.status, body));
   }
   return res;
 }
@@ -548,5 +568,16 @@ export async function getSystemLogs(): Promise<SystemLogsResponse> {
 export async function deleteUser(userId: string): Promise<void> {
   await apiRequest(`/users/${userId}`, {
     method: "DELETE",
+  });
+}
+
+export async function changePassword(input: {
+  current_password: string;
+  new_password: string;
+}): Promise<User> {
+  return apiFetch<User>("/auth/change-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
   });
 }

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { API_URL } from './config'
 import { parseValidJwtClaims } from './auth-token'
+import { clearSessionCookies, handleForbiddenResponse, setPasswordChangeFlag } from './session'
+import { SCHOOL_INACTIVE, SCHOOL_INACTIVE_MESSAGE } from './session-errors'
 
 export type AuthUser = {
   id: string
@@ -10,6 +12,7 @@ export type AuthUser = {
   role: 'admin' | 'staff' | 'counselor'
   school_id: string | null
   is_super_admin: boolean
+  must_change_password: boolean
 }
 
 let currentUserRequest: {
@@ -23,7 +26,7 @@ export function setAuthCookie(token: string) {
 }
 
 export function clearAuthCookie() {
-  document.cookie = 'echosense_token=; path=/; max-age=0'
+  clearSessionCookies()
   currentUserRequest = null
 }
 
@@ -44,6 +47,7 @@ function decodeToken(token: string): AuthUser | null {
         role: payload.role,
         school_id: null,
         is_super_admin: false,
+        must_change_password: false,
       }
     : null
 }
@@ -63,7 +67,8 @@ function parseAuthUser(value: unknown): AuthUser | null {
     typeof user.email === 'string' &&
     ['admin', 'staff', 'counselor'].includes(String(user.role)) &&
     validSchoolId &&
-    (user.is_super_admin === undefined || typeof user.is_super_admin === 'boolean')
+    (user.is_super_admin === undefined || typeof user.is_super_admin === 'boolean') &&
+    (user.must_change_password === undefined || typeof user.must_change_password === 'boolean')
   ) {
     return {
       id: user.id,
@@ -71,9 +76,21 @@ function parseAuthUser(value: unknown): AuthUser | null {
       role: user.role as AuthUser['role'],
       school_id: typeof user.school_id === 'string' ? user.school_id : null,
       is_super_admin: user.is_super_admin === true,
+      must_change_password: user.must_change_password === true,
     }
   }
   return null
+}
+
+async function readErrorDetail(response: Response): Promise<unknown> {
+  try {
+    const value = (await response.json()) as unknown
+    return typeof value === 'object' && value !== null && 'detail' in value
+      ? (value as { detail: unknown }).detail
+      : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function redirectInvalidSession() {
@@ -92,7 +109,13 @@ async function fetchCurrentUser(
     headers: { Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(60_000),
   })
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 403) {
+    if (handleForbiddenResponse(await readErrorDetail(response)) === 'no_permission') {
+      redirectInvalidSession()
+    }
+    return null
+  }
+  if (response.status === 401) {
     redirectInvalidSession()
     return null
   }
@@ -110,6 +133,8 @@ async function fetchCurrentUser(
     redirectInvalidSession()
     return null
   }
+  // Keep the proxy's navigation hint in step with the backend's account state.
+  setPasswordChangeFlag(user.must_change_password)
   return user
 }
 
@@ -141,6 +166,9 @@ export async function login(email: string, password: string): Promise<AuthUser> 
   }
   if (res.status === 401) throw new Error('Invalid email or password')
   if (res.status === 403) {
+    if ((await readErrorDetail(res)) === SCHOOL_INACTIVE) {
+      throw new Error(SCHOOL_INACTIVE_MESSAGE)
+    }
     throw new Error('This account is not authorized to access EchoSense')
   }
   if (!res.ok) {
@@ -148,9 +176,15 @@ export async function login(email: string, password: string): Promise<AuthUser> 
   }
   const data = await res.json() as {
     access_token?: unknown
+    must_change_password?: unknown
     user?: unknown
   }
-  const user = parseAuthUser(data.user)
+  const parsedUser = parseAuthUser(data.user)
+  const user = parsedUser && {
+    ...parsedUser,
+    must_change_password:
+      parsedUser.must_change_password || data.must_change_password === true,
+  }
   if (
     typeof data.access_token !== 'string' ||
     !user
@@ -167,8 +201,19 @@ export async function login(email: string, password: string): Promise<AuthUser> 
     throw new Error('The server returned an invalid or expired login token')
   }
   setAuthCookie(data.access_token)
-  currentUserRequest = null
+  setPasswordChangeFlag(user.must_change_password)
+  // The login response is the stored user until the next /auth/me refresh.
+  currentUserRequest = { token: data.access_token, promise: Promise.resolve(user) }
   return user
+}
+
+/** Re-reads /auth/me, e.g. after a password change cleared must_change_password. */
+export async function refreshCurrentUser(): Promise<AuthUser | null> {
+  const token = getTokenFromCookie()
+  const decoded = token ? decodeToken(token) : null
+  if (!token || !decoded) return null
+  currentUserRequest = null
+  return validateCurrentUser(token, decoded)
 }
 
 export function logout() {
@@ -176,28 +221,39 @@ export function logout() {
   window.location.href = '/login'
 }
 
-export function useCurrentUser(): AuthUser | null {
-  const [user, setUser] = useState<AuthUser | null>(null)
+export type CurrentUserStatus = 'loading' | 'ready' | 'error'
+
+export function useCurrentUserState(): { user: AuthUser | null; status: CurrentUserStatus } {
+  const [state, setState] = useState<{ user: AuthUser | null; status: CurrentUserStatus }>({
+    user: null,
+    status: 'loading',
+  })
   useEffect(() => {
     const token = getTokenFromCookie()
     const decoded = token ? decodeToken(token) : null
-    if (!token) return
-    if (!decoded) {
-      clearAuthCookie()
-      return
+    if (!token || !decoded) {
+      if (token) clearAuthCookie()
+      const timer = setTimeout(() => setState({ user: null, status: 'error' }), 0)
+      return () => clearTimeout(timer)
     }
 
     let active = true
     void validateCurrentUser(token, decoded)
       .then((validatedUser) => {
-        if (active) setUser(validatedUser)
+        if (active) {
+          setState({ user: validatedUser, status: validatedUser ? 'ready' : 'error' })
+        }
       })
       .catch(() => {
-        if (active) setUser(null)
+        if (active) setState({ user: null, status: 'error' })
       })
     return () => {
       active = false
     }
   }, [])
-  return user
+  return state
+}
+
+export function useCurrentUser(): AuthUser | null {
+  return useCurrentUserState().user
 }

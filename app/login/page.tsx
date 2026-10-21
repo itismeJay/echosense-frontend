@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { School, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
 import ThemeToggle from "@/components/ThemeToggle";
 import { login } from "@/lib/auth";
+import { CHANGE_PASSWORD_PATH, loginNoticeMessage } from "@/lib/session-errors";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,14 +17,22 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // e.g. /login?notice=school_inactive after the backend ended the session.
+  useEffect(() => {
+    const notice = loginNoticeMessage(window.location.search);
+    if (!notice) return;
+    const timer = setTimeout(() => setError(notice), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
+      const user = await login(email, password);
       toast.success("Signed in");
-      router.push("/dashboard");
+      router.push(user.must_change_password ? CHANGE_PASSWORD_PATH : "/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
