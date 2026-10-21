@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Download, RefreshCw, Search } from "lucide-react";
 import { useAlerts } from "@/lib/AlertsProvider";
+import { accessRoleOf, canFilterBySchool } from "@/lib/access";
+import { useSchools } from "@/lib/useSchools";
 import { useCurrentUser } from "@/lib/auth";
 import {
   ApiError,
@@ -129,12 +131,14 @@ export default function AlertCollection({
 
   const isHistory = mode === "history";
   const pageSize = isHistory ? 10 : 6;
-  const isSuperAdmin = user?.is_super_admin === true;
+  const isSuperAdmin = canFilterBySchool(user);
+  const loadsManagementData = isSuperAdmin || accessRoleOf(user) === "admin";
+  const { schools: registeredSchools } = useSchools(isSuperAdmin);
   const activeSchoolId = isSuperAdmin ? schoolId : "";
   const hasServerFilters = Boolean(classroomId || deviceId || activeSchoolId);
 
   useEffect(() => {
-    if (user?.role !== "admin") return;
+    if (!loadsManagementData) return;
     let active = true;
     const timer = setTimeout(() => {
       void Promise.all([getClassrooms(), getDevices()])
@@ -151,7 +155,7 @@ export default function AlertCollection({
       active = false;
       clearTimeout(timer);
     };
-  }, [user?.role]);
+  }, [loadsManagementData]);
 
   const classroomOptions = useMemo(() => {
     const options = new Map<string, { id: string; name: string; schoolId: string | null; schoolName: string }>();
@@ -189,8 +193,9 @@ export default function AlertCollection({
         options.set(device.school_id, device.school_name);
       }
     });
+    registeredSchools.forEach((school) => options.set(school.id, school.name));
     return [...options].map(([id, name]) => ({ id, name })).sort((left, right) => left.name.localeCompare(right.name));
-  }, [alerts, managementClassrooms, managementDevices]);
+  }, [alerts, managementClassrooms, managementDevices, registeredSchools]);
 
   const deviceOptions = useMemo(() => {
     const options = new Map<string, { id: string; label: string; schoolId: string | null; classroomId: string | null }>();

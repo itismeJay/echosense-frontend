@@ -5,9 +5,12 @@ import Link from "next/link";
 import { DoorOpen, Pencil, Plus, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import AccessibleDialog from "@/components/AccessibleDialog";
+import { canFilterBySchool } from "@/lib/access";
 import { useCurrentUser } from "@/lib/auth";
 import { ApiError, createClassroom, getClassrooms, updateClassroom } from "@/lib/api";
 import { schoolSummariesFromResources } from "@/lib/multi-room-contract";
+import { selectableSchools } from "@/lib/user-admin";
+import { useSchools } from "@/lib/useSchools";
 import type { Classroom, SchoolSummary } from "@/lib/types";
 import ConfirmDialog from "./ConfirmDialog";
 import ResourceError from "./ResourceError";
@@ -121,6 +124,9 @@ function ClassroomForm({
 
 export default function ClassroomManagement() {
   const user = useCurrentUser();
+  const superAdmin = canFilterBySchool(user);
+  const { schools: registeredSchools } = useSchools(superAdmin);
+  const [schoolFilter, setSchoolFilter] = useState("");
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -151,13 +157,18 @@ export default function ClassroomManagement() {
     return () => clearTimeout(timer);
   }, [load]);
 
+  // Super admins pick from GET /schools so a new school without classrooms is selectable.
   const schools = useMemo(
-    () => schoolSummariesFromResources(classrooms),
-    [classrooms]
+    () =>
+      superAdmin
+        ? selectableSchools(registeredSchools)
+        : schoolSummariesFromResources(classrooms),
+    [classrooms, registeredSchools, superAdmin]
   );
   const visibleClassrooms = useMemo(() => {
     const query = search.trim().toLowerCase();
     return classrooms.filter((classroom) => {
+      if (superAdmin && schoolFilter && classroom.school_id !== schoolFilter) return false;
       if (status === "active" && !classroom.is_active) return false;
       if (status === "inactive" && classroom.is_active) return false;
       return (
@@ -171,7 +182,7 @@ export default function ClassroomManagement() {
         )
       );
     });
-  }, [classrooms, search, status]);
+  }, [classrooms, schoolFilter, search, status, superAdmin]);
 
   const handleCreate = async (name: string, schoolId: string) => {
     setPending(true);
@@ -224,14 +235,14 @@ export default function ClassroomManagement() {
           <h1 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">Classrooms</h1>
           <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Manage classrooms and their EchoSense devices.</p>
         </div>
-        {user?.role === "admin" && (
+        {user && (
           <button type="button" onClick={() => setShowCreate(true)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800">
             <Plus className="h-4 w-4" aria-hidden="true" /> Add classroom
           </button>
         )}
       </header>
 
-      <section aria-label="Classroom filters" className="mb-6 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[1fr_14rem] dark:border-slate-800 dark:bg-slate-900">
+      <section aria-label="Classroom filters" className={`mb-6 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 ${superAdmin ? "sm:grid-cols-[1fr_14rem_14rem]" : "sm:grid-cols-[1fr_14rem]"}`}>
         <div>
           <label htmlFor="classroom-search" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">Search</label>
           <div className="relative">
@@ -239,6 +250,15 @@ export default function ClassroomManagement() {
             <input id="classroom-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Classroom, school, or device" className={`${INPUT} pl-10`} />
           </div>
         </div>
+        {superAdmin && (
+          <div>
+            <label htmlFor="classroom-school-filter" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">School</label>
+            <select id="classroom-school-filter" value={schoolFilter} onChange={(event) => setSchoolFilter(event.target.value)} className={INPUT}>
+              <option value="">All schools</option>
+              {registeredSchools.map((school) => <option key={school.id} value={school.id}>{school.name}{school.is_active ? "" : " (inactive)"}</option>)}
+            </select>
+          </div>
+        )}
         <div>
           <label htmlFor="classroom-status" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">Status</label>
           <select id="classroom-status" value={status} onChange={(event) => setStatus(event.target.value as typeof status)} className={INPUT}>
@@ -259,7 +279,7 @@ export default function ClassroomManagement() {
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center dark:border-slate-700 dark:bg-slate-900">
           <DoorOpen className="mx-auto h-8 w-8 text-slate-400" aria-hidden="true" />
           <h2 className="mt-3 text-lg font-semibold text-slate-950 dark:text-white">{classrooms.length === 0 ? "No classrooms have been created yet." : "No classrooms found."}</h2>
-          {classrooms.length === 0 && user?.role === "admin" && <button type="button" onClick={() => setShowCreate(true)} className="mt-4 min-h-11 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800">Add classroom</button>}
+          {classrooms.length === 0 && user && <button type="button" onClick={() => setShowCreate(true)} className="mt-4 min-h-11 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800">Add classroom</button>}
         </section>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -299,12 +319,12 @@ export default function ClassroomManagement() {
 
       {showCreate && (
         <AccessibleDialog title="Add classroom" description="Create a classroom in an authorized school." onClose={() => setShowCreate(false)} closeDisabled={pending}>
-          <ClassroomForm schoolId={user?.school_id ?? null} schools={schools} isSuperAdmin={user?.is_super_admin === true} pending={pending} onCancel={() => setShowCreate(false)} onSubmit={handleCreate} />
+          <ClassroomForm schoolId={user?.school_id ?? null} schools={schools} isSuperAdmin={superAdmin} pending={pending} onCancel={() => setShowCreate(false)} onSubmit={handleCreate} />
         </AccessibleDialog>
       )}
       {editing && (
         <AccessibleDialog title={`Edit ${editing.name}`} description="Rename this classroom. Assignment changes are managed from Devices." onClose={() => setEditing(null)} closeDisabled={pending}>
-          <ClassroomForm classroom={editing} schoolId={editing.school_id} schools={schools} isSuperAdmin={user?.is_super_admin === true} pending={pending} onCancel={() => setEditing(null)} onSubmit={(name) => handleRename(name)} />
+          <ClassroomForm classroom={editing} schoolId={editing.school_id} schools={schools} isSuperAdmin={superAdmin} pending={pending} onCancel={() => setEditing(null)} onSubmit={(name) => handleRename(name)} />
         </AccessibleDialog>
       )}
       {deactivating && (

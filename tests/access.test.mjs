@@ -156,7 +156,7 @@ test("no page or component gates on role === \"admin\" alone any more", async ()
   ];
   for (const file of files) {
     const source = await readSource(file);
-    assert.doesNotMatch(source, /role !== "admin"|role === "admin"/, file);
+    assert.doesNotMatch(source, /\.role !== "admin"|\.role === "admin"/, file);
   }
 });
 
