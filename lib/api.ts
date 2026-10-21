@@ -12,8 +12,10 @@ import type { AlertListParseResult } from "./alert-contract";
 import { API_URL } from "./config";
 import { buildApiHeaders } from "./api-headers";
 import {
+  dictionaryQueryParams,
   parseDictionaryEntry,
   parseDictionaryListResponse,
+  parseTotalCount,
 } from "./dictionary-contract";
 import {
   parseSystemSettings,
@@ -51,6 +53,7 @@ import type {
   MonitoredTermLanguage,
   PiLog,
   Report,
+  School,
   Settings,
   SystemLogsResponse,
   SystemSettings,
@@ -58,6 +61,8 @@ import type {
 } from "./types";
 import { parseValidJwtClaims } from "./auth-token";
 import { clearSessionCookies, handleForbiddenResponse } from "./session";
+import { parseSchool, parseSchoolList } from "./schools-contract";
+import type { NewUserPayload } from "./user-admin";
 import {
   PASSWORD_CHANGE_MESSAGE,
   SCHOOL_INACTIVE_MESSAGE,
@@ -458,10 +463,8 @@ export async function getUsers(): Promise<User[]> {
   return apiFetch<User[]>("/users");
 }
 
-export async function registerUser(
-  data: { email: string; password: string; role: "admin" | "staff" | "counselor" }
-): Promise<User> {
-  return apiFetch<User>("/auth/register", {
+export async function createUser(data: NewUserPayload): Promise<User> {
+  return apiFetch<User>("/users/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -472,6 +475,23 @@ export async function getDictionary(): Promise<DictionaryEntry[]> {
   return parseDictionaryListResponse(
     await apiFetch<unknown>("/dictionary/")
   );
+}
+
+export interface DictionaryQuery {
+  search?: string;
+  language?: MonitoredTermLanguage | "";
+  skip: number;
+  limit: number;
+}
+
+export async function getDictionaryPage(
+  query: DictionaryQuery,
+  signal?: AbortSignal
+): Promise<{ entries: DictionaryEntry[]; total: number }> {
+  const params = dictionaryQueryParams(query);
+  const response = await apiRequest(`/dictionary/?${params}`, { signal });
+  const entries = parseDictionaryListResponse(await response.json());
+  return { entries, total: parseTotalCount(response.headers.get("x-total-count"), entries.length) };
 }
 
 export async function addDictionaryEntry(entry: {
@@ -580,4 +600,33 @@ export async function changePassword(input: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
+}
+
+export async function getSchools(): Promise<School[]> {
+  return parseSchoolList(await apiFetch<unknown>("/schools"));
+}
+
+export async function createSchool(name: string): Promise<School> {
+  return parseSchool(
+    await apiFetch<unknown>("/schools", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    })
+  );
+}
+
+export async function updateSchool(
+  schoolId: string,
+  input: { name?: string; is_active?: boolean }
+): Promise<School> {
+  const endpoint = `/schools/${encodeURIComponent(schoolId)}`;
+  return parseSchool(
+    await apiFetch<unknown>(endpoint, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }),
+    endpoint
+  );
 }
