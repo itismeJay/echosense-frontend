@@ -57,17 +57,19 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen: () => void }) {
 
       <div className="min-w-0 flex-1">
         {inSchool && scope && (
-          <p role="status" className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-body">
-            <span className="truncate">
+          <p role="status" className="flex min-w-0 items-center gap-x-1.5 text-body">
+            <span className="min-w-0 truncate">
               Viewing <strong className="font-semibold">{scope.name}</strong>
             </span>
-            <span aria-hidden="true">·</span>
+            <span aria-hidden="true" className="hidden sm:inline">
+              ·
+            </span>
             <button
               type="button"
               onClick={exitSchool}
-              className="min-h-11 rounded-control px-1 font-semibold underline underline-offset-2 hover:no-underline"
+              className="min-h-11 shrink-0 rounded-control px-1 font-semibold underline underline-offset-2 hover:no-underline"
             >
-              Exit to all schools
+              Exit<span className="hidden sm:inline"> to all schools</span>
             </button>
           </p>
         )}

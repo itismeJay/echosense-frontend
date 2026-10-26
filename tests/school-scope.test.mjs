@@ -40,7 +40,7 @@ test("the scope is cleared on login, logout and any session reset", async () => 
 test("the green banner names the school and offers Exit to all schools", async () => {
   const topBar = await readSource("components/TopBar.tsx");
   assert.match(topBar, /Viewing <strong className="font-semibold">\{scope\.name\}<\/strong>/);
-  assert.match(topBar, /Exit to all schools/);
+  assert.match(topBar, /Exit<span className="hidden sm:inline"> to all schools<\/span>/);
   assert.match(topBar, /border-brand bg-brand text-brand-ink/);
 });
 
