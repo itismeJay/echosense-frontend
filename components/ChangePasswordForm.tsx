@@ -6,7 +6,7 @@ import { ApiError, changePassword } from "@/lib/api";
 import { PASSWORD_MIN_LENGTH, newPasswordProblem } from "@/lib/password-policy";
 
 const INPUT =
-  "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 pr-12 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
+  "min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 pr-12 text-sm text-ink       ";
 
 interface PasswordFieldProps {
   id: string;
@@ -31,7 +31,7 @@ function PasswordField({
     <div>
       <label
         htmlFor={id}
-        className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+        className="mb-1.5 block text-sm font-medium text-ink"
       >
         {label}
       </label>
@@ -118,7 +118,7 @@ export default function ChangePasswordForm({
         describedBy={hintId}
         onChange={setNewPassword}
       />
-      <p id={hintId} className="-mt-2 text-xs text-slate-500 dark:text-slate-400">
+      <p id={hintId} className="-mt-2 text-xs text-muted">
         At least {PASSWORD_MIN_LENGTH} characters, different from the current password.
       </p>
       <PasswordField
@@ -134,7 +134,7 @@ export default function ChangePasswordForm({
         type="button"
         onClick={() => setVisible((value) => !value)}
         aria-pressed={visible}
-        className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-medium text-slate-600 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-slate-300 dark:hover:text-white"
+        className="inline-flex min-h-11 items-center gap-2 rounded-control px-2 text-sm font-medium text-muted hover:text-ink"
       >
         {visible ? (
           <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -148,7 +148,7 @@ export default function ChangePasswordForm({
         <div
           id={errorId}
           role="alert"
-          className="flex items-start gap-2 text-sm text-red-700 dark:text-red-300"
+          className="flex items-start gap-2 text-sm text-danger"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           {error}
@@ -159,7 +159,7 @@ export default function ChangePasswordForm({
         type="submit"
         disabled={submitting}
         aria-busy={submitting}
-        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-60 sm:w-auto"
+        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink hover:bg-brand-hover disabled:opacity-60 sm:w-auto"
       >
         {submitting ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

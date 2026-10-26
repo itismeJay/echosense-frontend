@@ -47,7 +47,7 @@ export default function WaveformDisplay({ snapshot, emotion }: WaveformDisplayPr
   const viewW = BARS * SLOT;
 
   return (
-    <div className="bg-white/40 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-xl p-3 backdrop-blur-xl">
+    <div className="bg-bg border border-white/60 rounded-control p-3">
       <svg
         width="100%"
         height={VIEW_H}
@@ -74,7 +74,7 @@ export default function WaveformDisplay({ snapshot, emotion }: WaveformDisplayPr
           );
         })}
       </svg>
-      <p className="mt-2 text-[10px] text-gray-400 dark:text-gray-500 text-center tracking-wide">
+      <p className="mt-2 text-[10px] text-muted text-center">
         Acoustic signature · No audio stored
       </p>
     </div>

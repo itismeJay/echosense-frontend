@@ -73,7 +73,7 @@ export default function LogsTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[740px]">
           <thead>
-            <tr className="border-b border-gray-100 dark:border-white/10">
+            <tr className="border-b border-line">
               {(
                 [
                   { key: "severity" as SortKey, label: "Severity" },
@@ -83,37 +83,37 @@ export default function LogsTable({
               ).map(({ key, label }) => (
                 <th
                   key={key}
-                  className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap"
+                  className="text-left py-2 px-3 text-xs text-muted font-medium whitespace-nowrap"
                 >
                   <button
-                    className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                    className="flex items-center gap-1 hover:text-ink transition-colors"
                     onClick={() => handleSort(key)}
                   >
                     {label} {renderSortIcon(sortKey, key, sortDir, sortable)}
                   </button>
                 </th>
               ))}
-              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden lg:table-cell">
+              <th className="text-left py-2 px-3 text-xs text-muted font-medium hidden lg:table-cell">
                 Category
               </th>
-              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden lg:table-cell">
+              <th className="text-left py-2 px-3 text-xs text-muted font-medium hidden lg:table-cell">
                 Language
               </th>
-              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden xl:table-cell whitespace-nowrap">
+              <th className="text-left py-2 px-3 text-xs text-muted font-medium hidden xl:table-cell whitespace-nowrap">
                 Trigger
               </th>
-              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden xl:table-cell whitespace-nowrap">
+              <th className="text-left py-2 px-3 text-xs text-muted font-medium hidden xl:table-cell whitespace-nowrap">
                 Words
               </th>
-              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden sm:table-cell">
+              <th className="text-left py-2 px-3 text-xs text-muted font-medium hidden sm:table-cell">
                 Emotion
               </th>
-              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden sm:table-cell">
+              <th className="text-left py-2 px-3 text-xs text-muted font-medium hidden sm:table-cell">
                 Location
               </th>
-              <th className="text-left py-2 px-3 text-xs text-gray-400 dark:text-gray-500 font-medium hidden md:table-cell whitespace-nowrap">
+              <th className="text-left py-2 px-3 text-xs text-muted font-medium hidden md:table-cell whitespace-nowrap">
                 <button
-                  className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  className="flex items-center gap-1 hover:text-ink transition-colors"
                   onClick={() => handleSort("created_at")}
                 >
                   Time {renderSortIcon(sortKey, "created_at", sortDir, sortable)}
@@ -125,7 +125,7 @@ export default function LogsTable({
           <tbody>
             {paged.length === 0 && (
               <tr>
-                <td colSpan={colCount} className="py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
+                <td colSpan={colCount} className="py-10 text-center text-muted text-sm">
                   No logs found
                 </td>
               </tr>
@@ -138,27 +138,27 @@ export default function LogsTable({
                 <Fragment key={row.id}>
                   <tr
                     onClick={expandable ? () => setExpandedId((id) => (id === row.id ? null : row.id)) : undefined}
-                    className={`border-b border-gray-50 dark:border-white/5 hover:bg-indigo-50/50 dark:hover:bg-white/5 transition-colors ${
+                    className={`border-b border-line-strong hover:bg-surface  transition-colors ${
                       expandable ? "cursor-pointer" : ""
-                    } ${isExpanded ? "bg-indigo-50/50 dark:bg-white/5" : ""}`}
+                    } ${isExpanded ? "bg-surface " : ""}`}
                   >
                     <td className="py-3 px-3">
                       <SeverityBadge severity={row.severity} dot />
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-14 bg-gray-100 dark:bg-white/5 rounded-full h-1.5 hidden sm:block shrink-0">
+                        <div className="w-14 bg-surface rounded-full h-1.5 hidden sm:block shrink-0">
                           <div
                             className="h-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
                             style={{ width: `${Math.round((row.confidence ?? 0) * 100)}%` }}
                           />
                         </div>
-                        <span className="text-gray-600 dark:text-gray-300 text-xs font-mono">
+                        <span className="text-muted text-xs font-mono">
                           {row.confidence != null ? formatConfidence(row.confidence) : "—"}
                         </span>
                       </div>
                     </td>
-                    <td className="py-3 px-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
+                    <td className="py-3 px-3 text-muted text-xs whitespace-nowrap">
                       {row.duration != null ? `${row.duration.toFixed(1)}s` : "—"}
                     </td>
                     <td className="py-3 px-3 hidden lg:table-cell">
@@ -167,11 +167,11 @@ export default function LogsTable({
                           {categoryLabel(firstCat)}
                         </span>
                       ) : (
-                        <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
+                        <span className="text-muted text-xs">—</span>
                       )}
                     </td>
                     <td className="py-3 px-3 hidden lg:table-cell">
-                      <span className="px-2 py-0.5 text-[11px] font-medium rounded-full border bg-gray-500/10 text-gray-600 border-gray-300/40 dark:bg-gray-500/15 dark:text-gray-300 dark:border-gray-400/25">
+                      <span className="px-2 py-0.5 text-[11px] font-medium rounded-full border bg-gray-500/10 text-muted border-line-strong">
                         {languageLabel(row.language)}
                       </span>
                     </td>
@@ -179,44 +179,44 @@ export default function LogsTable({
                       {row.duration_gate ? (
                         <DurationGateBadge gate={row.duration_gate} />
                       ) : (
-                        <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
+                        <span className="text-muted text-xs">—</span>
                       )}
                     </td>
-                    <td className="py-3 px-3 hidden xl:table-cell text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
-                      {wordCount > 0 ? `${wordCount} word${wordCount !== 1 ? "s" : ""}` : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                    <td className="py-3 px-3 hidden xl:table-cell text-muted text-xs whitespace-nowrap">
+                      {wordCount > 0 ? `${wordCount} word${wordCount !== 1 ? "s" : ""}` : <span className="text-muted">—</span>}
                     </td>
                     <td className="py-3 px-3 hidden sm:table-cell">
                       {row.emotion ? (
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${emotionBadgeColor(row.emotion)}`}
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold   ${emotionBadgeColor(row.emotion)}`}
                         >
                           {row.emotion}
                         </span>
                       ) : (
-                        <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
+                        <span className="text-muted text-xs">—</span>
                       )}
                     </td>
-                    <td className="py-3 px-3 text-gray-500 dark:text-gray-400 text-xs hidden sm:table-cell">
+                    <td className="py-3 px-3 text-muted text-xs hidden sm:table-cell">
                       <span className="inline-flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
+                        <MapPin className="w-3 h-3 text-muted shrink-0" />
                         {row.location}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-gray-400 dark:text-gray-500 text-xs hidden md:table-cell whitespace-nowrap">
+                    <td className="py-3 px-3 text-muted text-xs hidden md:table-cell whitespace-nowrap">
                       <span className="inline-flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
+                        <Clock className="w-3 h-3 text-muted shrink-0" />
                         {formatTimestamp(row.created_at)}
                       </span>
                     </td>
                     {expandable && (
-                      <td className="py-3 px-3 text-gray-400">
+                      <td className="py-3 px-3 text-muted">
                         <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                       </td>
                     )}
                   </tr>
                   {isExpanded && (
-                    <tr className="border-b border-gray-50 dark:border-white/5">
-                      <td colSpan={colCount} className="px-3 pb-4 pt-1 bg-indigo-50/30 dark:bg-white/[0.02]">
+                    <tr className="border-b border-line-strong">
+                      <td colSpan={colCount} className="px-3 pb-4 pt-1 bg-surface dark:bg-bg/[0.02]">
                         <AlertEvidence alert={row} defaultExpanded hideToggle />
                       </td>
                     </tr>
@@ -229,22 +229,22 @@ export default function LogsTable({
       </div>
 
       {paginated && totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
-          <span className="text-xs text-gray-400 dark:text-gray-500">
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-line">
+          <span className="text-xs text-muted">
             Page {page + 1} of {totalPages} · {sorted.length} total
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-gray-600 dark:text-gray-300 disabled:opacity-30 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+              className="px-3 py-1.5 text-xs bg-surface border border-line rounded-control text-muted disabled:opacity-30 hover:bg-surface transition-colors"
             >
               Previous
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
-              className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-gray-600 dark:text-gray-300 disabled:opacity-30 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+              className="px-3 py-1.5 text-xs bg-surface border border-line rounded-control text-muted disabled:opacity-30 hover:bg-surface transition-colors"
             >
               Next
             </button>

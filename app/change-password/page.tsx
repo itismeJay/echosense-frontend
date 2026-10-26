@@ -26,32 +26,32 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-slate-50 px-4 py-16 dark:bg-slate-950">
+    <main className="flex min-h-dvh items-center justify-center bg-surface px-4 py-16">
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
 
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <span className="flex min-h-11 items-center justify-center rounded-xl bg-indigo-100 px-3 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200">
+          <span className="flex min-h-11 items-center justify-center rounded-control bg-surface px-3 text-link">
             <KeyRound className="h-5 w-5" aria-hidden="true" />
           </span>
-          <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-xl font-semibold tracking-tight text-ink">
             {forced ? "Set a new password" : "Change password"}
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted">
             {forced
               ? "Your account was created with a temporary password. Choose a new one to continue."
               : "Choose a new password for your account."}
           </p>
           {user && (
-            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <p className="text-sm font-medium text-ink">
               {user.email}
             </p>
           )}
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="rounded-control border border-line bg-bg p-6">
           <ChangePasswordForm
             submitLabel={forced ? "Save and continue" : "Change password"}
             onChanged={handleChanged}
@@ -64,7 +64,7 @@ export default function ChangePasswordPage() {
           ) : (
             <Link
               href="/dashboard"
-              className="inline-flex min-h-11 items-center font-medium text-indigo-700 hover:underline dark:text-indigo-300"
+              className="inline-flex min-h-11 items-center font-medium text-link hover:underline"
             >
               Back to Dashboard
             </Link>
@@ -72,7 +72,7 @@ export default function ChangePasswordPage() {
           <button
             type="button"
             onClick={logout}
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 font-medium text-zinc-600 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-zinc-300 dark:hover:text-white"
+            className="inline-flex min-h-11 items-center gap-2 rounded-control px-2 font-medium text-muted hover:text-ink"
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
             Sign out

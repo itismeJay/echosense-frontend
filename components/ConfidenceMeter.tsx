@@ -16,8 +16,8 @@ export default function ConfidenceMeter({ value }: ConfidenceMeterProps) {
   const offset = CIRCUMFERENCE * (1 - clamped);
 
   return (
-    <div className="bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 rounded-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset] flex flex-col items-center justify-center">
-      <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">
+    <div className="bg-bg border border-white/80 rounded-panel p-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset] flex flex-col items-center justify-center">
+      <p className="text-xs text-muted mb-4">
         Detection Confidence
       </p>
       <svg
@@ -83,7 +83,7 @@ export default function ConfidenceMeter({ value }: ConfidenceMeterProps) {
           CONFIDENCE
         </text>
       </svg>
-      <p className="text-xs text-gray-400 dark:text-gray-600 mt-2">Last detection score</p>
+      <p className="text-xs text-muted mt-2">Last detection score</p>
     </div>
   );
 }

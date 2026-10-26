@@ -17,7 +17,7 @@ import ResourceError from "./ResourceError";
 import StatusBadge from "./StatusBadge";
 
 const INPUT =
-  "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
+  "min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink       ";
 
 interface ClassroomFormProps {
   classroom?: Classroom;
@@ -62,7 +62,7 @@ function ClassroomForm({
   return (
     <form onSubmit={(event) => void submit(event)}>
       <div>
-        <label htmlFor="classroom-name" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+        <label htmlFor="classroom-name" className="mb-1.5 block text-sm font-semibold text-ink">
           Classroom name
         </label>
         <input
@@ -79,7 +79,7 @@ function ClassroomForm({
 
       {!classroom && isSuperAdmin && (
         <div className="mt-4">
-          <label htmlFor="classroom-school" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+          <label htmlFor="classroom-school" className="mb-1.5 block text-sm font-semibold text-ink">
             School
           </label>
           <select
@@ -103,18 +103,18 @@ function ClassroomForm({
       )}
 
       {!isSuperAdmin && schoolId && !classroom && (
-        <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-4 text-sm text-muted">
           The classroom will be created in your assigned school.
         </p>
       )}
 
-      {error && <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
+      {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
 
       <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <button type="button" onClick={onCancel} disabled={pending} className="min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+        <button type="button" onClick={onCancel} disabled={pending} className="min-h-11 rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:opacity-50">
           Cancel
         </button>
-        <button type="submit" disabled={pending || !selectedSchoolId} className="min-h-11 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-50">
+        <button type="submit" disabled={pending || !selectedSchoolId} className="min-h-11 rounded-control bg-brand px-4 py-2 text-sm font-semibold text-brand-ink hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50">
           {pending ? "Saving…" : classroom ? "Save changes" : "Create classroom"}
         </button>
       </div>
@@ -231,28 +231,28 @@ export default function ClassroomManagement() {
     <div className="mx-auto max-w-6xl p-4 md:p-6 lg:p-8">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Multi-Room Management</p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">Classrooms</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Manage classrooms and their EchoSense devices.</p>
+          <p className="text-sm font-semibold text-link">Multi-Room Management</p>
+          <h1 className="mt-1 text-2xl font-semibold text-ink">Classrooms</h1>
+          <p className="mt-2 text-sm leading-6 text-muted">Manage classrooms and their EchoSense devices.</p>
         </div>
         {user && (
-          <button type="button" onClick={() => setShowCreate(true)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800">
+          <button type="button" onClick={() => setShowCreate(true)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2 text-sm font-semibold text-brand-ink hover:bg-brand-hover">
             <Plus className="h-4 w-4" aria-hidden="true" /> Add classroom
           </button>
         )}
       </header>
 
-      <section aria-label="Classroom filters" className={`mb-6 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 ${superAdmin ? "sm:grid-cols-[1fr_14rem_14rem]" : "sm:grid-cols-[1fr_14rem]"}`}>
+      <section aria-label="Classroom filters" className={`mb-6 grid gap-4 rounded-panel border border-line bg-bg p-4    ${superAdmin ? "sm:grid-cols-[1fr_14rem_14rem]" : "sm:grid-cols-[1fr_14rem]"}`}>
         <div>
-          <label htmlFor="classroom-search" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">Search</label>
+          <label htmlFor="classroom-search" className="mb-1.5 block text-sm font-semibold text-ink">Search</label>
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
             <input id="classroom-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Classroom, school, or device" className={`${INPUT} pl-10`} />
           </div>
         </div>
         {superAdmin && (
           <div>
-            <label htmlFor="classroom-school-filter" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">School</label>
+            <label htmlFor="classroom-school-filter" className="mb-1.5 block text-sm font-semibold text-ink">School</label>
             <select id="classroom-school-filter" value={schoolFilter} onChange={(event) => setSchoolFilter(event.target.value)} className={INPUT}>
               <option value="">All schools</option>
               {registeredSchools.map((school) => <option key={school.id} value={school.id}>{school.name}{school.is_active ? "" : " (inactive)"}</option>)}
@@ -260,7 +260,7 @@ export default function ClassroomManagement() {
           </div>
         )}
         <div>
-          <label htmlFor="classroom-status" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">Status</label>
+          <label htmlFor="classroom-status" className="mb-1.5 block text-sm font-semibold text-ink">Status</label>
           <select id="classroom-status" value={status} onChange={(event) => setStatus(event.target.value as typeof status)} className={INPUT}>
             <option value="all">All statuses</option>
             <option value="active">Active</option>
@@ -273,43 +273,43 @@ export default function ClassroomManagement() {
 
       {loading && classrooms.length === 0 ? (
         <div aria-label="Loading classrooms" className="grid gap-4 sm:grid-cols-2">
-          {[0, 1, 2, 3].map((item) => <div key={item} className="h-48 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />)}
+          {[0, 1, 2, 3].map((item) => <div key={item} className="h-48 animate-pulse rounded-panel bg-surface" />)}
         </div>
       ) : !error && visibleClassrooms.length === 0 ? (
-        <section className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center dark:border-slate-700 dark:bg-slate-900">
-          <DoorOpen className="mx-auto h-8 w-8 text-slate-400" aria-hidden="true" />
-          <h2 className="mt-3 text-lg font-semibold text-slate-950 dark:text-white">{classrooms.length === 0 ? "No classrooms have been created yet." : "No classrooms found."}</h2>
-          {classrooms.length === 0 && user && <button type="button" onClick={() => setShowCreate(true)} className="mt-4 min-h-11 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800">Add classroom</button>}
+        <section className="rounded-panel border border-dashed border-line-strong bg-bg px-6 py-16 text-center">
+          <DoorOpen className="mx-auto h-8 w-8 text-muted" aria-hidden="true" />
+          <h2 className="mt-3 text-lg font-semibold text-ink">{classrooms.length === 0 ? "No classrooms have been created yet." : "No classrooms found."}</h2>
+          {classrooms.length === 0 && user && <button type="button" onClick={() => setShowCreate(true)} className="mt-4 min-h-11 rounded-control bg-brand px-4 py-2 text-sm font-semibold text-brand-ink hover:bg-brand-hover">Add classroom</button>}
         </section>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {visibleClassrooms.map((classroom) => (
-            <article key={classroom.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <article key={classroom.id} className="rounded-panel border border-line bg-bg p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h2 className="truncate text-lg font-bold text-slate-950 dark:text-white">{classroom.name}</h2>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{classroom.school_name}</p>
+                  <h2 className="truncate text-lg font-semibold text-ink">{classroom.name}</h2>
+                  <p className="mt-1 text-sm text-muted">{classroom.school_name}</p>
                 </div>
                 <StatusBadge active={classroom.is_active} />
               </div>
-              <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Devices ({classroom.devices.length})</p>
+              <div className="mt-4 border-t border-line pt-4">
+                <p className="text-sm font-semibold text-ink">Devices ({classroom.devices.length})</p>
                 {classroom.devices.length === 0 ? (
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">No device assigned</p>
+                  <p className="mt-2 text-sm text-muted">No device assigned</p>
                 ) : (
-                  <ul className="mt-2 space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
+                  <ul className="mt-2 space-y-1.5 text-sm text-muted">
                     {classroom.devices.slice(0, 3).map((device) => <li key={device.id} className="truncate">{device.display_name} <span className="font-mono text-xs">({device.device_code})</span></li>)}
                     {classroom.devices.length > 3 && <li>+{classroom.devices.length - 3} more</li>}
                   </ul>
                 )}
               </div>
               <div className="mt-5 flex flex-wrap gap-2">
-                <Link href={`/classrooms/${classroom.id}`} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">View</Link>
-                <button type="button" onClick={() => setEditing(classroom)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"><Pencil className="h-4 w-4" aria-hidden="true" /> Edit</button>
+                <Link href={`/classrooms/${classroom.id}`} className="inline-flex min-h-11 items-center justify-center rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface">View</Link>
+                <button type="button" onClick={() => setEditing(classroom)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"><Pencil className="h-4 w-4" aria-hidden="true" /> Edit</button>
                 {classroom.is_active ? (
-                  <button type="button" onClick={() => setDeactivating(classroom)} className="min-h-11 rounded-xl px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30">Deactivate</button>
+                  <button type="button" onClick={() => setDeactivating(classroom)} className="min-h-11 rounded-control px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30">Deactivate</button>
                 ) : (
-                  <button type="button" disabled={pending} onClick={() => void setClassroomActive(classroom, true)} className="min-h-11 rounded-xl px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-300 dark:hover:bg-emerald-950/30">Reactivate</button>
+                  <button type="button" disabled={pending} onClick={() => void setClassroomActive(classroom, true)} className="min-h-11 rounded-control px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-300 dark:hover:bg-emerald-950/30">Reactivate</button>
                 )}
               </div>
             </article>

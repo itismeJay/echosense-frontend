@@ -40,26 +40,26 @@ export default function AlertCard({ alert, compact = false }: AlertCardProps) {
   const testAlert = isTestAlert(alert);
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+    <article className="rounded-panel border border-line bg-bg p-5 transition-shadow hover:">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <SeverityBadge severity={alert.severity} dot />
         <div className="flex flex-wrap justify-end gap-2">
           {testAlert && (
-            <span className="rounded-full border-2 border-blue-600 bg-blue-50 px-3 py-1 text-xs font-black tracking-wide text-blue-800 dark:bg-blue-950/50 dark:text-blue-100">
+            <span className="rounded-full border-2 border-blue-600 bg-blue-50 px-3 py-1 text-xs font-black text-blue-800">
               TEST ALERT — NOT A REAL INCIDENT
             </span>
           )}
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-ink">
             {reviewStatusLabel(alert)}
           </span>
         </div>
       </div>
 
       <div className="mt-4">
-        <h2 className={`${compact ? "text-base" : "text-lg"} font-semibold text-slate-950 dark:text-white`}>
+        <h2 className={`${compact ? "text-base" : "text-lg"} font-semibold text-ink`}>
           {severitySummary(alert.severity)}
         </h2>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600 dark:text-slate-300">
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
           <span className="inline-flex items-center gap-1.5">
             <Clock3 className="h-4 w-4" aria-hidden="true" />
             {formatTime(eventTime(alert))}
@@ -71,7 +71,7 @@ export default function AlertCard({ alert, compact = false }: AlertCardProps) {
         </div>
       </div>
 
-      <dl className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+      <dl className="mt-4 space-y-2 text-sm text-muted">
         <div className="flex flex-wrap items-center gap-2">
           <School className="h-4 w-4" aria-hidden="true" />
           <dt className="font-medium">School:</dt>
@@ -101,11 +101,11 @@ export default function AlertCard({ alert, compact = false }: AlertCardProps) {
         </div>
       </dl>
 
-      <p className="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+      <p className="mt-3 text-xs font-medium text-muted">
         {severityEvidenceAvailabilityLabel(alert)}
       </p>
 
-      <p className="mt-3 flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+      <p className="mt-3 flex items-center gap-2 text-xs font-medium text-muted">
         <Info className="h-4 w-4" aria-hidden="true" />
         {REQUIRED_REVIEW_NOTICE}
       </p>
@@ -113,7 +113,7 @@ export default function AlertCard({ alert, compact = false }: AlertCardProps) {
       <div className="mt-5 flex justify-end">
         <Link
           href={`/alerts/${alert.id}`}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 dark:ring-offset-slate-900"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand focus-visible:outline-none focus-visible:ring-offset-2 dark:ring-offset-slate-900"
           aria-label={`View details for the alert in ${alert.location}`}
         >
           View Details

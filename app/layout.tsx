@@ -1,27 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import ToasterClient from "@/components/ToasterClient";
 import { Providers } from "@/lib/theme-provider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const plexSans = IBM_Plex_Sans({
+  variable: "--font-plex",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "EchoSense — Classroom Monitoring System",
+  title: "EchoSense",
   description:
-    "A classroom monitoring dashboard for possible aggression alerts used by authorized school personnel.",
+    "Classroom alerts for school staff: see what needs attention, review it, and follow up.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f8fafc",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
 };
 
 export default function RootLayout({
@@ -31,9 +30,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}
-      >
+      <body className={`${plexSans.variable} min-h-screen`}>
         <Providers>
           {children}
           <ToasterClient />

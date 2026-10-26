@@ -1,7 +1,7 @@
 export type Severity = "high" | "medium" | "low";
 export type AlertSeverity = Severity | "unknown";
 export type CanonicalSeverity = "LOW" | "MEDIUM" | "HIGH";
-export type AlertStatus = "active" | "resolved" | "unknown";
+export type AlertStatus = "active" | "reviewed" | "resolved" | "unknown";
 export type AlertTriggerType = "KEYWORD" | "ACOUSTIC" | "TEST" | "UNKNOWN";
 export type DeliveryStatus = "stored" | "unknown";
 export type PushStatus =

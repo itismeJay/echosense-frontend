@@ -43,7 +43,7 @@ export default function ClassroomDetail({ classroomId }: { classroomId: string }
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6 lg:p-8">
-      <Link href="/classrooms" className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-xl text-sm font-semibold text-indigo-700 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-100">
+      <Link href="/classrooms" className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-control text-sm font-semibold text-link hover:text-link">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to classrooms
       </Link>
 
@@ -58,41 +58,41 @@ export default function ClassroomDetail({ classroomId }: { classroomId: string }
 
       {loading && !classroom ? (
         <div aria-label="Loading classroom details" className="space-y-5">
-          <div className="h-44 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
-          <div className="h-64 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
+          <div className="h-44 animate-pulse rounded-panel bg-surface" />
+          <div className="h-64 animate-pulse rounded-panel bg-surface" />
         </div>
       ) : classroom ? (
         <>
-          <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <header className="rounded-panel border border-line bg-bg p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">{classroom.school_name}</p>
-                <h1 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">{classroom.name}</h1>
+                <p className="text-sm font-semibold text-link">{classroom.school_name}</p>
+                <h1 className="mt-1 text-2xl font-semibold text-ink">{classroom.name}</h1>
               </div>
               <StatusBadge active={classroom.is_active} />
             </div>
-            <dl className="mt-5 grid gap-4 border-t border-slate-200 pt-5 text-sm sm:grid-cols-2 dark:border-slate-800">
-              <div><dt className="font-medium text-slate-500 dark:text-slate-400">Created</dt><dd className="mt-1 text-slate-900 dark:text-white">{formatTimestamp(classroom.created_at)}</dd></div>
-              <div><dt className="font-medium text-slate-500 dark:text-slate-400">Last updated</dt><dd className="mt-1 text-slate-900 dark:text-white">{formatTimestamp(classroom.updated_at)}</dd></div>
+            <dl className="mt-5 grid gap-4 border-t border-line pt-5 text-sm sm:grid-cols-2">
+              <div><dt className="font-medium text-muted">Created</dt><dd className="mt-1 text-ink">{formatTimestamp(classroom.created_at)}</dd></div>
+              <div><dt className="font-medium text-muted">Last updated</dt><dd className="mt-1 text-ink">{formatTimestamp(classroom.updated_at)}</dd></div>
             </dl>
           </header>
 
           <section className="mt-6" aria-labelledby="assigned-devices-title">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 id="assigned-devices-title" className="text-xl font-bold text-slate-950 dark:text-white">Assigned devices</h2>
-              <span className="text-sm text-slate-500 dark:text-slate-400">{classroom.devices.length}</span>
+              <h2 id="assigned-devices-title" className="text-xl font-semibold text-ink">Assigned devices</h2>
+              <span className="text-sm text-muted">{classroom.devices.length}</span>
             </div>
             {classroom.devices.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-900">
-                <Cpu className="mx-auto h-7 w-7 text-slate-400" aria-hidden="true" />
-                <p className="mt-3 font-semibold text-slate-900 dark:text-white">No device assigned</p>
-                <Link href="/devices" className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-indigo-700 dark:text-indigo-300">Manage devices</Link>
+              <div className="rounded-panel border border-dashed border-line-strong bg-bg px-6 py-10 text-center">
+                <Cpu className="mx-auto h-7 w-7 text-muted" aria-hidden="true" />
+                <p className="mt-3 font-semibold text-ink">No device assigned</p>
+                <Link href="/devices" className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-link">Manage devices</Link>
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 {classroom.devices.map((device) => (
-                  <Link key={device.id} href={`/devices/${device.id}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-800">
-                    <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-950 dark:text-white">{device.display_name}</h3><p className="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">{device.device_code}</p></div><StatusBadge active={device.is_active} activeLabel="Active" inactiveLabel="Disabled" /></div>
+                  <Link key={device.id} href={`/devices/${device.id}`} className="rounded-panel border border-line bg-bg p-4 transition hover:border-line">
+                    <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold text-ink">{device.display_name}</h3><p className="mt-1 font-mono text-xs text-muted">{device.device_code}</p></div><StatusBadge active={device.is_active} activeLabel="Active" inactiveLabel="Disabled" /></div>
                   </Link>
                 ))}
               </div>
@@ -101,11 +101,11 @@ export default function ClassroomDetail({ classroomId }: { classroomId: string }
 
           <section className="mt-8" aria-labelledby="classroom-alerts-title">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 id="classroom-alerts-title" className="text-xl font-bold text-slate-950 dark:text-white">Recent alerts</h2>
-              <Link href={`/alerts?classroom_id=${encodeURIComponent(classroom.id)}`} className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300"><BellRing className="h-4 w-4" aria-hidden="true" /> View filtered alerts</Link>
+              <h2 id="classroom-alerts-title" className="text-xl font-semibold text-ink">Recent alerts</h2>
+              <Link href={`/alerts?classroom_id=${encodeURIComponent(classroom.id)}`} className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-link"><BellRing className="h-4 w-4" aria-hidden="true" /> View filtered alerts</Link>
             </div>
             {alerts.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">No alerts have been recorded for this classroom.</div>
+              <div className="rounded-panel border border-dashed border-line-strong bg-bg px-6 py-10 text-center text-sm text-muted">No alerts have been recorded for this classroom.</div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2">{alerts.map((alert) => <AlertCard key={alert.id} alert={alert} compact />)}</div>
             )}

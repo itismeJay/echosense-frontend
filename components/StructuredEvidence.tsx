@@ -35,13 +35,13 @@ export default function StructuredEvidence({
 }) {
   const entries = Object.entries(evidence);
   if (entries.length === 0) {
-    return <p className="text-sm text-slate-600 dark:text-slate-300">No recorded details.</p>;
+    return <p className="text-sm text-muted">No recorded details.</p>;
   }
   return (
-    <dl className={`${nested ? "mt-1" : "mt-3"} space-y-2 text-sm text-slate-700 dark:text-slate-200`}>
+    <dl className={`${nested ? "mt-1" : "mt-3"} space-y-2 text-sm text-ink`}>
       {entries.map(([key, value]) => (
-        <div key={key} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/50">
-          <dt className="font-semibold text-slate-900 dark:text-white">
+        <div key={key} className="rounded-control border border-line bg-surface p-3">
+          <dt className="font-semibold text-ink">
             {readableEvidenceLabel(key)}
           </dt>
           <dd className="mt-1"><EvidenceValueView value={value} /></dd>

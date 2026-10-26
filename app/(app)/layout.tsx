@@ -26,17 +26,17 @@ function PageGuard({ children }: { children: React.ReactNode }) {
   if (status === "error") {
     return (
       <div role="alert" className="mx-auto max-w-xl p-4 md:p-6 lg:p-8">
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30">
-          <h1 className="font-bold text-red-950 dark:text-red-100">
+        <div className="rounded-panel border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30">
+          <h1 className="font-semibold text-ink">
             We couldn&apos;t confirm your account.
           </h1>
-          <p className="mt-2 text-sm text-red-800 dark:text-red-200">
+          <p className="mt-2 text-sm text-danger">
             Please check the connection and try again.
           </p>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700"
+            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Retry
@@ -49,7 +49,7 @@ function PageGuard({ children }: { children: React.ReactNode }) {
     return (
       <div role="status" className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">
         <span className="sr-only">Loading your account</span>
-        <div className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900" />
+        <div className="h-40 animate-pulse rounded-panel border border-line bg-bg" />
       </div>
     );
   }
@@ -61,7 +61,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-dvh flex-col overflow-hidden bg-surface">
       <a
         href="#main-content"
         className="skip-link"

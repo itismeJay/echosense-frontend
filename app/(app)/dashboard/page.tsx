@@ -31,10 +31,10 @@ interface DashboardMetricProps {
 }
 
 const METRIC_TONES = {
-  indigo: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-200",
+  indigo: "bg-surface text-link  ",
   red: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-200",
   emerald: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200",
-  slate: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+  slate: "bg-surface text-ink  ",
 };
 
 function DashboardMetric({
@@ -46,26 +46,26 @@ function DashboardMetric({
   loading = false,
 }: DashboardMetricProps) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <article className="rounded-panel border border-line bg-bg p-5">
       <div className="flex items-start gap-4">
-        <span className={`rounded-xl p-3 ${METRIC_TONES[tone]}`}>
+        <span className={`rounded-control p-3 ${METRIC_TONES[tone]}`}>
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+          <p className="text-sm font-semibold text-muted">
             {label}
           </p>
           {loading ? (
             <div
-              className="mt-2 h-8 w-24 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800"
+              className="mt-2 h-8 w-24 animate-pulse rounded-control bg-surface"
               aria-label={`Loading ${label}`}
             />
           ) : (
-            <p className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
+            <p className="mt-1 text-2xl font-semibold text-ink">
               {value}
             </p>
           )}
-          <p className="mt-2 text-sm leading-5 text-slate-500 dark:text-slate-400">
+          <p className="mt-2 text-sm leading-5 text-muted">
             {helpText}
           </p>
         </div>
@@ -150,13 +150,13 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6 lg:p-8">
       <header className="mb-6">
-        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        <p className="text-sm font-semibold text-link">
           Classroom Monitoring System
         </p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">
           What needs your attention today?
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           See recent possible classroom concerns and check whether the classroom
           device is connected.
         </p>
@@ -165,20 +165,20 @@ export default function DashboardPage() {
       {error && (
         <div
           role="alert"
-          className="mb-6 flex flex-col gap-4 rounded-2xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-red-900/60 dark:bg-red-950/30"
+          className="mb-6 flex flex-col gap-4 rounded-panel border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-red-900/60 dark:bg-red-950/30"
         >
           <div>
-            <p className="font-semibold text-red-950 dark:text-red-100">
+            <p className="font-semibold text-ink">
               We couldn&apos;t load classroom alerts.
             </p>
-            <p className="mt-1 text-sm text-red-800 dark:text-red-200">
+            <p className="mt-1 text-sm text-danger">
               Please try again.
             </p>
           </div>
           <button
             type="button"
             onClick={handleRetry}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-semibold text-red-800 hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-red-300 bg-bg px-4 py-2.5 text-sm font-semibold text-red-800 hover:bg-red-100 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Retry
@@ -189,7 +189,7 @@ export default function DashboardPage() {
       {!deviceLoading && deviceConnected === false && (
         <section
           aria-labelledby="device-offline-title"
-          className="mb-6 flex gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-900/70 dark:bg-amber-950/30"
+          className="mb-6 flex gap-3 rounded-panel border border-amber-300 bg-amber-50 p-4 dark:border-amber-900/70 dark:bg-amber-950/30"
         >
           <WifiOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-800 dark:text-amber-200" aria-hidden="true" />
           <div>
@@ -210,20 +210,20 @@ export default function DashboardPage() {
       {!deviceLoading && deviceError && (
         <section
           aria-labelledby="device-unavailable-title"
-          className="mb-6 flex gap-3 rounded-2xl border border-slate-300 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+          className="mb-6 flex gap-3 rounded-panel border border-line-strong bg-surface p-4"
         >
           <CircleHelp
-            className="mt-0.5 h-5 w-5 shrink-0 text-slate-700 dark:text-slate-200"
+            className="mt-0.5 h-5 w-5 shrink-0 text-ink"
             aria-hidden="true"
           />
           <div>
             <h2
               id="device-unavailable-title"
-              className="font-semibold text-slate-950 dark:text-white"
+              className="font-semibold text-ink"
             >
               Classroom Device Status Unavailable
             </h2>
-            <p className="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-300">
+            <p className="mt-1 text-sm leading-6 text-ink">
               EchoSense could not check the device right now. This does not
               mean the classroom device is offline.
             </p>
@@ -294,17 +294,17 @@ export default function DashboardPage() {
           <div>
             <h2
               id="recent-alerts-title"
-              className="text-xl font-bold text-slate-950 dark:text-white"
+              className="text-xl font-semibold text-ink"
             >
               Recent Alerts
             </h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            <p className="mt-1 text-sm text-muted">
               Automated alerts are possible concerns and have not been verified.
             </p>
           </div>
           <Link
             href="/alerts"
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+            className="inline-flex min-h-11 items-center gap-2 rounded-control px-3 py-2 text-sm font-semibold text-link hover:bg-surface"
           >
             View all alerts
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -314,12 +314,12 @@ export default function DashboardPage() {
         {loading && alerts.length === 0 ? (
           <AlertListSkeleton count={4} />
         ) : recentAlerts.length === 0 && !error ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-panel border border-line bg-bg p-8 text-center">
             <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
-            <h3 className="mt-3 font-semibold text-slate-950 dark:text-white">
+            <h3 className="mt-3 font-semibold text-ink">
               No alerts need attention today.
             </h3>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            <p className="mt-1 text-sm text-muted">
               Recent classroom alerts will appear here when they are received.
             </p>
           </div>
@@ -332,7 +332,7 @@ export default function DashboardPage() {
         )}
       </section>
 
-      <p className="mt-6 flex items-center gap-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+      <p className="mt-6 flex items-center gap-2 text-xs leading-5 text-muted">
         <Clock3 className="h-4 w-4 shrink-0" aria-hidden="true" />
         Alert information refreshes automatically while this page is open.
       </p>

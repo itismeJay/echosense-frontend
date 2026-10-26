@@ -27,13 +27,13 @@ export const UNAVAILABLE_SEVERITY_EVIDENCE_MESSAGE =
 export function severityLabel(severity: AlertSeverity): string {
   switch (severity) {
     case "high":
-      return "HIGH";
+      return "High";
     case "medium":
-      return "MEDIUM";
+      return "Medium";
     case "low":
-      return "LOW";
+      return "Low";
     default:
-      return "SEVERITY UNAVAILABLE";
+      return "Severity unavailable";
   }
 }
 
@@ -76,9 +76,15 @@ export function alertStatusLabel(): string {
 }
 
 export function reviewStatusLabel(alert: Alert): string {
-  if (alert.status === "resolved") return "Marked resolved";
-  if (alert.status === "active") return "Awaiting review";
+  if (alert.status === "resolved") return "Resolved";
+  if (alert.status === "reviewed") return "Reviewed";
+  if (alert.status === "active") return "Needs review";
   return "Review status unavailable";
+}
+
+/** An alert needs review until someone marks it reviewed or resolved. */
+export function needsReview(alert: Alert): boolean {
+  return alert.status === "active";
 }
 
 export function isTestAlert(alert: Alert): boolean {

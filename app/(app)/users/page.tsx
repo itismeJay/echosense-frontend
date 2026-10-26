@@ -46,7 +46,7 @@ const ROLE_LABELS: Record<User["role"], string> = {
 };
 
 const INPUT =
-  "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
+  "min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink       ";
 
 function roleLabel(user: User): string {
   return isSuperAdmin(user) ? "Super Administrator" : ROLE_LABELS[user.role];
@@ -170,15 +170,15 @@ export default function UsersPage() {
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">
       <header className="mb-6">
-        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        <p className="text-sm font-semibold text-link">
           Administrator
         </p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+            <h1 className="text-2xl font-semibold text-ink sm:text-3xl">
               User Accounts
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
               {creatorIsSuperAdmin
                 ? "View accounts in every school, create accounts for a chosen school, and remove accounts."
                 : "View the accounts in your school, create new ones, and remove accounts."}
@@ -187,7 +187,7 @@ export default function UsersPage() {
           <button
             type="button"
             onClick={openCreateDialog}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink hover:bg-brand-hover"
           >
             <UserPlus className="h-4 w-4" aria-hidden="true" />
             Add User
@@ -199,7 +199,7 @@ export default function UsersPage() {
         <div className="mb-5 max-w-xs">
           <label
             htmlFor="users-school-filter"
-            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+            className="mb-1.5 block text-sm font-medium text-ink"
           >
             School
           </label>
@@ -227,57 +227,57 @@ export default function UsersPage() {
           {[0, 1, 2, 3].map((item) => (
             <div
               key={item}
-              className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+              className="h-40 animate-pulse rounded-panel border border-line bg-bg"
             />
           ))}
         </div>
       ) : error ? (
         <div
           role="alert"
-          className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
+          className="rounded-panel border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
         >
-          <h2 className="font-bold text-red-950 dark:text-red-100">
+          <h2 className="font-semibold text-ink">
             We couldn&apos;t load user accounts.
           </h2>
-          <p className="mt-2 text-sm text-red-800 dark:text-red-200">
+          <p className="mt-2 text-sm text-danger">
             Please check the connection and try again.
           </p>
           <button
             type="button"
             onClick={() => void loadUsers()}
-            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700"
+            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Retry
           </button>
         </div>
       ) : visibleUsers.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
-          <Users className="mx-auto h-7 w-7 text-slate-500" aria-hidden="true" />
-          <h2 className="mt-3 font-bold text-slate-950 dark:text-white">
+        <div className="rounded-panel border border-line bg-bg p-8 text-center">
+          <Users className="mx-auto h-7 w-7 text-muted" aria-hidden="true" />
+          <h2 className="mt-3 font-semibold text-ink">
             No user accounts are available.
           </h2>
         </div>
       ) : (
         <section aria-label="User accounts">
-          <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">
+          <p className="mb-3 text-sm text-muted">
             {visibleUsers.length} account{visibleUsers.length === 1 ? "" : "s"}
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {visibleUsers.map((user) => (
               <article
                 key={user.id}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                className="rounded-panel border border-line bg-bg p-5"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <span className="rounded-xl bg-indigo-50 p-2.5 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200">
+                  <span className="rounded-control bg-surface p-2.5 text-link">
                     <Users className="h-5 w-5" aria-hidden="true" />
                   </span>
                   {user.id !== currentUser?.id && (
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(user)}
-                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-700 dark:hover:bg-red-950/30 dark:hover:text-red-300"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-muted hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30 dark:hover:text-red-300"
                       aria-label={`Delete ${user.email}`}
                     >
                       <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -287,35 +287,35 @@ export default function UsersPage() {
 
                 <dl className="mt-4 space-y-3">
                   <div>
-                    <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <dt className="flex items-center gap-2 text-xs font-semibold text-muted">
                       <Mail className="h-4 w-4" aria-hidden="true" />
                       Email
                     </dt>
-                    <dd className="mt-1 break-words font-semibold text-slate-950 dark:text-white">
+                    <dd className="mt-1 break-words font-semibold text-ink">
                       {user.email}
                       {user.id === currentUser?.id && (
-                        <span className="ml-2 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                        <span className="ml-2 text-xs font-medium text-link">
                           You
                         </span>
                       )}
                     </dd>
                   </div>
                   <div>
-                    <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <dt className="flex items-center gap-2 text-xs font-semibold text-muted">
                       <ShieldCheck className="h-4 w-4" aria-hidden="true" />
                       Access level
                     </dt>
-                    <dd className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+                    <dd className="mt-1 text-sm text-ink">
                       {roleLabel(user)}
                     </dd>
                   </div>
                   {showSchoolFilter && (
                     <div>
-                      <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <dt className="flex items-center gap-2 text-xs font-semibold text-muted">
                         <Building2 className="h-4 w-4" aria-hidden="true" />
                         School
                       </dt>
-                      <dd className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+                      <dd className="mt-1 text-sm text-ink">
                         {user.school_id
                           ? schoolNames.get(user.school_id) ?? "Unknown school"
                           : "No school"}
@@ -324,7 +324,7 @@ export default function UsersPage() {
                   )}
                 </dl>
                 {user.must_change_password && (
-                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  <p className="mt-4 flex items-center gap-2 rounded-control bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                     <KeyRound className="h-4 w-4 shrink-0" aria-hidden="true" />
                     Temporary password: not changed yet
                   </p>
@@ -350,7 +350,7 @@ export default function UsersPage() {
             <div>
               <label
                 htmlFor="new-user-email"
-                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+                className="mb-1.5 block text-sm font-medium text-ink"
               >
                 Email
               </label>
@@ -367,7 +367,7 @@ export default function UsersPage() {
             <div>
               <label
                 htmlFor="new-user-password"
-                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+                className="mb-1.5 block text-sm font-medium text-ink"
               >
                 Temporary password
               </label>
@@ -384,7 +384,7 @@ export default function UsersPage() {
               />
               <p
                 id="new-user-password-hint"
-                className="mt-1.5 flex items-start gap-1.5 text-xs text-slate-600 dark:text-slate-300"
+                className="mt-1.5 flex items-start gap-1.5 text-xs text-muted"
               >
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 At least 8 characters. User must change this password on first login.
@@ -393,7 +393,7 @@ export default function UsersPage() {
             <div>
               <label
                 htmlFor="new-user-role"
-                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+                className="mb-1.5 block text-sm font-medium text-ink"
               >
                 Access level
               </label>
@@ -409,12 +409,12 @@ export default function UsersPage() {
               </select>
             </div>
             {creatorIsSuperAdmin && role === "admin" && (
-              <label className="flex min-h-11 items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+              <label className="flex min-h-11 items-center gap-3 text-sm text-ink">
                 <input
                   type="checkbox"
                   checked={newSuperAdmin}
                   onChange={(event) => setNewSuperAdmin(event.target.checked)}
-                  className="h-5 w-5 rounded border-slate-300 accent-indigo-700"
+                  className="h-5 w-5 rounded border-line-strong"
                 />
                 Super administrator (all schools, no school assigned)
               </label>
@@ -423,7 +423,7 @@ export default function UsersPage() {
               <div>
                 <label
                   htmlFor="new-user-school"
-                  className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+                  className="mb-1.5 block text-sm font-medium text-ink"
                 >
                   School
                 </label>
@@ -444,14 +444,14 @@ export default function UsersPage() {
               </div>
             )}
             {!creatorIsSuperAdmin && (
-              <p className="text-sm text-slate-600 dark:text-slate-300">
+              <p className="text-sm text-muted">
                 The account is created in your school.
               </p>
             )}
             {formError && (
               <p
                 role="alert"
-                className="flex items-start gap-2 text-sm font-medium text-red-700 dark:text-red-300"
+                className="flex items-start gap-2 text-sm font-medium text-danger"
               >
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 {formError}
@@ -462,7 +462,7 @@ export default function UsersPage() {
                 type="button"
                 onClick={() => setShowCreate(false)}
                 disabled={submitting}
-                className="min-h-11 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="min-h-11 rounded-control border border-line-strong px-4 py-2.5 text-sm font-semibold text-ink hover:bg-surface disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -470,7 +470,7 @@ export default function UsersPage() {
                 type="submit"
                 disabled={submitting}
                 aria-busy={submitting}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-60"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink hover:bg-brand-hover disabled:opacity-60"
               >
                 {submitting && (
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -494,7 +494,7 @@ export default function UsersPage() {
               type="button"
               onClick={() => setDeleteTarget(null)}
               disabled={deleting}
-              className="min-h-11 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="min-h-11 rounded-control border border-line-strong px-4 py-2.5 text-sm font-semibold text-ink hover:bg-surface disabled:opacity-50"
             >
               Cancel
             </button>
@@ -503,7 +503,7 @@ export default function UsersPage() {
               onClick={() => void handleDelete()}
               disabled={deleting}
               aria-busy={deleting}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700 disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
             >
               {deleting && (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

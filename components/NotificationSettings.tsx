@@ -75,10 +75,10 @@ export default function NotificationSettings() {
   return (
     <section
       aria-labelledby="notification-settings-title"
-      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900"
+      className="rounded-panel border border-line bg-bg p-5 sm:p-6"
     >
       <div className="flex items-start gap-3">
-        <span className="rounded-xl bg-amber-50 p-2.5 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
+        <span className="rounded-control bg-amber-50 p-2.5 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
           {enabled ? (
             <BellRing className="h-5 w-5" aria-hidden="true" />
           ) : (
@@ -90,11 +90,11 @@ export default function NotificationSettings() {
             <div>
               <h2
                 id="notification-settings-title"
-                className="font-bold text-slate-950 dark:text-white"
+                className="font-semibold text-ink"
               >
                 Browser Alert Notifications
               </h2>
-              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+              <p className="mt-1 text-sm leading-6 text-muted">
                 Show a notification on this device when a new high-priority
                 possible alert arrives.
               </p>
@@ -106,27 +106,27 @@ export default function NotificationSettings() {
               aria-label="Browser alert notifications"
               disabled={updating || permission === "unsupported"}
               onClick={() => void handleToggle()}
-              className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-none   focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
                 enabled
-                  ? "border-indigo-700 bg-indigo-700"
-                  : "border-slate-300 bg-slate-200 dark:border-slate-600 dark:bg-slate-700"
+                  ? "border-line bg-brand"
+                  : "border-line-strong bg-surface  "
               }`}
             >
               <span
-                className={`inline-flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm transition-transform ${
+                className={`inline-flex h-6 w-6 items-center justify-center rounded-full bg-bg  transition-transform ${
                   enabled ? "translate-x-7" : "translate-x-1"
                 }`}
               >
                 {updating && (
                   <Loader2
-                    className="h-3.5 w-3.5 animate-spin text-indigo-700"
+                    className="h-3.5 w-3.5 animate-spin text-link"
                     aria-hidden="true"
                   />
                 )}
               </span>
             </button>
           </div>
-          <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+          <p className="mt-3 text-xs leading-5 text-muted">
             {permissionMessage(permission)} This preference applies only to
             this browser and device.
           </p>

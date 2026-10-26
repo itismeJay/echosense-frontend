@@ -300,8 +300,9 @@ test("maps supported and unknown status values without implying guilt", () => {
   assert.equal(priorityLabel(BASE_ALERT.severity), "Medium priority");
   assert.equal(unknown.severity, "medium");
   assert.equal(alertStatusLabel(), "Unverified — review required");
-  assert.equal(reviewStatusLabel(BASE_ALERT), "Awaiting review");
-  assert.equal(reviewStatusLabel({ ...BASE_ALERT, status: "resolved" }), "Marked resolved");
+  assert.equal(reviewStatusLabel(BASE_ALERT), "Needs review");
+  assert.equal(reviewStatusLabel({ ...BASE_ALERT, status: "reviewed" }), "Reviewed");
+  assert.equal(reviewStatusLabel({ ...BASE_ALERT, status: "resolved" }), "Resolved");
   assert.equal(reviewStatusLabel(unknown), "Review status unavailable");
 });
 
@@ -318,7 +319,7 @@ test("renders LOW, MEDIUM, and HIGH from canonical mocked API responses", () => 
   );
   assert.deepEqual(
     alerts.map((alert) => severityLabel(alert.severity)),
-    ["LOW", "MEDIUM", "HIGH"]
+    ["Low", "Medium", "High"]
   );
   assert.deepEqual(
     alerts.map((alert) => severitySummary(alert.severity)),
@@ -335,7 +336,7 @@ test("keeps lowercase severity compatible and never defaults invalid values to L
   assert.equal(normalizeAlertSeverity("MeDiUm"), "medium");
   assert.equal(normalizeAlertSeverity(" HIGH "), "high");
   assert.equal(normalizeAlertSeverity("critical"), "unknown");
-  assert.equal(severityLabel("unknown"), "SEVERITY UNAVAILABLE");
+  assert.equal(severityLabel("unknown"), "Severity unavailable");
 
   assert.throws(
     () => parseAlertResponse({ ...BASE_ALERT, severity: "critical" }),

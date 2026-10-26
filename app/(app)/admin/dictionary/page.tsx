@@ -37,7 +37,7 @@ import type {
 } from "@/lib/types";
 
 const INPUT =
-  "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
+  "min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink       ";
 
 const LANGUAGE_OPTIONS: { value: MonitoredTermLanguage; label: string }[] = [
   { value: "fil", label: "Filipino" },
@@ -167,13 +167,13 @@ export default function DictionaryPage() {
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">
       <header className="mb-6">
-        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        <p className="text-sm font-semibold text-link">
           {canEdit ? "Super administrator" : "Administrator"}
         </p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">
           Monitored Terms
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           Terms and alert weights used by the monitoring system in every school.
           These terms support detection and do not confirm an incident.
         </p>
@@ -182,20 +182,20 @@ export default function DictionaryPage() {
       {canEdit ? (
         <section
           aria-labelledby="add-term-title"
-          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900"
+          className="rounded-panel border border-line bg-bg p-5 sm:p-6"
         >
           <div className="flex gap-3">
-            <span className="rounded-xl bg-emerald-50 p-2.5 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200">
+            <span className="rounded-control bg-emerald-50 p-2.5 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200">
               <Plus className="h-5 w-5" aria-hidden="true" />
             </span>
             <div>
               <h2
                 id="add-term-title"
-                className="font-bold text-slate-950 dark:text-white"
+                className="font-semibold text-ink"
               >
                 Add Monitored Term
               </h2>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              <p className="mt-1 text-sm text-muted">
                 The value is saved to the monitored-terms list.
               </p>
             </div>
@@ -208,7 +208,7 @@ export default function DictionaryPage() {
             <div>
               <label
                 htmlFor="monitored-term"
-                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+                className="mb-1.5 block text-sm font-medium text-ink"
               >
                 Term
               </label>
@@ -224,7 +224,7 @@ export default function DictionaryPage() {
             <div>
               <label
                 htmlFor="term-language"
-                className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+                className="mb-1.5 block text-sm font-medium text-ink"
               >
                 Language
               </label>
@@ -248,11 +248,11 @@ export default function DictionaryPage() {
               <div className="flex items-center justify-between gap-3">
                 <label
                   htmlFor="term-alert-weight"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-200"
+                  className="text-sm font-medium text-ink"
                 >
                   Alert Weight
                 </label>
-                <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
+                <span className="text-sm font-semibold text-link">
                   {alertWeight.toFixed(1)}
                 </span>
               </div>
@@ -266,7 +266,7 @@ export default function DictionaryPage() {
                 onChange={(event) =>
                   setAlertWeight(Number(event.target.value))
                 }
-                className="mt-1 h-11 w-full cursor-pointer accent-indigo-700"
+                className="mt-1 h-11 w-full cursor-pointer"
               />
             </div>
             <div className="md:col-span-3">
@@ -274,7 +274,7 @@ export default function DictionaryPage() {
                 type="submit"
                 disabled={submitting}
                 aria-busy={submitting}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-60"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink hover:bg-brand-hover disabled:opacity-60"
               >
                 {submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -289,7 +289,7 @@ export default function DictionaryPage() {
       ) : currentUser ? (
         <div
           role="note"
-          className="flex gap-3 rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm leading-6 text-indigo-950 dark:border-indigo-900/70 dark:bg-indigo-950/30 dark:text-indigo-100"
+          className="flex gap-3 rounded-control border border-line bg-surface p-4 text-sm leading-6 text-link"
         >
           <Info className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
           <p>
@@ -304,11 +304,11 @@ export default function DictionaryPage() {
           <div>
             <h2
               id="saved-terms-title"
-              className="text-xl font-bold text-slate-950 dark:text-white"
+              className="text-xl font-semibold text-ink"
             >
               Saved Terms
             </h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300" aria-live="polite">
+            <p className="mt-1 text-sm text-muted" aria-live="polite">
               {loading
                 ? "Loading terms…"
                 : total === 0
@@ -322,7 +322,7 @@ export default function DictionaryPage() {
                 Search terms
               </label>
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
                 <input
                   id="term-search"
                   type="search"
@@ -364,31 +364,31 @@ export default function DictionaryPage() {
             {[0, 1, 2, 3].map((item) => (
               <div
                 key={item}
-                className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                className="h-40 animate-pulse rounded-panel border border-line bg-bg"
               />
             ))}
           </div>
         ) : error ? (
           <div
             role="alert"
-            className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
+            className="rounded-panel border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
           >
-            <h3 className="font-bold text-red-950 dark:text-red-100">
+            <h3 className="font-semibold text-ink">
               We couldn&apos;t load monitored terms.
             </h3>
             <button
               type="button"
               onClick={reload}
-              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700"
+              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
             >
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
               Retry
             </button>
           </div>
         ) : entries.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
-            <BookOpen className="mx-auto h-7 w-7 text-slate-500" aria-hidden="true" />
-            <h3 className="mt-3 font-bold text-slate-950 dark:text-white">
+          <div className="rounded-panel border border-line bg-bg p-8 text-center">
+            <BookOpen className="mx-auto h-7 w-7 text-muted" aria-hidden="true" />
+            <h3 className="mt-3 font-semibold text-ink">
               {search || languageFilter
                 ? "No monitored terms match these filters."
                 : "No monitored terms are available."}
@@ -399,14 +399,14 @@ export default function DictionaryPage() {
             {entries.map((entry) => (
               <article
                 key={entry.term_id}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                className="rounded-panel border border-line bg-bg p-5"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <h3 className="break-words font-bold text-slate-950 dark:text-white">
+                    <h3 className="break-words font-semibold text-ink">
                       {entry.slur_text}
                     </h3>
-                    <p className="mt-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <p className="mt-2 flex items-center gap-2 text-sm text-muted">
                       <Globe2 className="h-4 w-4" aria-hidden="true" />
                       {languageLabel(entry.language)}
                     </p>
@@ -415,19 +415,19 @@ export default function DictionaryPage() {
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(entry)}
-                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-700 dark:hover:bg-red-950/30 dark:hover:text-red-300"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-muted hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30 dark:hover:text-red-300"
                       aria-label={`Delete ${entry.slur_text}`}
                     >
                       <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </button>
                   )}
                 </div>
-                <div className="mt-4 flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-950/60">
-                  <SlidersHorizontal className="h-4 w-4 text-slate-500" aria-hidden="true" />
-                  <span className="text-sm text-slate-600 dark:text-slate-300">
+                <div className="mt-4 flex items-center gap-3 rounded-control bg-surface p-3">
+                  <SlidersHorizontal className="h-4 w-4 text-muted" aria-hidden="true" />
+                  <span className="text-sm text-muted">
                     Alert Weight
                   </span>
-                  <span className="ml-auto font-bold text-slate-950 dark:text-white">
+                  <span className="ml-auto font-semibold text-ink">
                     {entry.severity_weight.toFixed(1)}
                   </span>
                 </div>
@@ -445,19 +445,19 @@ export default function DictionaryPage() {
               type="button"
               onClick={() => setPage((current) => Math.max(0, current - 1))}
               disabled={page === 0 || loading}
-              className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="inline-flex min-h-11 items-center gap-1 rounded-control border border-line-strong px-3 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:opacity-50"
             >
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
               Previous
             </button>
-            <span className="text-sm text-slate-600 dark:text-slate-300">
+            <span className="text-sm text-muted">
               Page {page + 1} of {pageCount}
             </span>
             <button
               type="button"
               onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))}
               disabled={page >= pageCount - 1 || loading}
-              className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="inline-flex min-h-11 items-center gap-1 rounded-control border border-line-strong px-3 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:opacity-50"
             >
               Next
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -478,7 +478,7 @@ export default function DictionaryPage() {
               type="button"
               onClick={() => setDeleteTarget(null)}
               disabled={deleting}
-              className="min-h-11 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="min-h-11 rounded-control border border-line-strong px-4 py-2.5 text-sm font-semibold text-ink hover:bg-surface disabled:opacity-50"
             >
               Cancel
             </button>
@@ -487,7 +487,7 @@ export default function DictionaryPage() {
               onClick={() => void handleDelete()}
               disabled={deleting}
               aria-busy={deleting}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700 disabled:opacity-60"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
             >
               {deleting && (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

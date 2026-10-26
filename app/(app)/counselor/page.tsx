@@ -42,17 +42,17 @@ function SummaryCard({
   tone,
 }: SummaryCardProps) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <span className={`inline-flex rounded-xl p-2.5 ${tone}`}>
+    <article className="rounded-panel border border-line bg-bg p-5">
+      <span className={`inline-flex rounded-control p-2.5 ${tone}`}>
         <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
-      <p className="mt-4 text-sm font-semibold text-slate-600 dark:text-slate-300">
+      <p className="mt-4 text-sm font-semibold text-muted">
         {label}
       </p>
-      <p className="mt-1 text-3xl font-bold text-slate-950 dark:text-white">
+      <p className="mt-1 text-3xl font-semibold text-ink">
         {value}
       </p>
-      <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+      <p className="mt-2 text-xs leading-5 text-muted">
         {helpText}
       </p>
     </article>
@@ -130,22 +130,22 @@ export default function CounselorPage() {
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6 lg:p-8">
       <header className="mb-6">
-        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        <p className="text-sm font-semibold text-link">
           Guidance counselor
         </p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+            <h1 className="text-2xl font-semibold text-ink sm:text-3xl">
               Counselor Overview
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
               Review possible classroom concerns and recent alert patterns.
               Alerts remain unverified unless school procedures establish otherwise.
             </p>
           </div>
           <Link
             href="/analytics"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-link hover:bg-surface"
           >
             <BarChart3 className="h-4 w-4" aria-hidden="true" />
             Reports and Trends
@@ -156,20 +156,20 @@ export default function CounselorPage() {
       {error && (
         <div
           role="alert"
-          className="mb-6 flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-red-900/60 dark:bg-red-950/30"
+          className="mb-6 flex flex-col gap-3 rounded-panel border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-red-900/60 dark:bg-red-950/30"
         >
           <div>
-            <p className="font-semibold text-red-950 dark:text-red-100">
+            <p className="font-semibold text-ink">
               We couldn&apos;t load the counselor overview.
             </p>
-            <p className="mt-1 text-sm text-red-800 dark:text-red-200">
+            <p className="mt-1 text-sm text-danger">
               Please try again.
             </p>
           </div>
           <button
             type="button"
             onClick={() => void refresh()}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Retry
@@ -187,7 +187,7 @@ export default function CounselorPage() {
             value={waitingToday}
             helpText="Possible alerts marked active today."
             icon={BellRing}
-            tone="bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200"
+            tone="bg-surface text-link  "
           />
           <SummaryCard
             label="Marked Resolved Today"
@@ -201,7 +201,7 @@ export default function CounselorPage() {
             value={weekAlerts.length}
             helpText="Possible alerts recorded during the last seven days."
             icon={Clock3}
-            tone="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            tone="bg-surface text-ink  "
           />
           <SummaryCard
             label="High Priority Today"
@@ -216,23 +216,23 @@ export default function CounselorPage() {
       <section className="mt-8" aria-labelledby="weekly-patterns">
         <h2
           id="weekly-patterns"
-          className="text-xl font-bold text-slate-950 dark:text-white"
+          className="text-xl font-semibold text-ink"
         >
           This Week at a Glance
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-1 text-sm text-muted">
           Simple summaries based on recorded alert information.
         </p>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="flex items-center gap-2 font-bold text-slate-950 dark:text-white">
-              <Tags className="h-5 w-5 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
+          <article className="rounded-panel border border-line bg-bg p-5">
+            <h3 className="flex items-center gap-2 font-semibold text-ink">
+              <Tags className="h-5 w-5 text-link" aria-hidden="true" />
               Possible Concern Categories
             </h3>
             <div className="mt-4 space-y-3">
               {categoryCounts.every((item) => item.count === 0) ? (
-                <p className="text-sm text-slate-600 dark:text-slate-300">
+                <p className="text-sm text-muted">
                   No category information is available this week.
                 </p>
               ) : (
@@ -243,10 +243,10 @@ export default function CounselorPage() {
                       key={item.key}
                       className="flex items-center justify-between gap-4"
                     >
-                      <span className="text-sm text-slate-700 dark:text-slate-200">
+                      <span className="text-sm text-ink">
                         {categoryLabel(item.key)}
                       </span>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-100">
+                      <span className="rounded-full bg-surface px-3 py-1 text-sm font-semibold text-ink">
                         {item.count}
                       </span>
                     </div>
@@ -255,14 +255,14 @@ export default function CounselorPage() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="flex items-center gap-2 font-bold text-slate-950 dark:text-white">
-              <Globe2 className="h-5 w-5 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
+          <article className="rounded-panel border border-line bg-bg p-5">
+            <h3 className="flex items-center gap-2 font-semibold text-ink">
+              <Globe2 className="h-5 w-5 text-link" aria-hidden="true" />
               Alert Languages
             </h3>
             <div className="mt-4 space-y-3">
               {languageCounts.length === 0 ? (
-                <p className="text-sm text-slate-600 dark:text-slate-300">
+                <p className="text-sm text-muted">
                   No language information is available this week.
                 </p>
               ) : (
@@ -271,10 +271,10 @@ export default function CounselorPage() {
                     key={item.language}
                     className="flex items-center justify-between gap-4"
                   >
-                    <span className="text-sm text-slate-700 dark:text-slate-200">
+                    <span className="text-sm text-ink">
                       {item.language}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-800 dark:bg-slate-800 dark:text-slate-100">
+                    <span className="rounded-full bg-surface px-3 py-1 text-sm font-semibold text-ink">
                       {item.count}
                     </span>
                   </div>
@@ -290,17 +290,17 @@ export default function CounselorPage() {
           <div>
             <h2
               id="counselor-recent-alerts"
-              className="text-xl font-bold text-slate-950 dark:text-white"
+              className="text-xl font-semibold text-ink"
             >
               Recent Alerts
             </h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            <p className="mt-1 text-sm text-muted">
               Select an alert to view its available classroom context.
             </p>
           </div>
           <Link
             href="/alerts"
-            className="inline-flex min-h-11 items-center rounded-xl px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+            className="inline-flex min-h-11 items-center rounded-control px-3 py-2 text-sm font-semibold text-link hover:bg-surface"
           >
             View all alerts
           </Link>
@@ -309,8 +309,8 @@ export default function CounselorPage() {
         {loading && alerts.length === 0 ? (
           <AlertListSkeleton count={4} />
         ) : recentAlerts.length === 0 && !error ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
-            <p className="font-semibold text-slate-950 dark:text-white">
+          <div className="rounded-panel border border-line bg-bg p-8 text-center">
+            <p className="font-semibold text-ink">
               No classroom alerts are available.
             </p>
           </div>

@@ -71,20 +71,20 @@ function AuditTimestamp({
 function StatusBadge({ status }: { status: AuditLogStatus | null }) {
   if (status === "SUCCESS") {
     return (
-      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
         Success
       </span>
     );
   }
   if (status === "FAILURE") {
     return (
-      <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+      <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
         Failure
       </span>
     );
   }
   return (
-    <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+    <span className="inline-flex rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-semibold text-muted">
       Status unavailable
     </span>
   );
@@ -101,14 +101,14 @@ function DetailItem({
 }) {
   return (
     <div
-      className={`rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900 ${
+      className={`rounded-control border border-line bg-surface p-3   ${
         fullWidth ? "sm:col-span-2" : ""
       }`}
     >
-      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <dt className="text-xs font-semibold text-muted">
         {label}
       </dt>
-      <dd className="mt-1 break-words text-sm text-slate-900 dark:text-slate-100">
+      <dd className="mt-1 break-words text-sm text-ink">
         {children}
       </dd>
     </div>
@@ -122,7 +122,7 @@ function MetadataDetails({
 }) {
   if (!metadata || Object.keys(metadata).length === 0) {
     return (
-      <p className="text-sm text-slate-600 dark:text-slate-300">
+      <p className="text-sm text-muted">
         No metadata is available.
       </p>
     );
@@ -139,13 +139,13 @@ function MetadataDetails({
         {Object.entries(safeMetadata).map(([key, value]) => (
           <div
             key={key}
-            className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950"
+            className="rounded-control border border-line bg-bg p-3"
           >
-            <dt className="break-all text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <dt className="break-all text-xs font-semibold text-muted">
               {key}
             </dt>
             <dd className="mt-1">
-              <pre className="whitespace-pre-wrap break-all font-mono text-xs leading-5 text-slate-800 dark:text-slate-100">
+              <pre className="whitespace-pre-wrap break-all font-mono text-xs leading-5 text-ink">
                 {typeof value === "string"
                   ? value
                   : JSON.stringify(value, null, 2)}
@@ -154,7 +154,7 @@ function MetadataDetails({
           </div>
         ))}
       </dl>
-      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+      <p className="mt-3 text-xs text-muted">
         Sensitive metadata keys are redacted in this view and in CSV exports.
       </p>
     </div>
@@ -168,7 +168,7 @@ function AuditLogSkeleton() {
       {[0, 1, 2, 3, 4].map((item) => (
         <div
           key={item}
-          className="h-20 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+          className="h-20 animate-pulse rounded-panel border border-line bg-bg"
         />
       ))}
     </div>
@@ -303,20 +303,20 @@ export default function AuditLogDashboard() {
   return (
     <div className="mx-auto max-w-[100rem] p-4 md:p-6 lg:p-8">
       <header className="mb-6">
-        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        <p className="text-sm font-semibold text-link">
           Administrator
         </p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+            <h1 className="text-2xl font-semibold text-ink sm:text-3xl">
               Audit History
             </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
               Review important account, security, and administrative activity.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            <span className="inline-flex min-h-11 items-center gap-2 rounded-control bg-surface px-3 py-2 text-xs font-semibold text-ink">
               <LockKeyhole className="h-4 w-4" aria-hidden="true" />
               Administrator only · Read only
             </span>
@@ -324,7 +324,7 @@ export default function AuditLogDashboard() {
               type="button"
               onClick={() => void loadLogs()}
               disabled={loading}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+              className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-bg px-4 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RefreshCw
                 className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
@@ -338,7 +338,7 @@ export default function AuditLogDashboard() {
               disabled={loading || exporting || !page || page.total === 0}
               aria-label="Export all audit records matching the selected filters as CSV"
               aria-describedby="audit-export-help"
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-offset-slate-950"
+              className="inline-flex min-h-11 items-center gap-2 rounded-control bg-brand px-4 py-2 text-sm font-semibold text-brand-ink hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-offset-slate-950"
             >
               {exporting ? (
                 <RefreshCw
@@ -354,7 +354,7 @@ export default function AuditLogDashboard() {
         </div>
         <p
           id="audit-export-help"
-          className="mt-2 text-xs text-slate-500 dark:text-slate-400"
+          className="mt-2 text-xs text-muted"
         >
           Filters, sorting, pagination, and CSV export are applied by the
           backend. Export includes the records matching the selected filters,
@@ -363,7 +363,7 @@ export default function AuditLogDashboard() {
         {exportError && (
           <p
             role="alert"
-            className="mt-2 text-sm font-semibold text-red-700 dark:text-red-300"
+            className="mt-2 text-sm font-semibold text-danger"
           >
             We couldn&apos;t prepare the CSV export. Please try again.
           </p>
@@ -372,7 +372,7 @@ export default function AuditLogDashboard() {
 
       <div
         role="note"
-        className="mb-5 flex gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-100"
+        className="mb-5 flex gap-3 rounded-panel border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950"
       >
         <Info className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
         <p>
@@ -384,12 +384,12 @@ export default function AuditLogDashboard() {
 
       <section
         aria-labelledby="audit-filters-heading"
-        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+        className="rounded-panel border border-line bg-bg p-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2
             id="audit-filters-heading"
-            className="text-base font-bold text-slate-950 dark:text-white"
+            className="text-base font-semibold text-ink"
           >
             Filter audit history
           </h2>
@@ -397,7 +397,7 @@ export default function AuditLogDashboard() {
             <button
               type="button"
               onClick={resetFilters}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+              className="inline-flex min-h-11 items-center gap-2 rounded-control px-3 py-2 text-sm font-semibold text-link hover:bg-surface focus-visible:outline-none"
             >
               <X className="h-4 w-4" aria-hidden="true" />
               Reset filters
@@ -409,13 +409,13 @@ export default function AuditLogDashboard() {
           <div className="sm:col-span-2">
             <label
               htmlFor="audit-search"
-              className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+              className="mb-1.5 block text-sm font-semibold text-ink"
             >
               Search
             </label>
             <div className="relative">
               <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
                 aria-hidden="true"
               />
               <input
@@ -424,20 +424,20 @@ export default function AuditLogDashboard() {
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search user, action, resource, target"
-                className="min-h-11 w-full rounded-xl border border-slate-300 bg-white py-2 pl-10 pr-11 text-sm text-slate-950 placeholder:text-slate-500 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                className="min-h-11 w-full rounded-control border border-line-strong bg-bg py-2 pl-10 pr-11 text-sm text-ink placeholder:text-muted"
               />
               {searchInput && (
                 <button
                   type="button"
                   onClick={() => setSearchInput("")}
                   aria-label="Clear audit history search"
-                  className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:hover:text-white"
+                  className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-control text-muted hover:text-ink focus-visible:outline-none"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               )}
             </div>
-            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1.5 text-xs text-muted">
               Search updates after a short pause and resets to page 1.
             </p>
           </div>
@@ -445,7 +445,7 @@ export default function AuditLogDashboard() {
           <div>
             <label
               htmlFor="audit-date-from"
-              className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+              className="mb-1.5 block text-sm font-semibold text-ink"
             >
               Date from
             </label>
@@ -457,14 +457,14 @@ export default function AuditLogDashboard() {
               onChange={(event) =>
                 updateFilters({ date_from: event.target.value })
               }
-              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink"
             />
           </div>
 
           <div>
             <label
               htmlFor="audit-date-to"
-              className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+              className="mb-1.5 block text-sm font-semibold text-ink"
             >
               Date to
             </label>
@@ -476,14 +476,14 @@ export default function AuditLogDashboard() {
               onChange={(event) =>
                 updateFilters({ date_to: event.target.value })
               }
-              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink"
             />
           </div>
 
           <div>
             <label
               htmlFor="audit-user"
-              className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+              className="mb-1.5 block text-sm font-semibold text-ink"
             >
               User or email
             </label>
@@ -495,14 +495,14 @@ export default function AuditLogDashboard() {
                 updateFilters({ actor_email: event.target.value })
               }
               placeholder="admin@school.edu"
-              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink"
             />
           </div>
 
           <div>
             <label
               htmlFor="audit-action"
-              className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+              className="mb-1.5 block text-sm font-semibold text-ink"
             >
               Action
             </label>
@@ -514,14 +514,14 @@ export default function AuditLogDashboard() {
                 updateFilters({ action: event.target.value })
               }
               placeholder="LOGIN"
-              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink"
             />
           </div>
 
           <div>
             <label
               htmlFor="audit-resource"
-              className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+              className="mb-1.5 block text-sm font-semibold text-ink"
             >
               Resource
             </label>
@@ -533,14 +533,14 @@ export default function AuditLogDashboard() {
                 updateFilters({ resource: event.target.value })
               }
               placeholder="Authentication"
-              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink"
             />
           </div>
 
           <div>
             <label
               htmlFor="audit-sort"
-              className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+              className="mb-1.5 block text-sm font-semibold text-ink"
             >
               Sort order
             </label>
@@ -552,7 +552,7 @@ export default function AuditLogDashboard() {
                   sort_order: event.target.value as "asc" | "desc",
                 })
               }
-              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink"
             >
               <option value="desc">Newest first</option>
               <option value="asc">Oldest first</option>
@@ -562,7 +562,7 @@ export default function AuditLogDashboard() {
           <div>
             <label
               htmlFor="audit-role"
-              className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+              className="mb-1.5 block text-sm font-semibold text-ink"
             >
               Role
             </label>
@@ -572,7 +572,7 @@ export default function AuditLogDashboard() {
               onChange={(event) =>
                 updateFilters({ actor_role: event.target.value })
               }
-              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink"
             >
               <option value="">All roles</option>
               <option value="admin">Administrator</option>
@@ -584,7 +584,7 @@ export default function AuditLogDashboard() {
           <div>
             <label
               htmlFor="audit-status"
-              className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+              className="mb-1.5 block text-sm font-semibold text-ink"
             >
               Status
             </label>
@@ -596,7 +596,7 @@ export default function AuditLogDashboard() {
                   status: event.target.value as AuditLogStatus | "",
                 })
               }
-              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink"
             >
               <option value="">All statuses</option>
               <option value="SUCCESS">Success</option>
@@ -611,12 +611,12 @@ export default function AuditLogDashboard() {
           <div>
             <h2
               id="audit-results-heading"
-              className="font-bold text-slate-950 dark:text-white"
+              className="font-semibold text-ink"
             >
               Recorded activity
             </h2>
             <p
-              className="mt-1 text-sm text-slate-600 dark:text-slate-300"
+              className="mt-1 text-sm text-muted"
               aria-live="polite"
             >
               {loading
@@ -627,7 +627,7 @@ export default function AuditLogDashboard() {
             </p>
           </div>
           {lastUpdated && !loading && (
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-muted">
               Refreshed {formatTimestamp(lastUpdated)}
             </p>
           )}
@@ -638,14 +638,14 @@ export default function AuditLogDashboard() {
         ) : errorStatus !== null ? (
           <div
             role="alert"
-            className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
+            className="rounded-panel border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
           >
-            <h3 className="font-bold text-red-950 dark:text-red-100">
+            <h3 className="font-semibold text-ink">
               {errorStatus === 403
                 ? "You do not have permission to view audit history."
                 : "We couldn't load audit history."}
             </h3>
-            <p className="mt-2 text-sm text-red-800 dark:text-red-200">
+            <p className="mt-2 text-sm text-danger">
               {errorStatus === 403
                 ? "Sign in with an administrator account."
                 : "Check the connection and try again."}
@@ -653,19 +653,19 @@ export default function AuditLogDashboard() {
             <button
               type="button"
               onClick={() => void loadLogs()}
-              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2"
+              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-offset-2"
             >
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
               Retry
             </button>
           </div>
         ) : records.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-panel border border-line bg-bg p-8 text-center">
             <ClipboardList
-              className="mx-auto h-8 w-8 text-slate-500"
+              className="mx-auto h-8 w-8 text-muted"
               aria-hidden="true"
             />
-            <h3 className="mt-3 font-bold text-slate-950 dark:text-white">
+            <h3 className="mt-3 font-semibold text-ink">
               {activeFilters
                 ? "No audit activity was found for the selected filters."
                 : "No audit activity has been recorded yet."}
@@ -673,73 +673,73 @@ export default function AuditLogDashboard() {
           </div>
         ) : (
           <>
-            <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm xl:block dark:border-slate-800 dark:bg-slate-900">
+            <div className="hidden overflow-hidden rounded-panel border border-line bg-bg xl:block">
               <table className="w-full table-fixed border-collapse text-left text-xs">
                 <caption className="sr-only">
                   Administrative audit history with a dedicated details action
                   for each record.
                 </caption>
-                <thead className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                <thead className="bg-surface text-ink">
                   <tr>
-                    <th scope="col" className="w-44 px-3 py-3 font-bold">
+                    <th scope="col" className="w-44 px-3 py-3 font-semibold">
                       Timestamp
                     </th>
-                    <th scope="col" className="w-48 px-3 py-3 font-bold">
+                    <th scope="col" className="w-48 px-3 py-3 font-semibold">
                       User
                     </th>
                     <th
                       scope="col"
-                      className="hidden w-32 px-3 py-3 font-bold xl:table-cell"
+                      className="hidden w-32 px-3 py-3 font-semibold xl:table-cell"
                     >
                       Role
                     </th>
-                    <th scope="col" className="w-40 px-3 py-3 font-bold">
+                    <th scope="col" className="w-40 px-3 py-3 font-semibold">
                       Action
                     </th>
-                    <th scope="col" className="w-36 px-3 py-3 font-bold">
+                    <th scope="col" className="w-36 px-3 py-3 font-semibold">
                       Resource
                     </th>
                     <th
                       scope="col"
-                      className="hidden w-40 px-3 py-3 font-bold xl:table-cell"
+                      className="hidden w-40 px-3 py-3 font-semibold xl:table-cell"
                     >
                       Target
                     </th>
-                    <th scope="col" className="w-36 px-3 py-3 font-bold">
+                    <th scope="col" className="w-36 px-3 py-3 font-semibold">
                       Status
                     </th>
-                    <th scope="col" className="w-28 px-3 py-3 font-bold">
+                    <th scope="col" className="w-28 px-3 py-3 font-semibold">
                       Details
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                <tbody className="divide-y divide-line">
                   {records.map((log) => (
                     <tr
                       key={log.id}
-                      className="align-top hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                      className="align-top hover:bg-surface"
                     >
-                      <td className="px-3 py-4 text-slate-700 dark:text-slate-200">
+                      <td className="px-3 py-4 text-ink">
                         <AuditTimestamp
                           value={log.occurred_at}
                           recordId={log.id}
                         />
                       </td>
-                      <td className="break-words px-3 py-4 font-medium text-slate-950 dark:text-white">
+                      <td className="break-words px-3 py-4 font-medium text-ink">
                         {log.actor_email ?? "Unknown user"}
                       </td>
-                      <td className="hidden px-3 py-4 text-slate-700 xl:table-cell dark:text-slate-200">
+                      <td className="hidden px-3 py-4 text-ink xl:table-cell">
                         {formatAuditRole(log.actor_role)}
                       </td>
                       <td className="px-3 py-4">
-                        <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 font-bold text-blue-800 dark:bg-blue-950/60 dark:text-blue-200">
+                        <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 font-semibold text-blue-800">
                           {formatAuditAction(log.action)}
                         </span>
                       </td>
-                      <td className="break-words px-3 py-4 text-slate-700 dark:text-slate-200">
+                      <td className="break-words px-3 py-4 text-ink">
                         {log.resource}
                       </td>
-                      <td className="hidden break-words px-3 py-4 text-slate-700 xl:table-cell dark:text-slate-200">
+                      <td className="hidden break-words px-3 py-4 text-ink xl:table-cell">
                         {log.target ?? "—"}
                       </td>
                       <td className="px-3 py-4">
@@ -749,7 +749,7 @@ export default function AuditLogDashboard() {
                         <button
                           type="button"
                           onClick={() => setSelectedLog(log)}
-                          className="inline-flex min-h-11 items-center gap-1 rounded-xl px-3 py-2 font-semibold text-indigo-700 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
+                          className="inline-flex min-h-11 items-center gap-1 rounded-control px-3 py-2 font-semibold text-link hover:bg-surface focus-visible:outline-none"
                           aria-label={`View details for ${formatAuditAction(
                             log.action
                           )} audit record ${log.id}`}
@@ -771,14 +771,14 @@ export default function AuditLogDashboard() {
               {records.map((log) => (
                 <article
                   key={log.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                  className="rounded-panel border border-line bg-bg p-4"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800 dark:bg-blue-950/60 dark:text-blue-200">
+                      <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">
                         {formatAuditAction(log.action)}
                       </span>
-                      <h3 className="mt-3 break-words font-bold text-slate-950 dark:text-white">
+                      <h3 className="mt-3 break-words font-semibold text-ink">
                         {log.resource}
                       </h3>
                     </div>
@@ -786,10 +786,10 @@ export default function AuditLogDashboard() {
                   </div>
                   <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                     <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <dt className="text-xs font-semibold text-muted">
                         Timestamp
                       </dt>
-                      <dd className="mt-1 text-slate-800 dark:text-slate-100">
+                      <dd className="mt-1 text-ink">
                         <AuditTimestamp
                           value={log.occurred_at}
                           recordId={log.id}
@@ -797,10 +797,10 @@ export default function AuditLogDashboard() {
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <dt className="text-xs font-semibold text-muted">
                         User
                       </dt>
-                      <dd className="mt-1 break-words text-slate-800 dark:text-slate-100">
+                      <dd className="mt-1 break-words text-ink">
                         {log.actor_email ?? "Unknown user"}
                       </dd>
                     </div>
@@ -808,7 +808,7 @@ export default function AuditLogDashboard() {
                   <button
                     type="button"
                     onClick={() => setSelectedLog(log)}
-                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-indigo-200 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-control border border-line px-4 py-2 text-sm font-semibold text-link hover:bg-surface focus-visible:outline-none"
                   >
                     View details
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -819,9 +819,9 @@ export default function AuditLogDashboard() {
 
             <nav
               aria-label="Audit history pagination"
-              className="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900"
+              className="mt-4 flex flex-col gap-3 rounded-panel border border-line bg-bg p-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="text-sm text-slate-600 dark:text-slate-300">
+              <div className="text-sm text-muted">
                 Page <strong>{page?.page ?? 1}</strong> of{" "}
                 <strong>{Math.max(1, page?.total_pages ?? 0)}</strong> ·{" "}
                 <strong>{page?.total ?? 0}</strong> matching record
@@ -830,7 +830,7 @@ export default function AuditLogDashboard() {
               <div className="flex flex-wrap items-center gap-2">
                 <label
                   htmlFor="audit-page-size"
-                  className="text-sm font-semibold text-slate-700 dark:text-slate-200"
+                  className="text-sm font-semibold text-ink"
                 >
                   Per page
                 </label>
@@ -842,7 +842,7 @@ export default function AuditLogDashboard() {
                       page_size: Number(event.target.value),
                     })
                   }
-                  className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="min-h-11 rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink"
                 >
                   <option value={10}>10</option>
                   <option value={25}>25</option>
@@ -858,7 +858,7 @@ export default function AuditLogDashboard() {
                   }
                   disabled={!page || page.page === 1}
                   aria-label="Go to previous audit history page"
-                  className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-control border border-line-strong px-3 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                   Previous
@@ -877,7 +877,7 @@ export default function AuditLogDashboard() {
                     page.page >= page.total_pages
                   }
                   aria-label="Go to next audit history page"
-                  className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-control border border-line-strong px-3 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Next
                   <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -918,7 +918,7 @@ export default function AuditLogDashboard() {
               <span className="font-semibold">
                 {formatAuditAction(selectedLog.action)}
               </span>
-              <span className="mt-1 block font-mono text-xs text-slate-500 dark:text-slate-400">
+              <span className="mt-1 block font-mono text-xs text-muted">
                 {selectedLog.action}
               </span>
             </DetailItem>

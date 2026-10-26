@@ -18,7 +18,7 @@ import {
 import type { Alert, LogsStats, CategoryStats } from "@/lib/types";
 
 const GLASS =
-  "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900";
+  "rounded-panel border border-line bg-bg p-5   ";
 
 function useTooltipStyle(theme: string | undefined) {
   const isDark = theme === "dark";
@@ -54,7 +54,7 @@ function useIsMounted() {
 }
 
 function ChartSkeleton() {
-  return <div className="h-48 bg-gray-100 dark:bg-white/5 rounded-xl animate-pulse" />;
+  return <div className="h-48 bg-surface rounded-control animate-pulse" />;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -155,7 +155,7 @@ export function AlertsPerDayBar({ alerts }: { alerts: Alert[] }) {
 
   return (
     <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+      <h3 className="text-sm font-semibold text-ink mb-4">
         Alerts Per Day — Last 7 Days
       </h3>
       {!mounted ? (
@@ -203,7 +203,7 @@ export function SeverityPie({ alerts }: { alerts: Alert[] }) {
 
   return (
     <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+      <h3 className="text-sm font-semibold text-ink mb-4">
         Priority Breakdown
       </h3>
       {!mounted ? (
@@ -239,7 +239,7 @@ export function SeverityPie({ alerts }: { alerts: Alert[] }) {
                   className="w-2.5 h-2.5 rounded-full"
                   style={{ background: d.color }}
                 />
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-muted">
                   {d.name} ({d.value})
                 </span>
               </div>
@@ -259,7 +259,7 @@ export function ConfidenceOverTimeLine({ alerts }: { alerts: Alert[] }) {
 
   return (
     <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+      <h3 className="text-sm font-semibold text-ink mb-4">
         Detection Confidence Over Time (Last 20 Alerts)
       </h3>
       {!mounted ? (
@@ -317,7 +317,7 @@ export function PeakHoursHeatmap({ alerts }: { alerts: Alert[] }) {
 
   return (
     <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+      <h3 className="text-sm font-semibold text-ink mb-4">
         Most Common Alert Times
       </h3>
       <div className="overflow-x-auto">
@@ -338,7 +338,7 @@ export function PeakHoursHeatmap({ alerts }: { alerts: Alert[] }) {
           {dayNames.map((day, di) => (
             <div key={day} className="flex items-center mb-0.5">
               <div
-                className="w-9 text-right pr-2 text-gray-400 dark:text-gray-600 shrink-0"
+                className="w-9 text-right pr-2 text-muted shrink-0"
                 style={{ fontSize: 9 }}
               >
                 {day}
@@ -372,16 +372,16 @@ export function EmotionDonut({ stats }: { stats: LogsStats }) {
 
   return (
     <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+      <h3 className="text-sm font-semibold text-ink mb-1">
         Possible Vocal Tone
       </h3>
-      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+      <p className="text-xs text-muted mb-4">
         Possible vocal tone in alerts
       </p>
       {!mounted ? (
         <ChartSkeleton />
       ) : data.length === 0 ? (
-        <div className="h-48 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+        <div className="h-48 flex items-center justify-center text-sm text-muted">
           No emotion data yet
         </div>
       ) : (
@@ -415,7 +415,7 @@ export function EmotionDonut({ stats }: { stats: LogsStats }) {
                   className="w-2.5 h-2.5 rounded-full"
                   style={{ background: d.color }}
                 />
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-muted">
                   {d.name} ({d.value})
                 </span>
               </div>
@@ -451,16 +451,16 @@ export function CategoryBarChart({ stats }: { stats: CategoryStats | null; loadi
 
   return (
     <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+      <h3 className="text-sm font-semibold text-ink mb-1">
         Possible Concern Categories
       </h3>
-      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+      <p className="text-xs text-muted mb-4">
         Alert count by possible concern category
       </p>
       {!mounted ? (
         <ChartSkeleton />
       ) : !stats || data.every((d) => d.count === 0) ? (
-        <div className="h-48 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+        <div className="h-48 flex items-center justify-center text-sm text-muted">
           No category data yet
         </div>
       ) : (
@@ -481,7 +481,7 @@ export function CategoryBarChart({ stats }: { stats: CategoryStats | null; loadi
             {data.map((d) => (
               <div key={d.name} className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
-                <span className="text-xs text-gray-500 dark:text-gray-400">{d.name} ({d.count})</span>
+                <span className="text-xs text-muted">{d.name} ({d.count})</span>
               </div>
             ))}
           </div>
@@ -517,14 +517,14 @@ export function LanguageBreakdown({ alerts }: { alerts: Alert[] }) {
 
   return (
     <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+      <h3 className="text-sm font-semibold text-ink mb-1">
         Alert Languages
       </h3>
-      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+      <p className="text-xs text-muted mb-4">
         Language information included with recorded alerts
       </p>
       {total === 0 ? (
-        <div className="h-24 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+        <div className="h-24 flex items-center justify-center text-sm text-muted">
           No data yet
         </div>
       ) : (
@@ -534,12 +534,12 @@ export function LanguageBreakdown({ alerts }: { alerts: Alert[] }) {
             return (
               <div key={d.code}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{d.label}</span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
+                  <span className="text-sm font-medium text-ink">{d.label}</span>
+                  <span className="text-xs text-muted font-mono">
                     {d.count} alert{d.count !== 1 ? "s" : ""} · {pct}%
                   </span>
                 </div>
-                <div className="w-full h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
                   <div
                     className="h-2 rounded-full transition-all duration-500"
                     style={{ width: `${pct}%`, background: d.color }}
@@ -568,16 +568,16 @@ export function TopKeywordsBar({
 
   return (
     <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+      <h3 className="text-sm font-semibold text-ink mb-1">
         Possible Detected Terms
       </h3>
-      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+      <p className="text-xs text-muted mb-4">
         Most frequent terms included with recorded alerts
       </p>
       {!mounted ? (
         <ChartSkeleton />
       ) : data.length === 0 ? (
-        <div className="h-48 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+        <div className="h-48 flex items-center justify-center text-sm text-muted">
           No keyword data yet
         </div>
       ) : (

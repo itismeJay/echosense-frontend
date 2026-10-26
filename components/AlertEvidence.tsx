@@ -64,13 +64,13 @@ function MetricBar({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between gap-4">
-        <span className="inline-flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-200">
+        <span className="inline-flex items-center gap-1.5 text-sm text-ink">
           <Icon className="h-4 w-4" aria-hidden="true" />
           {label}
         </span>
-        <span className="font-mono text-xs text-slate-600 dark:text-slate-300">{display}</span>
+        <span className="font-mono text-xs text-muted">{display}</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
         <div className={`h-2 rounded-full ${barClass}`} style={{ width: `${percent}%` }} />
       </div>
     </div>
@@ -116,7 +116,7 @@ export default function AlertEvidence({
           type="button"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={isOpen}
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
+          className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line bg-surface px-4 py-2 text-sm font-semibold text-link hover:bg-surface"
         >
           {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           {isOpen ? "Hide Details" : "View Details"}
@@ -124,21 +124,21 @@ export default function AlertEvidence({
       )}
 
       {isOpen && (
-        <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+        <div className="space-y-6 rounded-panel border border-line bg-bg p-5">
           <section aria-labelledby={`severity-explanation-${alert.id}`}>
             <div className="flex items-start gap-3">
               <CircleHelp
-                className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300"
+                className="mt-0.5 h-5 w-5 shrink-0 text-link"
                 aria-hidden="true"
               />
               <div>
                 <h2
                   id={`severity-explanation-${alert.id}`}
-                  className="text-base font-semibold text-slate-950 dark:text-white"
+                  className="text-base font-semibold text-ink"
                 >
                   Why this alert received this severity
                 </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                <p className="mt-1 text-sm leading-6 text-muted">
                   Severity helps staff prioritize review. It does not verify
                   aggression or determine intent.
                 </p>
@@ -146,19 +146,19 @@ export default function AlertEvidence({
             </div>
 
             {severityEvidence || severityReasons.length > 0 ? (
-              <div className="mt-4 space-y-5 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50">
+              <div className="mt-4 space-y-5 rounded-control border border-line bg-surface p-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-950 dark:text-white">
+                  <h3 className="text-sm font-semibold text-ink">
                     Primary reasons
                   </h3>
-                  <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                  <ul className="mt-2 space-y-2 text-sm leading-6 text-ink">
                     {severityReasons.map((reason, index) => (
                       <li
                         key={`${reason}-${index}`}
                         className="flex items-start gap-2"
                       >
                         <span
-                          className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-600 dark:bg-indigo-300"
+                          className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand"
                           aria-hidden="true"
                         />
                         <span>{severityReasonLabel(reason)}</span>
@@ -169,20 +169,20 @@ export default function AlertEvidence({
 
                 {severityTermCategories.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">
+                    <h3 className="text-sm font-semibold text-ink">
                       Matched evidence categories
                     </h3>
                     <div className="mt-2 space-y-3">
                       {severityTermCategories.map(([category, terms]) => (
                         <div
                           key={category}
-                          className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+                          className="rounded-control border border-line bg-bg p-3"
                         >
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                          <p className="text-sm font-semibold text-ink">
                             {termCategoryEvidenceLabel(category)}
                           </p>
                           {terms.length > 0 && (
-                            <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                            <ul className="mt-2 space-y-1 text-sm text-ink">
                               {terms.map((term, index) => (
                                 <li
                                   key={`${category}-${term}-${index}`}
@@ -201,17 +201,17 @@ export default function AlertEvidence({
 
                 {supportingEvidence.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">
+                    <h3 className="text-sm font-semibold text-ink">
                       Supporting acoustic or context evidence
                     </h3>
-                    <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                    <ul className="mt-2 space-y-2 text-sm leading-6 text-ink">
                       {supportingEvidence.map((evidence, index) => (
                         <li
                           key={`${evidence}-${index}`}
                           className="flex items-start gap-2"
                         >
                           <span
-                            className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-600 dark:bg-cyan-300"
+                            className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-600"
                             aria-hidden="true"
                           />
                           <span>{supportingEvidenceLabel(evidence)}</span>
@@ -222,7 +222,7 @@ export default function AlertEvidence({
                 )}
               </div>
             ) : (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100">
+              <div className="mt-4 rounded-control border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100">
                 {severityEvidence === null
                   ? HISTORICAL_SEVERITY_EVIDENCE_MESSAGE
                   : UNAVAILABLE_SEVERITY_EVIDENCE_MESSAGE}
@@ -231,27 +231,27 @@ export default function AlertEvidence({
           </section>
 
           <section aria-labelledby={`phrase-${alert.id}`}>
-            <h2 id={`phrase-${alert.id}`} className="text-base font-semibold text-slate-950 dark:text-white">
+            <h2 id={`phrase-${alert.id}`} className="text-base font-semibold text-ink">
               Detected transcript
             </h2>
             {transcript ? (
-              <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-900/70 dark:bg-indigo-950/30">
-                <p className="select-text whitespace-pre-wrap break-words text-sm leading-6 text-slate-800 dark:text-slate-100">
+              <div className="mt-3 rounded-control border border-line bg-surface p-4">
+                <p className="select-text whitespace-pre-wrap break-words text-sm leading-6 text-ink">
                   {exactTranscript(alert)}
                 </p>
               </div>
             ) : (
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              <p className="mt-2 text-sm text-muted">
                 {exactTranscript(alert)}
               </p>
             )}
-            <div className="mt-3 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+            <div className="mt-3 flex gap-2 rounded-control bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
               <Info className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
               <p>
                 {HUMAN_REVIEW_NOTE}
               </p>
             </div>
-            <p className="mt-3 text-sm text-slate-700 dark:text-slate-200">
+            <p className="mt-3 text-sm text-ink">
               <span className="font-medium">Transcription status:</span>{" "}
               {alert.transcription_status ?? "Not recorded"}
             </p>
@@ -260,7 +260,7 @@ export default function AlertEvidence({
           <section aria-labelledby={`matched-terms-${alert.id}`}>
             <h2
               id={`matched-terms-${alert.id}`}
-              className="text-base font-semibold text-slate-950 dark:text-white"
+              className="text-base font-semibold text-ink"
             >
               Detected monitored terms
             </h2>
@@ -269,18 +269,18 @@ export default function AlertEvidence({
                 {matchedTerms.map((matchedTerm, index) => (
                   <li
                     key={`${matchedTerm.term_id}-${matchedTerm.match_type}-${index}`}
-                    className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50"
+                    className="rounded-control border border-line bg-surface p-4"
                   >
                     <div className="flex items-start gap-3">
                       <Tags
-                        className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300"
+                        className="mt-0.5 h-5 w-5 shrink-0 text-link"
                         aria-hidden="true"
                       />
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        <p className="text-xs font-semibold text-muted">
                           {matchedTermEvidenceLabel(matchedTerm.match_type)}
                         </p>
-                        <p className="mt-1 break-words font-semibold text-slate-950 dark:text-white">
+                        <p className="mt-1 break-words font-semibold text-ink">
                           {matchedTerm.term}
                         </p>
                         <div className="mt-2">
@@ -295,11 +295,11 @@ export default function AlertEvidence({
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              <p className="mt-2 text-sm text-muted">
                 {NO_MATCHED_TERMS_MESSAGE}
               </p>
             )}
-            <div className="mt-3 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+            <div className="mt-3 flex gap-2 rounded-control bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
               <Info
                 className="mt-1 h-4 w-4 shrink-0"
                 aria-hidden="true"
@@ -309,10 +309,10 @@ export default function AlertEvidence({
           </section>
 
           <section aria-labelledby={`finalized-terms-${alert.id}`}>
-            <h2 id={`finalized-terms-${alert.id}`} className="text-base font-semibold text-slate-950 dark:text-white">
+            <h2 id={`finalized-terms-${alert.id}`} className="text-base font-semibold text-ink">
               Finalized monitored-term evidence
             </h2>
-            <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+            <p className="mt-2 text-sm text-ink">
               {monitoredTermSummary(alert)}
             </p>
             {alert.monitored_terms.length > 0 && (
@@ -324,7 +324,7 @@ export default function AlertEvidence({
               <div className="mt-3 space-y-3">
                 {alert.monitored_word_occurrences.map((occurrence, index) => (
                   <div key={index}>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <p className="text-xs font-semibold text-muted">
                       Occurrence {index + 1}
                     </p>
                     <StructuredEvidence evidence={occurrence} />
@@ -343,18 +343,18 @@ export default function AlertEvidence({
             ["Laughter context", alert.laughter_context],
           ] as const).map(([label, evidence]) => (
             <section key={label} aria-label={label}>
-              <h2 className="text-base font-semibold text-slate-950 dark:text-white">{label}</h2>
+              <h2 className="text-base font-semibold text-ink">{label}</h2>
               {evidence ? (
                 <StructuredEvidence evidence={evidence} />
               ) : (
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">No recorded details.</p>
+                <p className="mt-2 text-sm text-muted">No recorded details.</p>
               )}
             </section>
           ))}
 
           {(hardHits.length > 0 || softHits.length > 0 || fallbackWords.length > 0) && (
             <section aria-labelledby={`terms-${alert.id}`}>
-              <h2 id={`terms-${alert.id}`} className="text-base font-semibold text-slate-950 dark:text-white">
+              <h2 id={`terms-${alert.id}`} className="text-base font-semibold text-ink">
                 Words the system may have detected
               </h2>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -369,7 +369,7 @@ export default function AlertEvidence({
                   </span>
                 ))}
                 {fallbackWords.map((word, index) => (
-                  <span key={`word-${word}-${index}`} className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                  <span key={`word-${word}-${index}`} className="rounded-full border border-line-strong bg-surface px-3 py-1.5 text-sm font-medium text-ink">
                     {word}
                   </span>
                 ))}
@@ -379,7 +379,7 @@ export default function AlertEvidence({
 
           {categories.length > 0 && (
             <section aria-labelledby={`categories-${alert.id}`}>
-              <h2 id={`categories-${alert.id}`} className="text-base font-semibold text-slate-950 dark:text-white">
+              <h2 id={`categories-${alert.id}`} className="text-base font-semibold text-ink">
                 Possible Concern Category
               </h2>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -393,14 +393,14 @@ export default function AlertEvidence({
           )}
 
           <section aria-labelledby={`language-${alert.id}`}>
-            <h2 id={`language-${alert.id}`} className="text-base font-semibold text-slate-950 dark:text-white">
+            <h2 id={`language-${alert.id}`} className="text-base font-semibold text-ink">
               Language
             </h2>
             <div className="mt-3">
               <LanguageBadge language={alert.language} size="md" />
             </div>
             {languageConfidence && (
-              <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+              <p className="mt-2 text-sm text-ink">
                 <span className="font-medium">Language confidence:</span>{" "}
                 {languageConfidence}
               </p>
@@ -410,16 +410,16 @@ export default function AlertEvidence({
           <section aria-labelledby={`yamnet-ran-${alert.id}`}>
             <h2
               id={`yamnet-ran-${alert.id}`}
-              className="text-base font-semibold text-slate-950 dark:text-white"
+              className="text-base font-semibold text-ink"
             >
               Acoustic model (YAMNet)
             </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+            <p className="mt-2 text-sm leading-6 text-ink">
               {yamnetExplanation ??
                 "The acoustic classification status was not recorded for this alert."}
             </p>
             {(alert.yamnet_class || alert.yamnet_score != null) && (
-              <dl className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2 dark:text-slate-200">
+              <dl className="mt-3 grid gap-2 text-sm text-ink sm:grid-cols-2">
                 {alert.yamnet_class && (
                   <div>
                     <dt className="font-medium">Stored class</dt>
@@ -436,24 +436,24 @@ export default function AlertEvidence({
             )}
           </section>
 
-          <details className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-semibold text-slate-800 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-slate-100">
+          <details className="rounded-control border border-line bg-surface p-4">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-semibold text-ink">
               <ChevronDown className="h-4 w-4" aria-hidden="true" />
               Technical Details
             </summary>
 
-            <div className="mt-4 space-y-5 border-t border-slate-200 pt-4 dark:border-slate-800">
+            <div className="mt-4 space-y-5 border-t border-line pt-4">
               <div className="flex flex-wrap gap-2">
-                {alert.confidence != null && <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200">
+                {alert.confidence != null && <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-link">
                   <BarChart2 className="h-3.5 w-3.5" aria-hidden="true" />
                   Detection Confidence: {Math.round(alert.confidence * 100)}%
                 </span>}
-                {alert.duration != null && <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                {alert.duration != null && <span className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-bg px-3 py-1.5 text-xs font-semibold text-ink">
                   <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
                   Duration: {alert.duration.toFixed(1)}s
                 </span>}
                 {alert.required_duration != null && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-bg px-3 py-1.5 text-xs font-semibold text-ink">
                     <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
                     Required duration: {alert.required_duration.toFixed(1)}s
                   </span>
@@ -466,12 +466,12 @@ export default function AlertEvidence({
                 alert.yamnet_score != null) && (
                 <div className="flex flex-wrap gap-2">
                   {alert.emotion && (
-                    <span className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase ${emotionBadgeColor(alert.emotion)}`}>
+                    <span className={`rounded-full border px-3 py-1.5 text-xs font-semibold  ${emotionBadgeColor(alert.emotion)}`}>
                       Possible vocal tone: {alert.emotion}
                     </span>
                   )}
                   {(alert.yamnet_class || alert.yamnet_score != null) && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-medium text-cyan-900 dark:border-cyan-900 dark:bg-cyan-950/30 dark:text-cyan-100">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-medium text-cyan-900">
                       <Waves className="h-3.5 w-3.5" aria-hidden="true" />
                       Stored acoustic model result:{" "}
                       {alert.yamnet_class ?? "Class unavailable"}
@@ -484,7 +484,7 @@ export default function AlertEvidence({
 
               <div className="space-y-3">
                 {alert.rms != null && (
-                  <MetricBar label="Volume measurement (RMS)" value={(alert.rms / 3000) * 100} display={Math.round(alert.rms).toString()} barClass="bg-indigo-600" icon={Volume2} />
+                  <MetricBar label="Volume measurement (RMS)" value={(alert.rms / 3000) * 100} display={Math.round(alert.rms).toString()} barClass="bg-brand" icon={Volume2} />
                 )}
                 {alert.zero_crossing_rate != null && (
                   <MetricBar label="Zero-crossing rate" value={(alert.zero_crossing_rate / 0.3) * 100} display={alert.zero_crossing_rate.toFixed(3)} barClass="bg-purple-600" icon={Activity} />
@@ -496,14 +496,14 @@ export default function AlertEvidence({
 
               {alert.peak_to_average != null && (
                 <div className="flex justify-between gap-4 text-sm">
-                  <span className="text-slate-600 dark:text-slate-300">Peak-to-average ratio</span>
-                  <span className="font-mono text-slate-800 dark:text-slate-100">{alert.peak_to_average.toFixed(4)}</span>
+                  <span className="text-muted">Peak-to-average ratio</span>
+                  <span className="font-mono text-ink">{alert.peak_to_average.toFixed(4)}</span>
                 </div>
               )}
 
               {waveform.length > 0 && (
                 <div>
-                  <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-200">Waveform snapshot</p>
+                  <p className="mb-2 text-sm font-medium text-ink">Waveform snapshot</p>
                   <WaveformDisplay
                     snapshot={waveform}
                     emotion={alert.emotion ?? undefined}
@@ -511,7 +511,7 @@ export default function AlertEvidence({
                 </div>
               )}
 
-              <p className="flex gap-2 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-600 dark:border-slate-800 dark:text-slate-300">
+              <p className="flex gap-2 border-t border-line pt-4 text-xs leading-5 text-muted">
                 <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 Technical measurements are supporting signals only. They do not confirm that an incident occurred.
               </p>

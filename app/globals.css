@@ -1,32 +1,139 @@
 @import "tailwindcss";
 
-/* Enable class-based dark mode for next-themes */
+/* Class-based dark mode for next-themes */
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --color-indigo-400: #818cf8;
-  --color-indigo-500: #6366f1;
-  --color-purple-400: #c084fc;
-  --color-purple-500: #a855f7;
-  --color-cyan-400:   #22d3ee;
-  --color-cyan-500:   #06b6d4;
+/* ── Design tokens ───────────────────────────────────────────────────
+   The only place colors, radii and shadows are defined. Components use the
+   semantic utilities below (bg-surface, text-ink, border-line, …), so dark
+   mode is a variable swap rather than per-component overrides. */
+
+:root {
+  --bg: #ffffff;
+  --surface: #f7f8f7;
+  --line: #e4e7e4;
+  --line-strong: #8a928a;
+  --ink: #161a16;
+  --muted: #5e665e;
+  --brand: #3ecf8e;
+  --brand-hover: #35b97e;
+  --brand-ink: #0b2a1c;
+  --link: #1a7f52;
+  --focus: #1a7f52;
+
+  --sev-high: #b42318;
+  --sev-high-bg: #fef3f2;
+  --sev-medium: #8f4a00;
+  --sev-medium-bg: #fff6e5;
+  --sev-low: #1d5fbf;
+  --sev-low-bg: #eef4ff;
+  --danger: #b42318;
+  --danger-bg: #fef3f2;
+
+  --shadow-pop: 0 8px 24px rgb(22 26 22 / 0.12), 0 1px 2px rgb(22 26 22 / 0.08);
+  color-scheme: light;
 }
 
-/* ── Base backgrounds ────────────────────────────────────────────── */
+.dark {
+  --bg: #000000;
+  --surface: #141414;
+  --line: #262626;
+  --line-strong: #5c5c5c;
+  --ink: #ffffff;
+  --muted: #a3a3a3;
+  --brand: #3ecf8e;
+  --brand-hover: #5cdba2;
+  --brand-ink: #0b2a1c;
+  /* Green stays reserved for primary actions and the active state in dark mode. */
+  --link: #ffffff;
+  --focus: #3ecf8e;
+
+  --sev-high: #ff8b80;
+  --sev-high-bg: #2a1210;
+  --sev-medium: #f5b547;
+  --sev-medium-bg: #2a1f0a;
+  --sev-low: #7db4ff;
+  --sev-low-bg: #0f1c30;
+  --danger: #ff8b80;
+  --danger-bg: #2a1210;
+
+  --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.6), 0 0 0 1px #262626;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-ink: var(--brand-ink);
+  --color-link: var(--link);
+  --color-focus: var(--focus);
+  --color-sev-high: var(--sev-high);
+  --color-sev-high-bg: var(--sev-high-bg);
+  --color-sev-medium: var(--sev-medium);
+  --color-sev-medium-bg: var(--sev-medium-bg);
+  --color-sev-low: var(--sev-low);
+  --color-sev-low-bg: var(--sev-low-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+
+  /* Radius by hierarchy: panel > control > tag. */
+  --radius-panel: 12px;
+  --radius-control: 8px;
+  --radius-tag: 4px;
+
+  --shadow-pop: var(--shadow-pop);
+
+  /* Type scale */
+  --text-display: 1.75rem;
+  --text-display--line-height: 2.125rem;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.75rem;
+  --text-body-lg: 1rem;
+  --text-body-lg--line-height: 1.5rem;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.125rem;
+  --text-figure: 2rem;
+  --text-figure--line-height: 2.25rem;
+}
+
+/* ── Base ────────────────────────────────────────────────────────── */
+
+html {
+  background: var(--bg);
+}
 
 body {
-  background: #f8fafc;
-  color: #1e293b;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  -webkit-font-smoothing: antialiased;
 }
 
-.dark body {
-  background: #020617;
-  color: #f1f5f9;
+/* Counts, times and tables line up. */
+.num {
+  font-variant-numeric: tabular-nums;
 }
 
 :focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--brand-ink);
 }
 
 .skip-link {
@@ -35,62 +142,57 @@ body {
   top: 0.75rem;
   z-index: 100;
   transform: translateY(-200%);
-  border-radius: 0.75rem;
-  background: #312e81;
-  color: #fff;
+  border-radius: var(--radius-control);
+  background: var(--brand);
+  color: var(--brand-ink);
   padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  transition: transform 150ms ease;
+  font-weight: 600;
 }
 
 .skip-link:focus {
   transform: translateY(0);
 }
 
-/* ── Animations ──────────────────────────────────────────────────── */
+input[type="range"] {
+  accent-color: var(--link);
+}
+
+.dark input[type="range"] {
+  accent-color: var(--brand);
+}
+
+/* ── Motion: only in response to an action ──────────────────────── */
+
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes row-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes row-in {
+  from { background-color: var(--surface); }
+  to   { background-color: transparent; }
+}
+
+.animate-pop-in {
+  animation: pop-in 150ms ease-out;
+}
+
+.animate-row-out {
+  animation: row-out 150ms ease-out forwards;
+}
+
+.animate-row-in {
+  animation: row-in 1200ms ease-out;
+}
 
 @keyframes wave-bar {
   0%, 100% { transform: scaleY(0.15); }
   50%       { transform: scaleY(1); }
-}
-
-@keyframes pulse-dot {
-  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-  70%  { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-}
-
-@keyframes alert-flash {
-  0%   { box-shadow: inset 0 0 0 0 rgba(239, 68, 68, 0); }
-  15%  { box-shadow: inset 0 0 80px 20px rgba(239, 68, 68, 0.5); }
-  100% { box-shadow: inset 0 0 0 0 rgba(239, 68, 68, 0); }
-}
-
-@keyframes slide-in-top {
-  from { transform: translateY(-16px); opacity: 0; }
-  to   { transform: translateY(0);     opacity: 1; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-20px); }
-}
-
-/* ── Alert flash class ───────────────────────────────────────────── */
-.alert-flashing {
-  animation: alert-flash 1.2s ease-out;
-}
-
-/* ── Scrollbar ───────────────────────────────────────────────────── */
-::-webkit-scrollbar           { width: 5px; height: 5px; }
-::-webkit-scrollbar-track     { background: rgba(255,255,255,0.02); }
-::-webkit-scrollbar-thumb     { background: rgba(255,255,255,0.1); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-
-/* ── Range input ─────────────────────────────────────────────────── */
-input[type="range"] {
-  accent-color: #6366f1;
 }
 
 @media (prefers-reduced-motion: reduce) {

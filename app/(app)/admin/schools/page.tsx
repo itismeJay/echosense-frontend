@@ -20,7 +20,7 @@ import { useSchools } from "@/lib/useSchools";
 import type { School } from "@/lib/types";
 
 const INPUT =
-  "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
+  "min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink       ";
 
 function errorText(error: unknown, fallback: string): string {
   return error instanceof ApiError ? schoolErrorMessage(error.status, fallback) : fallback;
@@ -74,7 +74,7 @@ function SchoolNameDialog({ school, onClose, onSaved }: SchoolNameDialogProps) {
         <div>
           <label
             htmlFor="school-name"
-            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
+            className="mb-1.5 block text-sm font-medium text-ink"
           >
             School name
           </label>
@@ -93,7 +93,7 @@ function SchoolNameDialog({ school, onClose, onSaved }: SchoolNameDialogProps) {
           <p
             id="school-name-error"
             role="alert"
-            className="flex items-start gap-2 text-sm font-medium text-red-700 dark:text-red-300"
+            className="flex items-start gap-2 text-sm font-medium text-danger"
           >
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             {error}
@@ -104,7 +104,7 @@ function SchoolNameDialog({ school, onClose, onSaved }: SchoolNameDialogProps) {
             type="button"
             onClick={onClose}
             disabled={pending}
-            className="min-h-11 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="min-h-11 rounded-control border border-line-strong px-4 py-2.5 text-sm font-semibold text-ink hover:bg-surface disabled:opacity-50"
           >
             Cancel
           </button>
@@ -112,7 +112,7 @@ function SchoolNameDialog({ school, onClose, onSaved }: SchoolNameDialogProps) {
             type="submit"
             disabled={pending}
             aria-busy={pending}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink hover:bg-brand-hover disabled:opacity-60"
           >
             {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             {pending ? "Saving…" : school ? "Save name" : "Create school"}
@@ -159,20 +159,20 @@ export default function SchoolsPage() {
     <div className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+          <p className="text-sm font-semibold text-link">
             Super administrator
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+          <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">
             Schools
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
             Create schools, rename them, and turn their access on or off.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setEditing("new")}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink hover:bg-brand-hover"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Add School
@@ -185,63 +185,63 @@ export default function SchoolsPage() {
           {[0, 1, 2, 3].map((item) => (
             <div
               key={item}
-              className="h-36 animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+              className="h-36 animate-pulse rounded-panel border border-line bg-bg"
             />
           ))}
         </div>
       ) : error ? (
         <div
           role="alert"
-          className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
+          className="rounded-panel border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
         >
-          <h2 className="font-bold text-red-950 dark:text-red-100">We couldn&apos;t load schools.</h2>
+          <h2 className="font-semibold text-ink">We couldn&apos;t load schools.</h2>
           <button
             type="button"
             onClick={() => void reload()}
-            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-700"
+            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Retry
           </button>
         </div>
       ) : schools.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
-          <Building2 className="mx-auto h-7 w-7 text-slate-500" aria-hidden="true" />
-          <h2 className="mt-3 font-bold text-slate-950 dark:text-white">No schools yet.</h2>
+        <div className="rounded-panel border border-line bg-bg p-8 text-center">
+          <Building2 className="mx-auto h-7 w-7 text-muted" aria-hidden="true" />
+          <h2 className="mt-3 font-semibold text-ink">No schools yet.</h2>
         </div>
       ) : (
         <section aria-label="Schools">
-          <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">
+          <p className="mb-3 text-sm text-muted">
             {schools.length} school{schools.length === 1 ? "" : "s"}
           </p>
           <ul className="grid gap-4 sm:grid-cols-2">
             {schools.map((school) => (
               <li
                 key={school.id}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                className="rounded-panel border border-line bg-bg p-5"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="min-w-0 break-words font-bold text-slate-950 dark:text-white">
+                  <h2 className="min-w-0 break-words font-semibold text-ink">
                     {school.name}
                   </h2>
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
                       school.is_active
                         ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
-                        : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                        : "bg-surface text-ink  "
                     }`}
                   >
                     {school.is_active ? "Active" : "Inactive"}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-xs text-muted">
                   Created {formatTimestamp(school.created_at)}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => setEditing(school)}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong px-3 py-2 text-sm font-semibold text-ink hover:bg-surface"
                   >
                     <Pencil className="h-4 w-4" aria-hidden="true" />
                     Edit name
@@ -249,10 +249,10 @@ export default function SchoolsPage() {
                   <button
                     type="button"
                     onClick={() => setToggling(school)}
-                    className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold focus-visible:ring-2 ${
+                    className={`inline-flex min-h-11 items-center gap-2 rounded-control px-3 py-2 text-sm font-semibold  ${
                       school.is_active
-                        ? "border border-red-300 text-red-700 hover:bg-red-50 focus-visible:ring-red-700 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30"
-                        : "border border-emerald-300 text-emerald-800 hover:bg-emerald-50 focus-visible:ring-emerald-700 dark:border-emerald-900 dark:text-emerald-200 dark:hover:bg-emerald-950/30"
+                        ? "border border-red-300 text-red-700 hover:bg-red-50  dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                        : "border border-emerald-300 text-emerald-800 hover:bg-emerald-50  dark:border-emerald-900 dark:text-emerald-200 dark:hover:bg-emerald-950/30"
                     }`}
                   >
                     <Power className="h-4 w-4" aria-hidden="true" />

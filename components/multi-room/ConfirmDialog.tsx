@@ -1,6 +1,7 @@
 "use client";
 
 import AccessibleDialog from "@/components/AccessibleDialog";
+import { Button } from "@/components/ui";
 
 interface ConfirmDialogProps {
   title: string;
@@ -28,27 +29,17 @@ export default function ConfirmDialog({
       onClose={onCancel}
       closeDisabled={pending}
     >
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={pending}
-          className="min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-        >
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button onClick={onCancel} disabled={pending}>
           Cancel
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant={tone === "danger" ? "danger" : "primary"}
           onClick={onConfirm}
-          disabled={pending}
-          className={`min-h-11 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 ${
-            tone === "danger"
-              ? "bg-red-700 hover:bg-red-800"
-              : "bg-indigo-700 hover:bg-indigo-800"
-          }`}
+          pending={pending}
         >
           {pending ? "Working…" : confirmLabel}
-        </button>
+        </Button>
       </div>
     </AccessibleDialog>
   );

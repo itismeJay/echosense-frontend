@@ -38,7 +38,7 @@ export default function DeviceSecretDialog({
       description="Save this device key now. It will not be shown again."
       onClose={onClose}
     >
-      <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+      <div className="rounded-control border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
         <div className="flex gap-3">
           <KeyRound className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
           <p className="text-sm leading-6">
@@ -50,21 +50,21 @@ export default function DeviceSecretDialog({
 
       <dl className="mt-5 grid gap-3 text-sm">
         <div>
-          <dt className="font-medium text-slate-500 dark:text-slate-400">Device name</dt>
-          <dd className="mt-1 font-semibold text-slate-950 dark:text-white">
+          <dt className="font-medium text-muted">Device name</dt>
+          <dd className="mt-1 font-semibold text-ink">
             {result.device.display_name}
           </dd>
         </div>
         <div>
-          <dt className="font-medium text-slate-500 dark:text-slate-400">Device code</dt>
-          <dd className="mt-1 font-mono text-slate-950 dark:text-white">
+          <dt className="font-medium text-muted">Device code</dt>
+          <dd className="mt-1 font-mono text-ink">
             {result.device.device_code}
           </dd>
         </div>
       </dl>
 
       <div className="mt-4">
-        <label htmlFor="one-time-device-key" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+        <label htmlFor="one-time-device-key" className="mb-1.5 block text-sm font-semibold text-ink">
           One-time device key
         </label>
         <input
@@ -75,7 +75,7 @@ export default function DeviceSecretDialog({
           onFocus={(event) => event.currentTarget.select()}
           autoComplete="off"
           spellCheck={false}
-          className="min-h-11 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 font-mono text-sm text-slate-950 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+          className="min-h-11 w-full rounded-control border border-line-strong bg-surface px-3 font-mono text-sm text-ink"
         />
       </div>
 
@@ -83,7 +83,7 @@ export default function DeviceSecretDialog({
         <button
           type="button"
           onClick={() => void copyKey()}
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-300 bg-white px-4 py-2 text-sm font-semibold text-indigo-800 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-200 dark:hover:bg-indigo-950/30"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-control border border-line bg-bg px-4 py-2 text-sm font-semibold text-link hover:bg-surface"
         >
           {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
           {copied ? "Copied" : "Copy key"}
@@ -91,7 +91,7 @@ export default function DeviceSecretDialog({
         <button
           type="button"
           onClick={onClose}
-          className="min-h-11 flex-1 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800"
+          className="min-h-11 flex-1 rounded-control bg-brand px-4 py-2 text-sm font-semibold text-brand-ink hover:bg-brand-hover"
         >
           I have saved it
         </button>

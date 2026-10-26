@@ -190,7 +190,7 @@ function canonicalSeverity(value: unknown): CanonicalSeverity | undefined {
 }
 
 export function normalizeAlertStatus(value: unknown): AlertStatus {
-  return value === "active" || value === "resolved" ? value : "unknown";
+  return value === "active" || value === "reviewed" || value === "resolved" ? value : "unknown";
 }
 
 function triggerType(value: unknown): AlertTriggerType {

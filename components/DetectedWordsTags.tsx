@@ -10,7 +10,7 @@ export default function DetectedWordsTags({ hardHits, softHits }: DetectedWordsT
 
   return (
     <div className="space-y-1.5">
-      <span className="text-[11px] text-gray-400 dark:text-gray-500">Detected:</span>
+      <span className="text-[11px] text-muted">Detected:</span>
       <div className="flex flex-wrap gap-1.5">
         {(hasHard ? hardHits! : []).map((word, i) => (
           <span

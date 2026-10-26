@@ -75,13 +75,13 @@ export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
 
   return (
     <>
-    <header className="sticky top-0 z-40 flex min-h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/95 px-4 dark:border-slate-800 dark:bg-slate-950/95 md:px-6">
+    <header className="sticky top-0 z-40 flex min-h-16 shrink-0 items-center justify-between border-b border-line bg-bg px-4 md:px-6">
       {/* Left: wordmark */}
       <div className="flex items-center gap-2.5">
-        <div className="shrink-0 rounded-xl bg-indigo-100 p-2 dark:bg-indigo-950/60">
-          <School className="h-5 w-5 text-indigo-700 dark:text-indigo-300" aria-hidden="true" />
+        <div className="shrink-0 rounded-control bg-surface p-2">
+          <School className="h-5 w-5 text-link" aria-hidden="true" />
         </div>
-        <span className="text-sm font-bold tracking-tight text-slate-950 dark:text-white">
+        <span className="text-sm font-semibold tracking-tight text-ink">
           EchoSense
         </span>
       </div>
@@ -95,10 +95,10 @@ export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`relative flex min-h-11 items-center rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+              className={`relative flex min-h-11 items-center rounded-control px-4 py-2 text-sm font-medium transition-colors duration-150 focus-visible:outline-none   ${
                 active
-                  ? "text-gray-900 dark:text-white"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-white/5"
+                  ? "text-ink"
+                  : "text-muted hover:text-ink hover:bg-surface "
               }`}
             >
               {label}
@@ -115,14 +115,14 @@ export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
         {/* Backend update status pill */}
         <div
           role="status"
-          className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+          className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-control text-xs font-medium border transition-colors ${
             loading
-              ? "bg-gray-500/10 border-gray-500/20 text-gray-500 dark:text-gray-400"
+              ? "bg-gray-500/10 border-line-strong text-muted"
               : alertDataUnavailable
                 ? "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300"
               : online
                 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+                : "bg-red-500/10 border-red-500/20 text-danger"
           }`}
         >
           {loading ? (
@@ -148,14 +148,14 @@ export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
         {/* User email + logout */}
         {user && (
           <>
-            <span className="hidden max-w-[140px] truncate text-xs text-slate-500 dark:text-slate-400 sm:block">
+            <span className="hidden max-w-[140px] truncate text-xs text-muted sm:block">
               {user.email}
             </span>
             <button
               ref={logoutButtonRef}
               type="button"
               onClick={() => setShowLogoutConfirm(true)}
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition-colors hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-300"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-control border border-line text-muted transition-colors hover:bg-red-50 hover:text-red-700 focus-visible:outline-none dark:hover:bg-red-950/30 dark:hover:text-red-300"
               aria-label="Sign out"
             >
               <LogOut className="w-4 h-4" />
@@ -168,7 +168,7 @@ export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
           ref={menuButtonRef}
           type="button"
           onClick={onMenuOpen}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white md:hidden"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-control border border-line text-muted transition-colors hover:bg-surface hover:text-ink focus-visible:outline-none md:hidden"
           aria-label="Open menu"
         >
           <Menu className="w-4 h-4" />
@@ -180,7 +180,7 @@ export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50"
             onClick={() => setShowLogoutConfirm(false)}
             aria-hidden="true"
           />
@@ -189,15 +189,15 @@ export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
             aria-modal="true"
             aria-labelledby="logout-dialog-title"
             aria-describedby="logout-dialog-description"
-            className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+            className="relative z-10 w-full max-w-sm rounded-panel border border-line bg-bg p-6 shadow-pop"
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-xl bg-red-500/10 shrink-0">
+              <div className="p-2 rounded-control bg-red-500/10 shrink-0">
                 <LogOut className="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <h2 id="logout-dialog-title" className="text-base font-semibold text-gray-900 dark:text-white">Sign out</h2>
-                <p id="logout-dialog-description" className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Are you sure you want to sign out?</p>
+                <h2 id="logout-dialog-title" className="text-base font-semibold text-ink">Sign out</h2>
+                <p id="logout-dialog-description" className="mt-0.5 text-sm text-muted">Are you sure you want to sign out?</p>
               </div>
             </div>
             <div className="flex gap-3">
@@ -205,7 +205,7 @@ export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
                 ref={cancelButtonRef}
                 type="button"
                 onClick={() => setShowLogoutConfirm(false)}
-                className="min-h-11 flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
+                className="min-h-11 flex-1 rounded-control border border-line px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface focus-visible:outline-none"
               >
                 Cancel
               </button>
@@ -213,7 +213,7 @@ export default function Navbar({ onMenuOpen, mobileMenuOpen }: NavbarProps) {
                 ref={signOutButtonRef}
                 type="button"
                 onClick={logout}
-                className="min-h-11 flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2"
+                className="min-h-11 flex-1 rounded-control bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-danger focus-visible:outline-none focus-visible:ring-offset-2"
               >
                 Sign out
               </button>

@@ -84,7 +84,7 @@ const EMOTION_OPTIONS: { label: string; value: EmotionFilter }[] = [
 ];
 
 const SELECT =
-  "min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  "min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink       ";
 
 interface AlertCollectionProps {
   mode: "alerts" | "history";
@@ -400,13 +400,13 @@ export default function AlertCollection({
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6 lg:p-8">
       <header className="mb-6">
-        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        <p className="text-sm font-semibold text-link">
           Classroom Monitoring System
         </p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
+        <h1 className="mt-1 text-2xl font-semibold text-ink">
           {isHistory ? "Alert History" : "Classroom Alerts"}
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           {isHistory
             ? "Search and view previously recorded classroom alerts."
             : "View recent possible classroom concerns. These automated alerts are unverified."}
@@ -416,15 +416,15 @@ export default function AlertCollection({
       {displayedError && (
         <div
           role="alert"
-          className="mb-5 flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-red-900/60 dark:bg-red-950/30"
+          className="mb-5 flex flex-col gap-3 rounded-panel border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-red-900/60 dark:bg-red-950/30"
         >
           <div>
-            <p className="font-semibold text-red-900 dark:text-red-100">
+            <p className="font-semibold text-ink">
               {displayedErrorStatus === 403
                 ? "You do not have permission to view classroom alerts."
                 : "We couldn’t load classroom alerts."}
             </p>
-            <p className="mt-1 text-sm text-red-800 dark:text-red-200">
+            <p className="mt-1 text-sm text-danger">
               {displayedErrorStatus === 403
                 ? "Contact an administrator if you believe you should have access."
                 : "The service may be temporarily unavailable. Please try again."}
@@ -435,7 +435,7 @@ export default function AlertCollection({
               <button
                 type="button"
                 onClick={refreshDisplayedAlerts}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-red-300 bg-bg px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-100 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
               >
                 <RefreshCw className="h-4 w-4" aria-hidden="true" />
                 Retry
@@ -444,7 +444,7 @@ export default function AlertCollection({
               <button
                 type="button"
                 onClick={() => void refresh()}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-red-300 bg-bg px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-100 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
               >
                 <RefreshCw className="h-4 w-4" aria-hidden="true" />
                 Retry
@@ -457,7 +457,7 @@ export default function AlertCollection({
       {(displayedWarning || (!hasServerFilters && isStale)) && (
         <div
           role="status"
-          className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100"
+          className="mb-5 rounded-control border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100"
         >
           {!hasServerFilters && isStale
             ? `Showing retained alert data because the latest poll failed${lastUpdated ? ` (last updated ${lastUpdated.toLocaleTimeString()})` : ""}.`
@@ -465,10 +465,10 @@ export default function AlertCollection({
         </div>
       )}
 
-      <section aria-label="Alert filters" className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <section aria-label="Alert filters" className="mb-6 rounded-panel border border-line bg-bg p-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
           <fieldset className="flex-1">
-            <legend className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <legend className="mb-2 text-sm font-semibold text-ink">
               Priority
             </legend>
             <div className="flex flex-wrap gap-2">
@@ -478,10 +478,10 @@ export default function AlertCollection({
                   type="button"
                   aria-pressed={priority === option.value}
                   onClick={() => updateFilter(() => setPriority(option.value))}
-                  className={`min-h-11 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${
+                  className={`min-h-11 rounded-control border px-4 py-2 text-sm font-semibold transition-colors ${
                     priority === option.value
-                      ? "border-indigo-600 bg-indigo-600 text-white"
-                      : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                      ? "border-line bg-brand text-white"
+                      : "border-line-strong bg-bg text-ink hover:bg-surface    "
                   }`}
                 >
                   {option.label}
@@ -491,27 +491,27 @@ export default function AlertCollection({
           </fieldset>
 
           <div className="w-full lg:max-w-sm">
-            <label htmlFor={`${mode}-location-search`} className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <label htmlFor={`${mode}-location-search`} className="mb-2 block text-sm font-semibold text-ink">
               Search by classroom
             </label>
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
               <input
                 id={`${mode}-location-search`}
                 type="search"
                 value={search}
                 onChange={(event) => updateFilter(() => setSearch(event.target.value))}
                 placeholder="e.g. Grade 6"
-                className="min-h-11 w-full rounded-xl border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                className="min-h-11 w-full rounded-control border border-line-strong bg-bg py-2 pl-10 pr-3 text-sm text-ink placeholder:text-muted"
               />
             </div>
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2 lg:grid-cols-3 dark:border-slate-800">
+        <div className="mt-4 grid gap-4 border-t border-line pt-4 sm:grid-cols-2 lg:grid-cols-3">
           {isSuperAdmin ? (
             <div>
-              <label htmlFor={`${mode}-school-filter`} className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
+              <label htmlFor={`${mode}-school-filter`} className="mb-1.5 block text-sm font-medium text-ink">
                 School
               </label>
               <select id={`${mode}-school-filter`} value={schoolId} onChange={(event) => changeSchool(event.target.value)} className={SELECT}>
@@ -520,13 +520,13 @@ export default function AlertCollection({
               </select>
             </div>
           ) : (
-            <div className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-950">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">School context</p>
-              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{currentSchoolName ?? "Your assigned school"}</p>
+            <div className="rounded-control bg-surface px-3 py-2">
+              <p className="text-xs font-semibold text-muted">School context</p>
+              <p className="mt-1 text-sm font-semibold text-ink">{currentSchoolName ?? "Your assigned school"}</p>
             </div>
           )}
           <div>
-            <label htmlFor={`${mode}-classroom-filter`} className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
+            <label htmlFor={`${mode}-classroom-filter`} className="mb-1.5 block text-sm font-medium text-ink">
               Classroom
             </label>
             <select id={`${mode}-classroom-filter`} value={classroomId} onChange={(event) => changeClassroom(event.target.value)} className={SELECT}>
@@ -535,7 +535,7 @@ export default function AlertCollection({
             </select>
           </div>
           <div>
-            <label htmlFor={`${mode}-device-filter`} className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
+            <label htmlFor={`${mode}-device-filter`} className="mb-1.5 block text-sm font-medium text-ink">
               Edge device
             </label>
             <select id={`${mode}-device-filter`} value={deviceId} onChange={(event) => changeDevice(event.target.value)} className={SELECT}>
@@ -546,14 +546,14 @@ export default function AlertCollection({
         </div>
 
         {isHistory && (
-          <details className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-slate-200 dark:hover:text-white">
+          <details className="mt-4 border-t border-line pt-4">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-control text-sm font-semibold text-ink hover:text-ink">
               <ChevronDown className="h-4 w-4" aria-hidden="true" />
               More filters and export
             </summary>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label htmlFor="history-category" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                <label htmlFor="history-category" className="mb-1.5 block text-sm font-medium text-ink">
                   Concern category
                 </label>
                 <select id="history-category" value={category} onChange={(event) => updateFilter(() => setCategory(event.target.value as CategoryFilter))} className={SELECT}>
@@ -561,7 +561,7 @@ export default function AlertCollection({
                 </select>
               </div>
               <div>
-                <label htmlFor="history-language" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                <label htmlFor="history-language" className="mb-1.5 block text-sm font-medium text-ink">
                   Language
                 </label>
                 <select id="history-language" value={language} onChange={(event) => updateFilter(() => setLanguage(event.target.value as LanguageFilter))} className={SELECT}>
@@ -569,7 +569,7 @@ export default function AlertCollection({
                 </select>
               </div>
               <div>
-                <label htmlFor="history-trigger" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                <label htmlFor="history-trigger" className="mb-1.5 block text-sm font-medium text-ink">
                   Detection reason
                 </label>
                 <select id="history-trigger" value={trigger} onChange={(event) => updateFilter(() => setTrigger(event.target.value as TriggerFilter))} className={SELECT}>
@@ -577,7 +577,7 @@ export default function AlertCollection({
                 </select>
               </div>
               <div>
-                <label htmlFor="history-emotion" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                <label htmlFor="history-emotion" className="mb-1.5 block text-sm font-medium text-ink">
                   Possible vocal tone
                 </label>
                 <select id="history-emotion" value={emotion} onChange={(event) => updateFilter(() => setEmotion(event.target.value as EmotionFilter))} className={SELECT}>
@@ -589,7 +589,7 @@ export default function AlertCollection({
               <button
                 type="button"
                 onClick={handleExport}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line-strong bg-bg px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
               >
                 <Download className="h-4 w-4" aria-hidden="true" />
                 Export filtered history
@@ -602,20 +602,20 @@ export default function AlertCollection({
       {displayedLoading && displayedAlerts.length === 0 ? (
         <AlertListSkeleton count={isHistory ? 6 : 4} />
       ) : displayedError && displayedAlerts.length === 0 ? null : error && alerts.length === 0 ? null : visible.length === 0 ? (
-        <section className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center dark:border-slate-700 dark:bg-slate-900">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+        <section className="rounded-panel border border-dashed border-line-strong bg-bg px-6 py-16 text-center">
+          <h2 className="text-lg font-semibold text-ink">
             {filtered.length === 0 && displayedAlerts.length > 0
               ? "No alerts match these filters."
               : "No alerts need attention today."}
           </h2>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          <p className="mt-2 text-sm text-muted">
             New classroom alerts will appear here automatically.
           </p>
         </section>
       ) : (
         <>
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-slate-600 dark:text-slate-300" aria-live="polite">
+            <p className="text-sm text-muted" aria-live="polite">
               {filtered.length} alert{filtered.length === 1 ? "" : "s"}
             </p>
           </div>
@@ -627,7 +627,7 @@ export default function AlertCollection({
 
       {totalPages > 1 && (
         <nav className="mt-6 flex items-center justify-between gap-4" aria-label="Alert pages">
-          <p className="text-sm text-slate-600 dark:text-slate-300">
+          <p className="text-sm text-muted">
             Page {safePage + 1} of {totalPages}
           </p>
           <div className="flex gap-2">
@@ -635,7 +635,7 @@ export default function AlertCollection({
               type="button"
               disabled={safePage === 0}
               onClick={() => setPage(Math.max(0, safePage - 1))}
-              className="min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="min-h-11 rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
             >
               Previous
             </button>
@@ -643,7 +643,7 @@ export default function AlertCollection({
               type="button"
               disabled={safePage >= totalPages - 1}
               onClick={() => setPage(Math.min(totalPages - 1, safePage + 1))}
-              className="min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="min-h-11 rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
             >
               Next
             </button>

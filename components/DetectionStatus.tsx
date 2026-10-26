@@ -18,10 +18,10 @@ export default function DetectionStatus({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border p-6 transition-all duration-700 ${
+      className={`relative overflow-hidden rounded-panel border p-6 transition-all duration-700 ${
         isDetected
           ? "bg-red-500/10 border-red-500/30 shadow-[0_8px_32px_rgba(239,68,68,0.15)]"
-          : "bg-white/60 dark:bg-indigo-500/[0.03] border-white/80 dark:border-indigo-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_rgba(99,102,241,0.08)]"
+          : "bg-bg dark:bg-indigo-500/[0.03] border-white/80  shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_rgba(99,102,241,0.08)]"
       }`}
     >
       {/* Background glow */}
@@ -29,7 +29,7 @@ export default function DetectionStatus({
         className={`absolute inset-0 opacity-30 pointer-events-none ${
           isDetected
             ? "bg-gradient-to-br from-red-900/60 via-transparent to-transparent"
-            : "bg-gradient-to-br from-indigo-900/20 dark:from-indigo-900/40 via-transparent to-transparent"
+            : "bg-gradient-to-br from-indigo-900/20  via-transparent to-transparent"
         }`}
       />
 
@@ -41,23 +41,23 @@ export default function DetectionStatus({
               <>
                 <div className="flex items-center gap-2 mb-1">
                   <AlertTriangle className="w-5 h-5 text-red-400" />
-                  <span className="text-xs text-red-400 font-semibold uppercase tracking-widest">
+                  <span className="text-xs text-red-400 font-semibold">
                     Waiting for Attention
                   </span>
                 </div>
-                <h2 className="text-2xl font-black text-red-700 dark:text-red-200 leading-tight">
+                <h2 className="text-2xl font-black text-danger leading-tight">
                   Possible Aggression Alert
                 </h2>
               </>
             ) : (
               <>
                 <div className="flex items-center gap-2 mb-1">
-                  <Mic className="w-5 h-5 text-indigo-400" />
-                  <span className="text-xs text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-widest">
+                  <Mic className="w-5 h-5 text-link" />
+                  <span className="text-xs text-link font-semibold">
                     Monitoring Active
                   </span>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-indigo-200 leading-tight">
+                <h2 className="text-2xl font-semibold text-ink leading-tight">
                   Monitoring Active
                 </h2>
               </>
@@ -69,24 +69,24 @@ export default function DetectionStatus({
         {/* Detected details */}
         {isDetected && latest && (
           <div className="space-y-2 mt-2">
-            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-ink">
+              <MapPin className="w-4 h-4 text-muted shrink-0" />
               <span>{latest.location}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <Clock className="w-4 h-4 text-muted shrink-0" />
               <span>{formatTimestamp(latest.created_at)}</span>
             </div>
             <div className="flex items-center gap-4 text-sm mt-1">
-              <span className="text-gray-400 dark:text-gray-500">
+              <span className="text-muted">
                 Detection Confidence:{" "}
-                <span className="text-red-500 dark:text-red-300 font-bold">
+                <span className="text-red-500 dark:text-red-300 font-semibold">
                   {latest.confidence != null ? formatConfidence(latest.confidence) : "Unavailable"}
                 </span>
               </span>
-              <span className="text-gray-400 dark:text-gray-500">
+              <span className="text-muted">
                 Duration:{" "}
-                <span className="text-red-500 dark:text-red-300 font-bold">
+                <span className="text-red-500 dark:text-red-300 font-semibold">
                   {latest.duration != null ? `${latest.duration.toFixed(1)}s` : "Unavailable"}
                 </span>
               </span>
@@ -96,24 +96,24 @@ export default function DetectionStatus({
 
         {/* Listening state */}
         {!isDetected && (
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-sm text-muted mt-1">
             No recent high-priority possible alert is shown.
           </p>
         )}
 
         {/* Last detection info when listening */}
         {!isDetected && latest && (
-          <div className="mt-4 p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
+          <div className="mt-4 p-3 bg-bg rounded-control border border-line">
             <div className="flex items-center gap-1.5 mb-1">
-              <Timer className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600" />
-              <p className="text-xs text-gray-400 dark:text-gray-500">Last Alert</p>
+              <Timer className="w-3.5 h-3.5 text-muted" />
+              <p className="text-xs text-muted">Last Alert</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <SeverityBadge severity={latest.severity} />
-              <span className="text-xs text-gray-400 dark:text-gray-500">
+              <span className="text-xs text-muted">
                 {formatTimestamp(latest.created_at)}
               </span>
-              <span className="text-xs text-gray-300 dark:text-gray-600">
+              <span className="text-xs text-muted">
                 · {latest.confidence != null ? formatConfidence(latest.confidence) : "Confidence unavailable"}
               </span>
             </div>

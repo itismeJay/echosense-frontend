@@ -84,16 +84,16 @@ function NavContent({
       }`}
     >
       <div
-        className={`flex min-h-16 shrink-0 items-center border-b border-slate-200 px-3 dark:border-slate-800 ${
+        className={`flex min-h-16 shrink-0 items-center border-b border-line px-3  ${
           collapsed ? "justify-center" : "justify-between gap-3"
         }`}
       >
         {!collapsed && (
           <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-950 dark:text-white">
+            <p className="text-sm font-semibold text-ink">
               Navigation
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-muted">
               EchoSense menu
             </p>
           </div>
@@ -104,7 +104,7 @@ function NavContent({
             onClick={onToggleCollapsed}
             aria-expanded={!collapsed}
             aria-controls="desktop-primary-navigation"
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface hover:text-ink focus-visible:outline-none"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronLeft
@@ -129,7 +129,7 @@ function NavContent({
         {navSections.map((section, sectionIndex) => (
           <div key={section.label ?? `primary-${sectionIndex}`} className="space-y-0.5">
             {section.label && !collapsed && (
-              <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">
+              <p className="px-3 pb-1.5 text-[10px] font-semibold text-muted">
                 {section.label}
               </p>
             )}
@@ -144,10 +144,10 @@ function NavContent({
                   aria-label={collapsed ? label : undefined}
                   aria-current={active ? "page" : undefined}
                   title={collapsed ? label : undefined}
-                  className={`group relative flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                  className={`group relative flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 transition-all duration-150 focus-visible:outline-none   ${
                     active
-                      ? "bg-indigo-500/10 dark:bg-white/10 text-gray-900 dark:text-white"
-                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-200"
+                      ? "bg-indigo-500/10  text-ink"
+                      : "text-muted hover:bg-surface  hover:text-ink "
                   } ${collapsed ? "justify-center" : ""}`}
                 >
                   {active && (
@@ -155,7 +155,7 @@ function NavContent({
                   )}
                   <Icon
                     className={`w-5 h-5 shrink-0 transition-colors ${
-                      active ? "text-indigo-400" : ""
+                      active ? "text-link" : ""
                     }`}
                     aria-hidden="true"
                   />
@@ -234,7 +234,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden h-full shrink-0 overflow-hidden border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:flex">
+      <aside className="hidden h-full shrink-0 overflow-hidden border-r border-line bg-bg md:flex">
         <NavContent
           collapsed={collapsed}
           pathname={pathname}
@@ -259,14 +259,14 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="relative z-10 w-64 bg-white dark:bg-gray-950 border-r border-gray-200/60 dark:border-white/10 flex flex-col overflow-y-auto"
+            className="relative z-10 w-64 bg-bg border-r border-line flex flex-col overflow-y-auto"
             style={{ animation: "slide-in-top 250ms ease-out" }}
           >
             <button
               ref={closeButtonRef}
               type="button"
               onClick={onMobileClose}
-              className="absolute right-3 top-3 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-slate-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:hover:bg-slate-800 dark:hover:text-white"
+              className="absolute right-3 top-3 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface hover:text-ink focus-visible:outline-none"
               aria-label="Close menu"
             >
               <X className="w-5 h-5" />

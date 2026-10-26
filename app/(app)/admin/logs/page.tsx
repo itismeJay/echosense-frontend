@@ -98,15 +98,15 @@ export default function TechnicalLogsPage() {
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6 lg:p-8">
       <header className="mb-6">
-        <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        <p className="text-sm font-semibold text-link">
           Administrator · Technical
         </p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+            <h1 className="text-2xl font-semibold text-ink sm:text-3xl">
               Technical Logs
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
               Review backend and classroom-device diagnostic messages. These
               entries are separate from administrative audit history.
             </p>
@@ -115,7 +115,7 @@ export default function TechnicalLogsPage() {
             type="button"
             onClick={() => void loadLogs()}
             disabled={loading}
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+            className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-bg px-4 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           >
             <RefreshCw
               className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
@@ -128,18 +128,18 @@ export default function TechnicalLogsPage() {
 
       <section
         aria-label="Technical log filters"
-        className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[1fr_14rem] dark:border-slate-800 dark:bg-slate-900"
+        className="grid gap-4 rounded-panel border border-line bg-bg p-4 sm:grid-cols-[1fr_14rem]"
       >
         <div>
           <label
             htmlFor="technical-log-search"
-            className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+            className="mb-1.5 block text-sm font-semibold text-ink"
           >
             Search technical messages
           </label>
           <div className="relative">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
               aria-hidden="true"
             />
             <input
@@ -147,14 +147,14 @@ export default function TechnicalLogsPage() {
               type="search"
               value={search}
               onChange={(event) => handleSearchChange(event.target.value)}
-              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white py-2 pl-10 pr-11 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="min-h-11 w-full rounded-control border border-line-strong bg-bg py-2 pl-10 pr-11 text-sm text-ink"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => handleSearchChange("")}
                 aria-label="Clear technical log search"
-                className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:hover:text-white"
+                className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-control text-muted hover:text-ink focus-visible:outline-none"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -164,7 +164,7 @@ export default function TechnicalLogsPage() {
         <div>
           <label
             htmlFor="technical-log-type"
-            className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100"
+            className="mb-1.5 block text-sm font-semibold text-ink"
           >
             Message type
           </label>
@@ -172,7 +172,7 @@ export default function TechnicalLogsPage() {
             id="technical-log-type"
             value={typeFilter}
             onChange={(event) => handleTypeChange(event.target.value)}
-            className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            className="min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink"
           >
             {LOG_TYPES.map((type) => (
               <option key={type.value} value={type.value}>
@@ -187,13 +187,13 @@ export default function TechnicalLogsPage() {
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2
             id="technical-log-heading"
-            className="flex items-center gap-2 font-bold text-slate-950 dark:text-white"
+            className="flex items-center gap-2 font-semibold text-ink"
           >
             <Terminal className="h-5 w-5" aria-hidden="true" />
             Diagnostic messages
           </h2>
           <p
-            className="text-sm text-slate-600 dark:text-slate-300"
+            className="text-sm text-muted"
             aria-live="polite"
           >
             {filteredLogs.length === 0
@@ -208,38 +208,38 @@ export default function TechnicalLogsPage() {
           </p>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="overflow-hidden rounded-panel border border-line bg-bg">
           {loading ? (
             <div role="status" className="space-y-3 p-4">
               <span className="sr-only">Loading technical logs</span>
               {[0, 1, 2, 3, 4].map((item) => (
                 <div
                   key={item}
-                  className="h-14 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800"
+                  className="h-14 animate-pulse rounded-control bg-surface"
                 />
               ))}
             </div>
           ) : error ? (
             <div role="alert" className="p-8 text-center">
-              <p className="font-bold text-red-950 dark:text-red-100">
+              <p className="font-semibold text-ink">
                 We couldn&apos;t load technical logs.
               </p>
               <button
                 type="button"
                 onClick={() => void loadLogs()}
-                className="mt-4 min-h-11 rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2"
+                className="mt-4 min-h-11 rounded-control bg-danger px-4 py-2 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-offset-2"
               >
                 Retry
               </button>
             </div>
           ) : filteredLogs.length === 0 ? (
-            <p className="p-8 text-center text-sm text-slate-600 dark:text-slate-300">
+            <p className="p-8 text-center text-sm text-muted">
               {logs.length === 0
                 ? "No technical messages are available."
                 : "No technical messages match the selected filters."}
             </p>
           ) : (
-            <ol className="divide-y divide-slate-200 dark:divide-slate-800">
+            <ol className="divide-y divide-line">
               {pageLogs.map((log, index) => (
                 <li
                   key={
@@ -250,17 +250,17 @@ export default function TechnicalLogsPage() {
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
                     <div className="flex shrink-0 flex-wrap items-center gap-2 sm:w-52">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                      <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-ink">
                         {log.type}
                       </span>
                       <time
                         dateTime={log.timestamp}
-                        className="text-xs text-slate-500 dark:text-slate-400"
+                        className="text-xs text-muted"
                       >
                         {formatTimestamp(log.timestamp)}
                       </time>
                     </div>
-                    <p className="min-w-0 break-words font-mono text-xs leading-6 text-slate-700 dark:text-slate-200">
+                    <p className="min-w-0 break-words font-mono text-xs leading-6 text-ink">
                       {log.message}
                     </p>
                   </div>
@@ -273,9 +273,9 @@ export default function TechnicalLogsPage() {
         {!loading && !error && filteredLogs.length > 0 && (
           <nav
             aria-label="Technical logs pagination"
-            className="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900"
+            className="mt-4 flex flex-col gap-3 rounded-panel border border-line bg-bg p-4 sm:flex-row sm:items-center sm:justify-between"
           >
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <p className="text-sm text-muted">
               Page <strong>{currentPage}</strong> of{" "}
               <strong>{totalPages}</strong> · {LOGS_PER_PAGE} messages per page
             </p>
@@ -285,7 +285,7 @@ export default function TechnicalLogsPage() {
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
                 disabled={currentPage === 1}
                 aria-label="Go to previous technical logs page"
-                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
               >
                 <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                 Previous
@@ -297,7 +297,7 @@ export default function TechnicalLogsPage() {
                 }
                 disabled={currentPage === totalPages}
                 aria-label="Go to next technical logs page"
-                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
               >
                 Next
                 <ChevronRight className="h-4 w-4" aria-hidden="true" />

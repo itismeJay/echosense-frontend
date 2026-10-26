@@ -70,7 +70,7 @@ export default function AccessibleDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-slate-950/60"
+        className="absolute inset-0 bg-black/50"
         onClick={() => {
           if (!closeDisabled) onClose();
         }}
@@ -82,7 +82,7 @@ export default function AccessibleDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
-        className={`relative z-10 max-h-[90dvh] w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950 ${
+        className={`animate-pop-in relative z-10 max-h-[90dvh] w-full overflow-y-auto rounded-panel border border-line bg-bg p-5 shadow-pop sm:p-6 ${
           size === "large" ? "max-w-2xl" : "max-w-md"
         }`}
       >
@@ -91,19 +91,19 @@ export default function AccessibleDialog({
           type="button"
           onClick={onClose}
           disabled={closeDisabled}
-          className="absolute right-3 top-3 flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-white"
+          className="absolute right-3 top-3 flex min-h-11 min-w-11 items-center justify-center rounded-control text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Close dialog"
         >
           <X className="h-5 w-5" aria-hidden="true" />
         </button>
         <div className="pr-10">
-          <h2 id={titleId} className="text-xl font-bold text-slate-950 dark:text-white">
+          <h2 id={titleId} className="text-title font-semibold text-ink">
             {title}
           </h2>
           {description && (
             <p
               id={descriptionId}
-              className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"
+              className="mt-1.5 text-body text-muted"
             >
               {description}
             </p>

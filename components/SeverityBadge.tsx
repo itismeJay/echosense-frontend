@@ -15,7 +15,7 @@ export default function SeverityBadge({ severity, dot = false }: SeverityBadgePr
   return (
     <span
       aria-label={`${severityLabel(severity)} severity: ${severitySummary(severity)}`}
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-semibold uppercase tracking-wide ${colors}`}
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-semibold   ${colors}`}
     >
       {dot && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
       {severityLabel(severity)}

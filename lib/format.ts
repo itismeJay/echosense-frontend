@@ -139,11 +139,31 @@ export function formatUptime(ms: number): string {
   return `${minutes}m`;
 }
 
+/** Severity tag colors from the design tokens. Green is never used for severity. */
 export function severityColor(s: AlertSeverity): string {
-  if (s === "high")   return "bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/25";
-  if (s === "medium") return "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/25";
-  if (s === "low") return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25";
-  return "bg-slate-500/10 text-slate-700 border-slate-500/20 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/25";
+  if (s === "high") return "bg-sev-high-bg text-sev-high border-sev-high/40";
+  if (s === "medium") return "bg-sev-medium-bg text-sev-medium border-sev-medium/40";
+  if (s === "low") return "bg-sev-low-bg text-sev-low border-sev-low/40";
+  return "bg-surface text-muted border-line";
+}
+
+/** "8:15 AM" today, "Yesterday, 8:15 AM", else "Mon, Oct 26, 8:15 AM". */
+export function formatWhen(value: DateInput, now: Date = new Date()): string {
+  const parsed = parseDateInput(value, "formatWhen");
+  if (!parsed.date) return parsed.fallback;
+  const time = formatTime(parsed.date);
+  const day = (date: Date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  if (day(parsed.date) === day(now)) return time;
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (day(parsed.date) === day(yesterday)) return `Yesterday, ${time}`;
+  const date = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    ...(parsed.date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }),
+  }).format(parsed.date);
+  return `${date}, ${time}`;
 }
 
 export function capitalize(s: string): string {
