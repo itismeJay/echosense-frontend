@@ -9,24 +9,9 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { AlertCircle, Inbox, Loader2, RefreshCw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
-type ButtonSize = "md" | "sm";
+import { buttonClass, type ButtonSize, type ButtonVariant } from "./button-class";
 
-const VARIANT: Record<ButtonVariant, string> = {
-  primary: "bg-brand text-brand-ink hover:bg-brand-hover",
-  secondary: "border border-line-strong bg-bg text-ink hover:bg-surface",
-  ghost: "text-ink hover:bg-surface",
-  danger: "border border-danger text-danger hover:bg-danger-bg",
-};
-
-const SIZE: Record<ButtonSize, string> = {
-  md: "min-h-11 px-4 text-body",
-  sm: "min-h-9 px-3 text-small",
-};
-
-export function buttonClass(variant: ButtonVariant = "secondary", size: ButtonSize = "md") {
-  return `inline-flex items-center justify-center gap-2 rounded-control font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${VARIANT[variant]} ${SIZE[size]}`;
-}
+export { buttonClass };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;

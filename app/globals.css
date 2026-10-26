@@ -133,6 +133,8 @@ body {
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+  /* Show the ring at once; transition-colors would otherwise fade it in from currentColor. */
+  transition-property: none;
 }
 
 ::selection {
@@ -197,6 +199,46 @@ input[type="range"] {
 @keyframes wave-bar {
   0%, 100% { transform: scaleY(0.15); }
   50%       { transform: scaleY(1); }
+}
+
+/* ── Landing page ─────────────────────────────────────────────────
+   Ambient sound waves around the hero device, and the one orchestrated
+   moment: the push notification sliding onto the phone. */
+
+@keyframes es-wave {
+  0%   { transform: scale(0.55); opacity: 0; }
+  20%  { opacity: 0.55; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+@keyframes es-glow {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+
+@keyframes es-notify {
+  0%   { transform: translateY(-120%); opacity: 0; }
+  60%  { transform: translateY(6%); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.es-wave {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: es-wave 4.8s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+.es-glow {
+  animation: es-glow 4.8s ease-in-out infinite;
+}
+
+.es-notify {
+  animation: es-notify 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .es-wave { animation: none; opacity: 0.25; transform: scale(1); }
+  .es-glow { animation: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
