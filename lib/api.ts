@@ -62,6 +62,7 @@ import type {
 import { parseValidJwtClaims } from "./auth-token";
 import { clearSessionCookies, handleForbiddenResponse } from "./session";
 import { parseSchool, parseSchoolList } from "./schools-contract";
+import { getSchoolScope, withSchoolScope } from "./school-scope";
 import type { NewUserPayload } from "./user-admin";
 import {
   PASSWORD_CHANGE_MESSAGE,
@@ -194,7 +195,8 @@ async function apiRequest(
   const headers = buildApiHeaders(token, options?.headers);
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    // Inside a school, a super admin's every request carries that school's id.
+    res = await fetch(`${API_URL}${withSchoolScope(path, getSchoolScope())}`, {
       cache: "no-store",
       ...options,
       signal: getRequestSignal(options?.signal),

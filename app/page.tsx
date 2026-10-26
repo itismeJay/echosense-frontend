@@ -56,7 +56,7 @@ const STEPS = [
 
 export default function LandingPage() {
   const currentUser = useCurrentUser();
-  const ctaHref = currentUser ? "/dashboard" : "/login";
+  const ctaHref = currentUser ? "/overview" : "/login";
 
   return (
     <div className="min-h-dvh bg-surface text-ink">
@@ -68,7 +68,7 @@ export default function LandingPage() {
         <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link
             href="/"
-            className="flex min-h-11 items-center gap-2.5 rounded-control focus-visible:outline-none"
+            className="flex min-h-11 items-center gap-2.5 rounded-control"
             aria-label="EchoSense home"
           >
             <span className="rounded-control bg-surface p-2">
@@ -80,13 +80,13 @@ export default function LandingPage() {
           <nav aria-label="Landing page" className="hidden items-center gap-6 text-sm sm:flex">
             <a
               href="#features"
-              className="flex min-h-11 items-center text-muted hover:text-ink focus-visible:outline-none"
+              className="flex min-h-11 items-center text-muted hover:text-ink"
             >
               What you can see
             </a>
             <a
               href="#how-it-works"
-              className="flex min-h-11 items-center text-muted hover:text-ink focus-visible:outline-none"
+              className="flex min-h-11 items-center text-muted hover:text-ink"
             >
               How it works
             </a>
@@ -96,7 +96,7 @@ export default function LandingPage() {
             <ThemeToggle />
             <Link
               href={ctaHref}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-offset-2 dark:ring-offset-slate-950"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand-hover focus-visible:ring-offset-2 dark:ring-offset-slate-950"
             >
               {currentUser ? "Open Dashboard" : "Sign in"}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -123,14 +123,14 @@ export default function LandingPage() {
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href={ctaHref}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-control bg-brand px-6 py-3 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-offset-2 dark:ring-offset-slate-900"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-control bg-brand px-6 py-3 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand-hover focus-visible:ring-offset-2 dark:ring-offset-slate-900"
                 >
                   {currentUser ? "Go to Dashboard" : "Sign in to EchoSense"}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
                 <a
                   href="#how-it-works"
-                  className="inline-flex min-h-12 items-center justify-center rounded-control border border-line-strong bg-bg px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-surface focus-visible:outline-none"
+                  className="inline-flex min-h-12 items-center justify-center rounded-control border border-line-strong bg-bg px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-surface"
                 >
                   Learn how alerts work
                 </a>

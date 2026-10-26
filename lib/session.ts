@@ -4,6 +4,7 @@ import {
   type ForbiddenKind,
   type SessionEnvironment,
 } from "./session-errors";
+import { clearSchoolScope } from "./school-scope";
 
 export const AUTH_COOKIE = "echosense_token";
 
@@ -25,6 +26,7 @@ export function setPasswordChangeFlag(required: boolean) {
 export function clearSessionCookies() {
   clearTokenCookie();
   setPasswordChangeFlag(false);
+  clearSchoolScope();
 }
 
 function browserSessionEnvironment(): SessionEnvironment {

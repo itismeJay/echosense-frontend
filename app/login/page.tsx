@@ -1,5 +1,6 @@
 "use client";
 
+import { accessRoleOf, homePathFor } from "@/lib/access";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -32,7 +33,7 @@ export default function LoginPage() {
     try {
       const user = await login(email, password);
       toast.success("Signed in");
-      router.push(user.must_change_password ? CHANGE_PASSWORD_PATH : "/dashboard");
+      router.push(user.must_change_password ? CHANGE_PASSWORD_PATH : homePathFor(accessRoleOf(user)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {

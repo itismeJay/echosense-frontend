@@ -10,7 +10,8 @@ export function proxy(request: NextRequest) {
     pathname: request.nextUrl.pathname,
     jwtRole: claims?.role ?? null,
     hadToken: Boolean(token),
-    mustChangePassword: request.cookies.get(PASSWORD_CHANGE_COOKIE)?.value === "1",
+    mustChangePassword:
+      request.cookies.get(PASSWORD_CHANGE_COOKIE)?.value === "1",
   });
 
   const response =
@@ -26,18 +27,16 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
+    "/overview/:path*",
     "/alert/:path*",
     "/alerts/:path*",
-    "/analytics/:path*",
-    "/logs/:path*",
-    "/profile/:path*",
-    "/counselor/:path*",
-    "/admin/:path*",
-    "/settings/:path*",
-    "/users/:path*",
+    "/reports/:path*",
     "/classrooms/:path*",
-    "/devices/:path*",
+    "/people/:path*",
+    "/activity/:path*",
+    "/settings/:path*",
+    "/schools/:path*",
+    "/profile/:path*",
     "/change-password",
     "/no-access",
     "/login",

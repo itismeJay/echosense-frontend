@@ -115,7 +115,7 @@ export default function TechnicalLogsPage() {
             type="button"
             onClick={() => void loadLogs()}
             disabled={loading}
-            className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-bg px-4 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-bg px-4 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
           >
             <RefreshCw
               className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
@@ -154,7 +154,7 @@ export default function TechnicalLogsPage() {
                 type="button"
                 onClick={() => handleSearchChange("")}
                 aria-label="Clear technical log search"
-                className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-control text-muted hover:text-ink focus-visible:outline-none"
+                className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-control text-muted hover:text-ink"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -227,7 +227,7 @@ export default function TechnicalLogsPage() {
               <button
                 type="button"
                 onClick={() => void loadLogs()}
-                className="mt-4 min-h-11 rounded-control bg-danger px-4 py-2 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-offset-2"
+                className="mt-4 min-h-11 rounded-control bg-danger px-4 py-2 text-sm font-semibold text-white focus-visible:ring-offset-2"
               >
                 Retry
               </button>
@@ -285,7 +285,7 @@ export default function TechnicalLogsPage() {
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
                 disabled={currentPage === 1}
                 aria-label="Go to previous technical logs page"
-                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
               >
                 <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                 Previous
@@ -297,7 +297,7 @@ export default function TechnicalLogsPage() {
                 }
                 disabled={currentPage === totalPages}
                 aria-label="Go to next technical logs page"
-                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
               >
                 Next
                 <ChevronRight className="h-4 w-4" aria-hidden="true" />

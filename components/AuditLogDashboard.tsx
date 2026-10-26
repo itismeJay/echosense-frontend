@@ -324,7 +324,7 @@ export default function AuditLogDashboard() {
               type="button"
               onClick={() => void loadLogs()}
               disabled={loading}
-              className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-bg px-4 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-bg px-4 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RefreshCw
                 className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
@@ -338,7 +338,7 @@ export default function AuditLogDashboard() {
               disabled={loading || exporting || !page || page.total === 0}
               aria-label="Export all audit records matching the selected filters as CSV"
               aria-describedby="audit-export-help"
-              className="inline-flex min-h-11 items-center gap-2 rounded-control bg-brand px-4 py-2 text-sm font-semibold text-brand-ink hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-offset-slate-950"
+              className="inline-flex min-h-11 items-center gap-2 rounded-control bg-brand px-4 py-2 text-sm font-semibold text-brand-ink hover:bg-brand-hover focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-offset-slate-950"
             >
               {exporting ? (
                 <RefreshCw
@@ -397,7 +397,7 @@ export default function AuditLogDashboard() {
             <button
               type="button"
               onClick={resetFilters}
-              className="inline-flex min-h-11 items-center gap-2 rounded-control px-3 py-2 text-sm font-semibold text-link hover:bg-surface focus-visible:outline-none"
+              className="inline-flex min-h-11 items-center gap-2 rounded-control px-3 py-2 text-sm font-semibold text-link hover:bg-surface"
             >
               <X className="h-4 w-4" aria-hidden="true" />
               Reset filters
@@ -431,7 +431,7 @@ export default function AuditLogDashboard() {
                   type="button"
                   onClick={() => setSearchInput("")}
                   aria-label="Clear audit history search"
-                  className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-control text-muted hover:text-ink focus-visible:outline-none"
+                  className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-control text-muted hover:text-ink"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -653,7 +653,7 @@ export default function AuditLogDashboard() {
             <button
               type="button"
               onClick={() => void loadLogs()}
-              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-offset-2"
+              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 focus-visible:ring-offset-2"
             >
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
               Retry
@@ -749,7 +749,7 @@ export default function AuditLogDashboard() {
                         <button
                           type="button"
                           onClick={() => setSelectedLog(log)}
-                          className="inline-flex min-h-11 items-center gap-1 rounded-control px-3 py-2 font-semibold text-link hover:bg-surface focus-visible:outline-none"
+                          className="inline-flex min-h-11 items-center gap-1 rounded-control px-3 py-2 font-semibold text-link hover:bg-surface"
                           aria-label={`View details for ${formatAuditAction(
                             log.action
                           )} audit record ${log.id}`}
@@ -808,7 +808,7 @@ export default function AuditLogDashboard() {
                   <button
                     type="button"
                     onClick={() => setSelectedLog(log)}
-                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-control border border-line px-4 py-2 text-sm font-semibold text-link hover:bg-surface focus-visible:outline-none"
+                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-control border border-line px-4 py-2 text-sm font-semibold text-link hover:bg-surface"
                   >
                     View details
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -858,7 +858,7 @@ export default function AuditLogDashboard() {
                   }
                   disabled={!page || page.page === 1}
                   aria-label="Go to previous audit history page"
-                  className="inline-flex min-h-11 items-center gap-1 rounded-control border border-line-strong px-3 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-control border border-line-strong px-3 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                   Previous
@@ -877,7 +877,7 @@ export default function AuditLogDashboard() {
                     page.page >= page.total_pages
                   }
                   aria-label="Go to next audit history page"
-                  className="inline-flex min-h-11 items-center gap-1 rounded-control border border-line-strong px-3 py-2 text-sm font-semibold text-ink hover:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-control border border-line-strong px-3 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Next
                   <ChevronRight className="h-4 w-4" aria-hidden="true" />

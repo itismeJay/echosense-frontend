@@ -106,7 +106,7 @@ export default function NotificationSettings() {
               aria-label="Browser alert notifications"
               disabled={updating || permission === "unsupported"}
               onClick={() => void handleToggle()}
-              className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-none   focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors   focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
                 enabled
                   ? "border-line bg-brand"
                   : "border-line-strong bg-surface  "

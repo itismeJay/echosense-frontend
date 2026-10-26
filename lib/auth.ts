@@ -5,6 +5,7 @@ import { API_URL } from './config'
 import { parseValidJwtClaims } from './auth-token'
 import { clearSessionCookies, handleForbiddenResponse, setPasswordChangeFlag } from './session'
 import { SCHOOL_INACTIVE, SCHOOL_INACTIVE_MESSAGE } from './session-errors'
+import { clearSchoolScope } from './school-scope'
 
 export type AuthUser = {
   id: string
@@ -200,6 +201,7 @@ export async function login(email: string, password: string): Promise<AuthUser> 
   ) {
     throw new Error('The server returned an invalid or expired login token')
   }
+  clearSchoolScope()
   setAuthCookie(data.access_token)
   setPasswordChangeFlag(user.must_change_password)
   // The login response is the stored user until the next /auth/me refresh.

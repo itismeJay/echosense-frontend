@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Download, RefreshCw, Search } from "lucide-react";
 import { useAlerts } from "@/lib/AlertsProvider";
-import { accessRoleOf, canFilterBySchool } from "@/lib/access";
-import { useSchools } from "@/lib/useSchools";
+import { accessRoleOf } from "@/lib/access";
 import { useCurrentUser } from "@/lib/auth";
 import {
   ApiError,
@@ -131,9 +130,9 @@ export default function AlertCollection({
 
   const isHistory = mode === "history";
   const pageSize = isHistory ? 10 : 6;
-  const isSuperAdmin = canFilterBySchool(user);
+  const isSuperAdmin = false;
   const loadsManagementData = isSuperAdmin || accessRoleOf(user) === "admin";
-  const { schools: registeredSchools } = useSchools(isSuperAdmin);
+  const registeredSchools: { id: string; name: string }[] = [];
   const activeSchoolId = isSuperAdmin ? schoolId : "";
   const hasServerFilters = Boolean(classroomId || deviceId || activeSchoolId);
 

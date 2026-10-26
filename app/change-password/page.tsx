@@ -7,6 +7,7 @@ import { KeyRound, LogOut } from "lucide-react";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
 import ThemeToggle from "@/components/ThemeToggle";
 import { logout, refreshCurrentUser, useCurrentUser } from "@/lib/auth";
+import { accessRoleOf, homePathFor } from "@/lib/access";
 
 // Outside the (app) group on purpose: while must_change_password is set the backend
 // rejects every data route, so this page must not mount the alert polling shell.
@@ -22,7 +23,7 @@ export default function ChangePasswordPage() {
       return;
     }
     toast.success("Password changed.");
-    router.replace("/dashboard");
+    router.replace(homePathFor(accessRoleOf(refreshed)));
   };
 
   return (
@@ -63,7 +64,7 @@ export default function ChangePasswordPage() {
             <span />
           ) : (
             <Link
-              href="/dashboard"
+              href="/overview"
               className="inline-flex min-h-11 items-center font-medium text-link hover:underline"
             >
               Back to Dashboard

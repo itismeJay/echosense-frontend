@@ -5,7 +5,7 @@ import Link from "next/link";
 import { DoorOpen, Pencil, Plus, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import AccessibleDialog from "@/components/AccessibleDialog";
-import { canFilterBySchool } from "@/lib/access";
+
 import { useCurrentUser } from "@/lib/auth";
 import { ApiError, createClassroom, getClassrooms, updateClassroom } from "@/lib/api";
 import { schoolSummariesFromResources } from "@/lib/multi-room-contract";
@@ -124,7 +124,7 @@ function ClassroomForm({
 
 export default function ClassroomManagement() {
   const user = useCurrentUser();
-  const superAdmin = canFilterBySchool(user);
+  const superAdmin = false;
   const { schools: registeredSchools } = useSchools(superAdmin);
   const [schoolFilter, setSchoolFilter] = useState("");
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);

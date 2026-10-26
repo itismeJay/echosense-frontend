@@ -114,15 +114,15 @@ test("client code applies the forced change too, not only the proxy", async () =
   assert.match(layout, /if \(mustChangePassword\) router\.replace\(CHANGE_PASSWORD_PATH\)/);
   assert.match(auth, /setPasswordChangeFlag\(user\.must_change_password\)/);
   assert.match(auth, /data\.must_change_password === true/);
-  assert.match(login, /user\.must_change_password \? CHANGE_PASSWORD_PATH : "\/dashboard"/);
+  assert.match(login, /user\.must_change_password \? CHANGE_PASSWORD_PATH : homePathFor\(accessRoleOf\(user\)\)/);
   assert.match(proxy, /"\/change-password"/);
   assert.match(proxy, /PASSWORD_CHANGE_COOKIE/);
 });
 
-test("change-password page refreshes /auth/me and then opens the dashboard", async () => {
+test("change-password page refreshes /auth/me and then opens that role's home", async () => {
   const page = await readSource("app/change-password/page.tsx");
   assert.match(page, /await refreshCurrentUser\(\)/);
-  assert.match(page, /router\.replace\("\/dashboard"\)/);
+  assert.match(page, /router\.replace\(homePathFor\(accessRoleOf\(refreshed\)\)\)/);
   const profile = await readSource("app/(app)/profile/page.tsx");
   assert.match(profile, /<ChangePasswordForm/);
 });

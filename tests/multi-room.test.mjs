@@ -201,7 +201,8 @@ test("management routes remain admin-only and API errors distinguish permission 
     readSource("lib/api.ts"),
   ]);
   assert.match(access, /\{ prefix: "\/classrooms", roles: ADMINS \}/);
-  assert.match(access, /\{ prefix: "\/devices", roles: ADMINS \}/);
+  // Device management lives inside Classrooms now; /devices redirects there.
+  assert.doesNotMatch(access, /prefix: "\/devices"/);
   assert.match(api, /status === 403/);
   assert.match(api, /status === 409/);
   assert.match(api, /status === 422/);

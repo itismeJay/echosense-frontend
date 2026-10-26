@@ -18,22 +18,34 @@ export const NO_ACCESS_PATH = "/no-access";
 
 // The most specific (longest) matching prefix wins.
 export const ROUTE_ACCESS: ReadonlyArray<{ prefix: string; roles: readonly AccessRole[] }> = [
-  { prefix: "/dashboard", roles: EVERYONE },
+  { prefix: "/overview", roles: EVERYONE },
   { prefix: "/alerts", roles: EVERYONE },
   { prefix: "/alert", roles: EVERYONE },
-  { prefix: "/logs", roles: EVERYONE },
   { prefix: "/profile", roles: EVERYONE },
   { prefix: "/change-password", roles: EVERYONE },
   { prefix: NO_ACCESS_PATH, roles: EVERYONE },
-  { prefix: "/counselor", roles: GUIDANCE },
-  { prefix: "/analytics", roles: GUIDANCE },
-  { prefix: "/settings", roles: ADMINS },
+  { prefix: "/reports", roles: GUIDANCE },
   { prefix: "/classrooms", roles: ADMINS },
-  { prefix: "/devices", roles: ADMINS },
-  { prefix: "/users", roles: ADMINS },
-  { prefix: "/admin", roles: ADMINS },
-  { prefix: "/admin/schools", roles: SUPER_ADMIN },
+  { prefix: "/people", roles: ADMINS },
+  { prefix: "/activity", roles: ADMINS },
+  { prefix: "/settings", roles: ADMINS },
+  { prefix: "/schools", roles: SUPER_ADMIN },
 ];
+
+/** Where each role lands after signing in (super admins start at All schools). */
+export function homePathFor(role: AccessRole | null): string {
+  return role === "super_admin" ? "/schools" : "/overview";
+}
+
+/**
+ * Pages that show one school's data. A super admin opens them only after entering a
+ * school; outside a school they are sent to All schools to pick one.
+ */
+const SCHOOL_PAGE_PREFIXES = ["/overview", "/alerts", "/alert", "/reports", "/classrooms", "/people"];
+
+export function isSchoolPage(pathname: string): boolean {
+  return SCHOOL_PAGE_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
+}
 
 export function accessRoleOf(user: AccessSubject | null | undefined): AccessRole | null {
   if (!user) return null;
@@ -84,28 +96,16 @@ export function canEditGlobalConfig(user: AccessSubject | null | undefined): boo
   return isSuperAdmin(user);
 }
 
-/** Only super admins see data from more than one school, so only they get a school filter. */
-export function canFilterBySchool(user: AccessSubject | null | undefined): boolean {
-  return isSuperAdmin(user);
-}
-
 export type NavIconKey =
-  | "dashboard"
+  | "overview"
   | "alerts"
-  | "history"
-  | "settings"
-  | "profile"
-  | "counselor"
   | "reports"
   | "classrooms"
-  | "devices"
-  | "users"
-  | "heartbeat"
-  | "dictionary"
-  | "audit"
-  | "logs"
-  | "heatmap"
-  | "schools";
+  | "people"
+  | "activity"
+  | "settings"
+  | "schools"
+  | "words";
 
 export interface NavItemConfig {
   href: string;
@@ -113,52 +113,39 @@ export interface NavItemConfig {
   label: string;
 }
 
-export interface NavSectionConfig {
-  label?: string;
-  items: NavItemConfig[];
-}
+export type NavMode = "school" | "platform";
 
-const NAV_SECTIONS: NavSectionConfig[] = [
-  {
-    items: [
-      { href: "/dashboard", icon: "dashboard", label: "Dashboard" },
-      { href: "/alerts", icon: "alerts", label: "Alerts" },
-      { href: "/logs", icon: "history", label: "History" },
-      { href: "/settings", icon: "settings", label: "Settings" },
-      { href: "/profile", icon: "profile", label: "Profile" },
-    ],
-  },
-  {
-    label: "Guidance",
-    items: [
-      { href: "/counselor", icon: "counselor", label: "Counselor Overview" },
-      { href: "/analytics", icon: "reports", label: "Reports and Trends" },
-    ],
-  },
-  {
-    label: "Admin",
-    items: [
-      { href: "/classrooms", icon: "classrooms", label: "Classrooms" },
-      { href: "/devices", icon: "devices", label: "Edge Devices" },
-      { href: "/users", icon: "users", label: "User Accounts" },
-      { href: "/admin/heartbeat", icon: "heartbeat", label: "Device Status" },
-      { href: "/admin/dictionary", icon: "dictionary", label: "Monitored Terms" },
-      { href: "/admin/audit", icon: "audit", label: "Audit History" },
-      { href: "/admin/logs", icon: "logs", label: "Technical Logs" },
-      { href: "/admin/heatmap", icon: "heatmap", label: "Classroom Area Map" },
-    ],
-  },
-  {
-    label: "Platform",
-    items: [{ href: "/admin/schools", icon: "schools", label: "Schools" }],
-  },
+/** One school's pages: what staff, counselors and admins see, and a super admin inside a school. */
+const SCHOOL_NAV: NavItemConfig[] = [
+  { href: "/overview", icon: "overview", label: "Overview" },
+  { href: "/alerts", icon: "alerts", label: "Alerts" },
+  { href: "/reports", icon: "reports", label: "Reports" },
+  { href: "/classrooms", icon: "classrooms", label: "Classrooms" },
+  { href: "/people", icon: "people", label: "People" },
+  { href: "/activity", icon: "activity", label: "Activity" },
+  { href: "/settings", icon: "settings", label: "Settings" },
 ];
 
-export function navSectionsFor(role: AccessRole | null): NavSectionConfig[] {
-  return NAV_SECTIONS.map((section) => ({
-    ...section,
-    items: section.items.filter((item) => canAccessPath(role, item.href)),
-  })).filter((section) => section.items.length > 0);
+/** A super admin outside any school. */
+const PLATFORM_NAV: NavItemConfig[] = [
+  { href: "/schools", icon: "schools", label: "All schools" },
+  { href: "/settings/words", icon: "words", label: "Monitored words" },
+  { href: "/settings", icon: "settings", label: "Detection settings" },
+  { href: "/activity", icon: "activity", label: "Platform activity" },
+];
+
+export function navItemsFor(role: AccessRole | null, mode: NavMode = "school"): NavItemConfig[] {
+  if (role === "super_admin" && mode === "platform") return PLATFORM_NAV;
+  return SCHOOL_NAV.filter((item) => canAccessPath(role, item.href));
+}
+
+/** The nav item a path belongs to: the longest matching href wins (/settings/words over /settings). */
+export function activeNavHref(items: NavItemConfig[], pathname: string): string | null {
+  let best: string | null = null;
+  for (const item of items) {
+    if (matchesPrefix(pathname, item.href) && (!best || item.href.length > best.length)) best = item.href;
+  }
+  return best;
 }
 
 export type ProxyDecision =
@@ -177,7 +164,7 @@ export function decideProxy(input: {
     if (jwtRole) {
       return {
         kind: "redirect",
-        to: mustChangePassword ? "/change-password" : "/dashboard",
+        to: mustChangePassword ? "/change-password" : "/overview",
         clearToken: false,
       };
     }

@@ -113,7 +113,7 @@ export default function AlertCard({ alert, compact = false }: AlertCardProps) {
       <div className="mt-5 flex justify-end">
         <Link
           href={`/alerts/${alert.id}`}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand focus-visible:outline-none focus-visible:ring-offset-2 dark:ring-offset-slate-900"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand focus-visible:ring-offset-2 dark:ring-offset-slate-900"
           aria-label={`View details for the alert in ${alert.location}`}
         >
           View Details

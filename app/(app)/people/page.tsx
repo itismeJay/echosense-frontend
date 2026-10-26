@@ -28,7 +28,7 @@ import {
   deleteUser,
   getUsers,
 } from "@/lib/api";
-import { canFilterBySchool, isSuperAdmin } from "@/lib/access";
+import { isSuperAdmin } from "@/lib/access";
 import { useCurrentUser } from "@/lib/auth";
 import {
   buildNewUserPayload,
@@ -55,7 +55,7 @@ function roleLabel(user: User): string {
 export default function UsersPage() {
   const currentUser = useCurrentUser();
   const creatorIsSuperAdmin = isSuperAdmin(currentUser);
-  const showSchoolFilter = canFilterBySchool(currentUser);
+  const showSchoolFilter = false;
   const { schools } = useSchools(creatorIsSuperAdmin);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);

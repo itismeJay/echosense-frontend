@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Cpu, KeyRound, Pencil, Plus, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import AccessibleDialog from "@/components/AccessibleDialog";
-import { canFilterBySchool } from "@/lib/access";
+
 import { useCurrentUser } from "@/lib/auth";
 import {
   ApiError,
@@ -158,7 +158,7 @@ type Confirmation = { kind: "unassign" | "disable" | "rotate"; device: EdgeDevic
 
 export default function DeviceManagement() {
   const user = useCurrentUser();
-  const superAdmin = canFilterBySchool(user);
+  const superAdmin = false;
   const { schools: registeredSchools } = useSchools(superAdmin);
   const [schoolFilter, setSchoolFilter] = useState("");
   const [devices, setDevices] = useState<EdgeDevice[]>([]);
