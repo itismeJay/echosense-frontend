@@ -6,14 +6,15 @@ const readSource = (relativePath) =>
   readFile(new URL(`../${relativePath}`, import.meta.url), "utf8");
 
 test("alert list includes loading, empty, error, forbidden, and retry states", async () => {
-  const source = await readSource("components/AlertCollection.tsx");
+  const source = await readSource("components/AlertsView.tsx");
 
-  assert.match(source, /AlertListSkeleton/);
-  assert.match(source, /No alerts need attention today\./);
-  assert.match(source, /We couldn’t load classroom alerts\./);
-  assert.match(source, /You do not have permission to view classroom alerts\./);
-  assert.match(source, /onClick=\{\(\) => void refresh\(\)\}/);
-  assert.match(source, /error && alerts\.length === 0 \? null/);
+  assert.match(source, /<LoadingRows rows=\{5\} label="Loading alerts"/);
+  assert.match(source, /No alerts need review/);
+  assert.match(source, /No alerts match these filters/);
+  assert.match(source, /EchoSense can't load alerts right now/);
+  assert.match(source, /Your account can't view alerts/);
+  assert.match(source, /onRetry=\{errorStatus === 403 \? undefined : \(\) => void refresh\(\)\}/);
+  assert.match(source, /error && alerts\.length === 0 \?/);
 });
 
 test("three-second alert polling prevents overlap and decouples optional endpoints", async () => {
@@ -28,34 +29,49 @@ test("three-second alert polling prevents overlap and decouples optional endpoin
   assert.doesNotMatch(source, /Promise\.allSettled\(\[\s*getAlerts/);
 });
 
-test("alert cards expose concise review metadata and link to detail", async () => {
-  const source = await readSource("components/AlertCard.tsx");
+test("inbox rows show severity, classroom, words and time, link to detail, and review in one click", async () => {
+  const source = await readSource("components/AlertInbox.tsx");
 
-  assert.match(source, /severitySummary\(alert\.severity\)/);
-  assert.doesNotMatch(source, /Transcript preview|storedTranscript|transcribed_text/);
-  assert.match(source, /schoolLabel\(alert\)/);
-  assert.match(source, /monitoredTermSummary\(alert\)/);
-  assert.match(source, /triggerTypeLabel\(alert\)/);
-  assert.match(source, /TEST ALERT — NOT A REAL INCIDENT/);
-  assert.match(source, /severityEvidenceAvailabilityLabel\(alert\)/);
-  assert.match(source, /reviewStatusLabel\(alert\)/);
+  assert.match(source, /<SeverityTag severity=\{alert\.severity\} \/>/);
+  assert.match(source, /<SeverityStripe severity=\{alert\.severity\} \/>/);
+  assert.match(source, /classroomLabel\(alert\)/);
+  assert.match(source, /wordsHeard\(alert\)/);
+  assert.match(source, /formatWhen\(alert\.created_at\)/);
   assert.match(source, /href=\{`\/alerts\/\$\{alert\.id\}`\}/);
+  assert.match(source, /Test alert, not a real incident/);
+  assert.match(source, /Mark reviewed/);
+  assert.match(source, /setStatus\(alert, "reviewed"\)/);
+  // Rows stay short: no transcript in the list.
+  assert.doesNotMatch(source, /storedTranscript|transcribed_text|exactTranscript/);
 });
 
-test("alert detail includes exact transcript and evidence metadata", async () => {
+test("review actions call the review endpoint and offer Undo", async () => {
+  const [hook, api] = await Promise.all([readSource("lib/useReviewAlert.tsx"), readSource("lib/api.ts")]);
+  assert.match(api, /`\/alerts\/\$\{alertId\}\/review`/);
+  assert.match(api, /JSON\.stringify\(\{ status \}\)/);
+  assert.match(hook, /reviewAlert\(alert\.id, previous\)/);
+  assert.match(hook, /Undo/);
+  assert.match(hook, /The alert was not changed/);
+});
+
+test("alert detail includes review actions, exact transcript and evidence metadata", async () => {
   const [page, evidence] = await Promise.all([
     readSource("app/(app)/alerts/[id]/page.tsx"),
     readSource("components/AlertEvidence.tsx"),
   ]);
 
+  assert.match(page, /Mark reviewed/);
+  assert.match(page, /Mark resolved/);
+  assert.match(page, /Move back to Needs review/);
+  assert.match(page, /What was heard/);
   assert.match(page, /Alert ID/);
   assert.match(page, /Event ID/);
   assert.match(page, /Event timeline/);
   assert.match(page, /event_start_timestamp/);
   assert.match(page, /trigger_timestamp/);
   assert.match(page, /event_end_timestamp/);
-  assert.match(page, /Trusted device/);
-  assert.match(page, /Delivery and push state/);
+  assert.match(page, /label="Device"/);
+  assert.match(page, /Delivery and phone notifications/);
   assert.match(page, /REQUIRED_REVIEW_NOTICE/);
   assert.match(evidence, /Detected transcript/);
   assert.match(evidence, /\{exactTranscript\(alert\)\}/);
@@ -80,10 +96,11 @@ test("alert detail includes exact transcript and evidence metadata", async () =>
 
 test("alert review UI does not add raw-audio controls or prohibited claims", async () => {
   const sources = await Promise.all([
-    readSource("components/AlertCard.tsx"),
+    readSource("components/AlertInbox.tsx"),
     readSource("components/AlertEvidence.tsx"),
     readSource("app/(app)/alerts/[id]/page.tsx"),
-    readSource("components/AlertCollection.tsx"),
+    readSource("components/AlertsView.tsx"),
+    readSource("app/(app)/overview/page.tsx"),
   ]);
   const combined = sources.join("\n");
 
@@ -123,7 +140,7 @@ test("notification deep-link compatibility route validates and redirects positiv
 });
 
 test("alert list export excludes transcript and raw evidence", async () => {
-  const source = await readSource("components/AlertCollection.tsx");
+  const source = await readSource("components/AlertsView.tsx");
   assert.doesNotMatch(source, /storedTranscript|transcribed_text|transcriptPreview/);
   assert.doesNotMatch(source, /acoustic_trigger_evidence|tone_evidence|JSON\.stringify/);
   assert.match(source, /Monitored-term Occurrences/);

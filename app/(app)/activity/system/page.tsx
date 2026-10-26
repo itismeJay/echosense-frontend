@@ -30,7 +30,7 @@ const LOG_TYPES = [
 
 const LOGS_PER_PAGE = 20;
 
-export default function TechnicalLogsPage() {
+export default function SystemLogsPage() {
   const [logs, setLogs] = useState<PiLog[]>([]);
   const [reportedTotal, setReportedTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -96,35 +96,21 @@ export default function TechnicalLogsPage() {
 
 
   return (
-    <div className="mx-auto max-w-6xl p-4 md:p-6 lg:p-8">
-      <header className="mb-6">
-        <p className="text-sm font-semibold text-link">
-          Administrator · Technical
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-2xl text-body text-muted">
+          Messages from classroom devices and the EchoSense server, for troubleshooting. Recent messages only.
         </p>
-        <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-ink sm:text-3xl">
-              Technical Logs
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-              Review backend and classroom-device diagnostic messages. These
-              entries are separate from administrative audit history.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void loadLogs()}
-            disabled={loading}
-            className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-bg px-4 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
-              aria-hidden="true"
-            />
-            Refresh
-          </button>
-        </div>
-      </header>
+        <button
+          type="button"
+          onClick={() => void loadLogs()}
+          disabled={loading}
+          className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-bg px-4 text-body font-medium text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
+          Refresh
+        </button>
+      </div>
 
       <section
         aria-label="Technical log filters"

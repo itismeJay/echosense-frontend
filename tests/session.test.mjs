@@ -123,8 +123,14 @@ test("change-password page refreshes /auth/me and then opens that role's home", 
   const page = await readSource("app/change-password/page.tsx");
   assert.match(page, /await refreshCurrentUser\(\)/);
   assert.match(page, /router\.replace\(homePathFor\(accessRoleOf\(refreshed\)\)\)/);
-  const profile = await readSource("app/(app)/profile/page.tsx");
-  assert.match(profile, /<ChangePasswordForm/);
+  // Change password lives on its own page, reached from the avatar menu and Profile.
+  const [profile, topBar] = await Promise.all([
+    readSource("app/(app)/profile/page.tsx"),
+    readSource("components/TopBar.tsx"),
+  ]);
+  assert.match(profile, /href="\/change-password"/);
+  assert.match(topBar, /href: "\/change-password"/);
+  assert.match(page, /<ChangePasswordForm/);
 });
 
 test("new password rules match the backend", () => {

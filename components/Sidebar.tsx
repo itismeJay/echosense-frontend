@@ -24,6 +24,7 @@ import { needsReview } from "@/lib/alert-presentation";
 import { useAlerts } from "@/lib/AlertsProvider";
 import { useSchoolScope } from "@/lib/school-scope";
 import { formatTime } from "@/lib/format";
+import Wordmark from "@/components/Wordmark";
 
 const SIDEBAR_STORAGE_KEY = "echosense.sidebar.collapsed.v3";
 
@@ -127,18 +128,6 @@ function NavList({
   );
 }
 
-function Wordmark({ collapsed = false, href }: { collapsed?: boolean; href: string }) {
-  return (
-    <Link href={href} className="flex min-h-11 items-center gap-2.5 rounded-control px-1 text-ink">
-      <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" aria-hidden="true">
-        <rect width="24" height="24" rx="6" fill="var(--brand)" />
-        <path d="M7 9v6M10.5 7v10M14 9.5v5M17.5 11v2" stroke="var(--brand-ink)" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-      <span className={collapsed ? "sr-only" : "text-body-lg font-semibold"}>EchoSense</span>
-    </Link>
-  );
-}
-
 interface SidebarProps {
   mobileOpen: boolean;
   onMobileClose: () => void;
@@ -197,11 +186,9 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
   return (
     <>
-      <aside
-        className={`sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-line bg-surface md:flex ${
-          collapsed ? "w-[72px]" : "w-60"
-        }`}
-      >
+      {/* The outer column fills the page height; the inner panel stays in view while scrolling. */}
+      <div className={`hidden shrink-0 border-r border-line bg-surface md:block ${collapsed ? "w-[72px]" : "w-60"}`}>
+      <aside className="sticky top-0 flex h-dvh flex-col">
         <div className={`flex h-14 items-center px-3 ${collapsed ? "justify-center" : ""}`}>
           <Wordmark collapsed={collapsed} href={homeHref} />
         </div>
@@ -229,6 +216,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           </div>
         </div>
       </aside>
+      </div>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">

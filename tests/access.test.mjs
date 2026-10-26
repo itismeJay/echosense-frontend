@@ -238,14 +238,15 @@ test("global configuration is super-admin only", () => {
   }
 });
 
-test("per-page school filters are gone; the entered school scopes every request", { todo: "phase 3 rewrites these pages" }, async () => {
+test("per-page school filters are gone; the entered school scopes every request", async () => {
   for (const file of [
-    "components/AlertCollection.tsx",
-    "components/multi-room/ClassroomManagement.tsx",
-    "components/multi-room/DeviceManagement.tsx",
+    "components/AlertsView.tsx",
+    "app/(app)/classrooms/page.tsx",
+    "app/(app)/classrooms/[id]/page.tsx",
     "app/(app)/people/page.tsx",
+    "app/(app)/reports/page.tsx",
   ]) {
-    const source = await readSource(file).catch(() => "");
+    const source = await readSource(file);
     assert.doesNotMatch(source, /useSchools|canFilterBySchool|school-filter/, file);
   }
   const api = await readSource("lib/api.ts");

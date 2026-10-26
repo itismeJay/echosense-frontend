@@ -1,18 +1,10 @@
 import { Suspense } from "react";
 import AuditLogDashboard from "@/components/AuditLogDashboard";
+import { LoadingRows } from "@/components/ui";
 
-export default function AuditPage() {
+export default function AccountActionsPage() {
   return (
-    <Suspense
-      fallback={
-        <div
-          role="status"
-          className="mx-auto max-w-[100rem] p-4 text-sm text-muted md:p-6 lg:p-8"
-        >
-          Loading audit history…
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingRows rows={4} label="Loading account actions" />}>
       <AuditLogDashboard />
     </Suspense>
   );

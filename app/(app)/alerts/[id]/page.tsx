@@ -3,47 +3,54 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  ArrowLeft,
-  CalendarClock,
-  Fingerprint,
-  Hash,
-  MapPin,
-  RefreshCw,
-} from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, FlaskConical, RotateCcw } from "lucide-react";
 import AlertEvidence from "@/components/AlertEvidence";
-import AlertListSkeleton from "@/components/AlertListSkeleton";
-import SeverityBadge from "@/components/SeverityBadge";
+import { Button, Detail, ErrorState, LoadingRows, Note, Page } from "@/components/ui";
+import { ReviewState, SeverityTag } from "@/components/ui/status";
 import {
   REQUIRED_REVIEW_NOTICE,
   classroomLabel,
   deliveryStatusLabel,
   isTestAlert,
+  noWordsReason,
   pushStatusLabel,
-  reviewStatusLabel,
   schoolLabel,
   severitySummary,
   triggerTypeLabel,
+  wordsHeard,
 } from "@/lib/alert-presentation";
 import { ApiError, getAlert } from "@/lib/api";
 import { useAlerts } from "@/lib/AlertsProvider";
 import { formatTimestamp } from "@/lib/format";
+import { useReviewAlert } from "@/lib/useReviewAlert";
 import type { Alert } from "@/lib/types";
+
+function BackLink() {
+  return (
+    <Link
+      href="/alerts"
+      className="inline-flex min-h-11 items-center gap-2 rounded-control text-body font-medium text-ink hover:underline"
+    >
+      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+      Back to alerts
+    </Link>
+  );
+}
+
+function timestamp(value: string | null | undefined): string {
+  return value ? formatTimestamp(value) : "Not recorded";
+}
 
 export default function AlertDetailPage() {
   const params = useParams<{ id: string }>();
   const { alerts } = useAlerts();
+  const { setStatus, pendingId } = useReviewAlert();
   const alertId = Number(params.id);
-  const providerAlert = Number.isInteger(alertId)
-    ? alerts.find((item) => item.id === alertId)
-    : undefined;
+  const providerAlert = Number.isInteger(alertId) ? alerts.find((item) => item.id === alertId) : undefined;
   const [alert, setAlert] = useState<Alert | undefined>(providerAlert);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const requestInFlightRef = useRef(false);
-  const alertRef = useRef<Alert | undefined>(providerAlert);
 
   const loadAlert = useCallback(async () => {
     if (requestInFlightRef.current) return;
@@ -54,263 +61,221 @@ export default function AlertDetailPage() {
       return;
     }
     requestInFlightRef.current = true;
-    if (alertRef.current) setRefreshing(true);
-    else setLoading(true);
     setErrorStatus(null);
     try {
-      const nextAlert = await getAlert(alertId);
-      alertRef.current = nextAlert;
-      setAlert(nextAlert);
-      setLastUpdated(new Date());
+      setAlert(await getAlert(alertId));
     } catch (error) {
       setErrorStatus(error instanceof ApiError ? error.status : 500);
     } finally {
       setLoading(false);
-      setRefreshing(false);
       requestInFlightRef.current = false;
     }
   }, [alertId]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void loadAlert();
-    }, 0);
-    const interval = setInterval(() => {
-      void loadAlert();
-    }, 10_000);
+    const timer = setTimeout(() => void loadAlert(), 0);
+    const interval = setInterval(() => void loadAlert(), 10_000);
     return () => {
       clearTimeout(timer);
       clearInterval(interval);
     };
   }, [loadAlert]);
 
+  const changeStatus = async (status: "active" | "reviewed" | "resolved") => {
+    if (!alert) return;
+    const updated = await setStatus(alert, status);
+    if (updated) setAlert(updated);
+  };
+
   if (loading && !alert) {
     return (
-      <div className="mx-auto max-w-4xl p-4 md:p-6 lg:p-8">
-        <div className="mb-6 h-28 animate-pulse rounded-panel bg-surface" />
-        <AlertListSkeleton count={1} />
-      </div>
+      <Page>
+        <BackLink />
+        <div className="mt-6 rounded-panel border border-line">
+          <LoadingRows rows={4} label="Loading alert" />
+        </div>
+      </Page>
     );
   }
 
-  if (
-    errorStatus !== null &&
-    errorStatus !== 404 &&
-    (!alert || errorStatus === 401 || errorStatus === 403)
-  ) {
+  if (errorStatus !== null && errorStatus !== 404 && (!alert || errorStatus === 401 || errorStatus === 403)) {
     const forbidden = errorStatus === 403;
     const unauthorized = errorStatus === 401;
     return (
-      <main className="mx-auto max-w-4xl p-4 md:p-6 lg:p-8">
-        <Link
-          href="/alerts"
-          className="inline-flex min-h-11 items-center gap-2 rounded-control text-sm font-semibold text-link hover:text-link"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to Alerts
-        </Link>
-        <div
-          role="alert"
-          className="mt-6 rounded-panel border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
-        >
-          <h1 className="text-xl font-semibold text-ink">
-            {unauthorized
-              ? "Your session is no longer authorized."
-              : forbidden
-              ? "You do not have permission to view this alert."
-              : "We couldn’t load this classroom alert."}
-          </h1>
-          <p className="mt-2 text-sm text-danger">
+      <Page>
+        <BackLink />
+        <div className="mt-6 max-w-2xl">
+          <ErrorState
+            title={
+              unauthorized
+                ? "Your session is no longer authorized."
+                : forbidden
+                  ? "You do not have permission to view this alert."
+                  : "We couldn’t load this classroom alert."
+            }
+            onRetry={!forbidden && !unauthorized ? () => void loadAlert() : undefined}
+            retryLabel="Retry"
+          >
             {unauthorized
               ? "Sign in again to continue."
               : forbidden
-              ? "Contact an administrator if you believe you should have access."
-              : "The service may be temporarily unavailable. Please try again."}
-          </p>
-          {!forbidden && !unauthorized && (
-            <button
-              type="button"
-              onClick={() => void loadAlert()}
-              className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 focus-visible:ring-offset-2"
-            >
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              Retry
-            </button>
-          )}
+                ? "Alerts from other schools are hidden. Ask your school administrator if you need access."
+                : "EchoSense may be busy. Check the internet connection, then select Retry."}
+          </ErrorState>
         </div>
-      </main>
+      </Page>
     );
   }
 
   if (errorStatus === 404 || !alert) {
     return (
-      <main className="mx-auto max-w-4xl p-4 md:p-6 lg:p-8">
-        <Link
-          href="/alerts"
-          className="inline-flex min-h-11 items-center gap-2 rounded-control text-sm font-semibold text-link hover:text-link"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to Alerts
-        </Link>
-        <div className="mt-6 rounded-panel border border-line bg-bg p-8 text-center">
-          <h1 className="text-xl font-semibold text-ink">
-            Alert not found
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            This alert is not available in the current alert history.
+      <Page>
+        <BackLink />
+        <div className="mt-6 max-w-2xl">
+          <h1 className="text-display font-semibold text-ink">Alert not found</h1>
+          <p className="mt-2 text-body-lg text-muted">
+            This alert may belong to another school, or the link is incomplete. Go back to Alerts to find it in the
+            list.
           </p>
         </div>
-      </main>
+      </Page>
     );
   }
 
+  const words = wordsHeard(alert, 12);
+  const pending = pendingId === alert.id;
+
   return (
-    <main className="mx-auto max-w-4xl p-4 md:p-6 lg:p-8">
-      <Link
-        href="/alerts"
-        className="inline-flex min-h-11 items-center gap-2 rounded-control text-sm font-semibold text-link hover:text-link"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to Alerts
-      </Link>
-
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-muted">
-        <span>{lastUpdated ? `Last refreshed ${lastUpdated.toLocaleTimeString()}` : "Refreshing current status…"}</span>
-        <button
-          type="button"
-          onClick={() => void loadAlert()}
-          disabled={refreshing}
-          className="inline-flex min-h-10 items-center gap-2 rounded-control border border-line-strong px-3 py-2 font-semibold text-ink disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
-          Refresh status
-        </button>
-      </div>
-
-      {errorStatus !== null && (
-        <div
-          role="alert"
-          className="mt-4 rounded-control border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100"
-        >
-          The latest alert details could not be refreshed. The validated
-          evidence shown below came from the alert list.
-        </div>
-      )}
+    <Page className="max-w-[960px]">
+      <BackLink />
 
       {isTestAlert(alert) && (
-        <div className="mt-4 rounded-panel border-4 border-blue-600 bg-blue-50 p-5 text-blue-950">
-          <p className="text-lg font-black">TEST ALERT — NOT A REAL INCIDENT</p>
-          <p className="mt-1 text-sm">Synthetic test data for end-to-end delivery verification.</p>
+        <div className="mt-4 flex items-start gap-3 rounded-panel border-2 border-ink p-4">
+          <FlaskConical className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+          <div>
+            <p className="text-body-lg font-semibold text-ink">Test alert, not a real incident</p>
+            <p className="text-body text-muted">Sent to check that alerts reach this dashboard.</p>
+          </div>
         </div>
       )}
 
-      <header className="mt-4 rounded-panel border border-line bg-bg p-5 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-link">
-              Classroom Monitoring System
+      <header className="mt-4 border-b border-line pb-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <SeverityTag severity={alert.severity} />
+          <ReviewState status={alert.status} />
+        </div>
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-display font-semibold text-ink">{classroomLabel(alert)}</h1>
+            <p className="num mt-1 text-body-lg text-muted">
+              {formatTimestamp(alert.trigger_timestamp ?? alert.event_start_timestamp ?? alert.created_at)}
             </p>
-            <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">
-              Possible aggression alert
-            </h1>
-            <p className="mt-2 text-sm text-muted">
-              {severitySummary(alert.severity)}
-            </p>
           </div>
-          <SeverityBadge severity={alert.severity} dot />
-        </div>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <div className="flex gap-3 rounded-control bg-surface p-4">
-            <Hash className="mt-0.5 h-5 w-5 shrink-0 text-link" aria-hidden="true" />
-            <div>
-              <p className="text-xs font-semibold text-muted">
-                Alert ID
-              </p>
-              <p className="mt-1 break-all font-semibold text-ink">
-                {alert.id}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3 rounded-control bg-surface p-4">
-            <Fingerprint className="mt-0.5 h-5 w-5 shrink-0 text-link" aria-hidden="true" />
-            <div>
-              <p className="text-xs font-semibold text-muted">
-                Event ID
-              </p>
-              <p className="mt-1 break-all font-mono text-sm font-semibold text-ink">
-                {alert.event_id ?? "Not recorded for this alert"}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3 rounded-control bg-surface p-4">
-            <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-link" aria-hidden="true" />
-            <div>
-              <p className="text-xs font-semibold text-muted">
-                Classroom
-              </p>
-              <p className="mt-1 font-semibold text-ink">
-                {classroomLabel(alert)}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3 rounded-control bg-surface p-4">
-            <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-link" aria-hidden="true" />
-            <div>
-              <p className="text-xs font-semibold text-muted">
-                Detection Time
-              </p>
-              <p className="mt-1 font-semibold text-ink">
-                {formatTimestamp(alert.trigger_timestamp ?? alert.event_start_timestamp ?? alert.created_at)}
-              </p>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {alert.status === "active" || alert.status === "unknown" ? (
+              <>
+                <Button variant="primary" icon={Check} pending={pending} onClick={() => void changeStatus("reviewed")}>
+                  Mark reviewed
+                </Button>
+                <Button icon={CheckCheck} disabled={pending} onClick={() => void changeStatus("resolved")}>
+                  Mark resolved
+                </Button>
+              </>
+            ) : (
+              <>
+                {alert.status === "reviewed" && (
+                  <Button variant="primary" icon={CheckCheck} pending={pending} onClick={() => void changeStatus("resolved")}>
+                    Mark resolved
+                  </Button>
+                )}
+                <Button icon={RotateCcw} disabled={pending} onClick={() => void changeStatus("active")}>
+                  Move back to Needs review
+                </Button>
+              </>
+            )}
           </div>
         </div>
-
-        <div className="mt-4 rounded-control border border-line p-4">
-          <p className="text-sm font-semibold text-ink">
-            {alert.review_message || REQUIRED_REVIEW_NOTICE}
-          </p>
-          <p className="mt-2 text-sm leading-6 text-ink">
-            Review status: {reviewStatusLabel(alert)}
-          </p>
+        <div className="mt-4">
+          <Note>{alert.review_message || REQUIRED_REVIEW_NOTICE}</Note>
         </div>
-
-        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <div className="rounded-control border border-line p-4">
-            <dt className="font-semibold text-ink">Trigger information</dt>
-            <dd className="mt-1 text-ink">{triggerTypeLabel(alert)} · Schema version {alert.schema_version ?? "legacy"}</dd>
-          </div>
-          <div className="rounded-control border border-line p-4">
-            <dt className="font-semibold text-ink">Trusted school</dt>
-            <dd className="mt-1 text-ink">{schoolLabel(alert)}</dd>
-          </div>
-          <div className="rounded-control border border-line p-4">
-            <dt className="font-semibold text-ink">Trusted device</dt>
-            <dd className="mt-1 text-ink">
-              {alert.device_display_name || alert.device_code || alert.device_id || "Device identity unavailable"}
-              {alert.device_code && alert.device_display_name ? ` · ${alert.device_code}` : ""}
-            </dd>
-          </div>
-          <div className="rounded-control border border-line p-4">
-            <dt className="font-semibold text-ink">Delivery and push state</dt>
-            <dd className="mt-1 text-ink">Delivery: {deliveryStatusLabel(alert)} · Push: {pushStatusLabel(alert)}</dd>
-          </div>
-        </dl>
-
-        <section className="mt-4 rounded-control border border-line p-4" aria-labelledby="event-timeline-title">
-          <h2 id="event-timeline-title" className="text-sm font-semibold text-ink">Event timeline</h2>
-          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
-            <div><dt className="font-medium">Event start</dt><dd className="mt-1 text-muted">{alert.event_start_timestamp ? formatTimestamp(alert.event_start_timestamp) : "Not recorded"}</dd></div>
-            <div><dt className="font-medium">Trigger time</dt><dd className="mt-1 text-muted">{alert.trigger_timestamp ? formatTimestamp(alert.trigger_timestamp) : "Not recorded"}</dd></div>
-            <div><dt className="font-medium">Event end</dt><dd className="mt-1 text-muted">{alert.event_end_timestamp ? formatTimestamp(alert.event_end_timestamp) : "Not recorded"}</dd></div>
-          </dl>
-        </section>
       </header>
 
-      <section className="mt-6" aria-label="Alert information">
-        <AlertEvidence alert={alert} defaultExpanded hideToggle />
+      {errorStatus !== null && (
+        <p role="status" className="mt-4 text-body text-muted">
+          The newest details couldn&apos;t be loaded. What you see came from the alert list a moment ago.
+        </p>
+      )}
+
+      <section aria-labelledby="heard-title" className="mt-6">
+        <h2 id="heard-title" className="text-title font-semibold text-ink">
+          What was heard
+        </h2>
+        <p className="mt-1 text-body text-muted">{severitySummary(alert.severity)}</p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {words.length > 0 ? (
+            words.map((word) => (
+              <span key={word} className="rounded-tag bg-surface px-2 py-1 text-body-lg text-ink">
+                “{word}”
+              </span>
+            ))
+          ) : (
+            <span className="text-body-lg text-muted">{noWordsReason(alert)}</span>
+          )}
+        </div>
       </section>
-    </main>
+
+      <section className="mt-6" aria-label="Alert information">
+        <AlertEvidence alert={alert} defaultExpanded hideToggle part="summary" />
+      </section>
+
+      <details className="group mt-6 rounded-panel border border-line">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 text-body-lg font-medium text-ink sm:px-5">
+          Technical details
+          <span aria-hidden="true" className="text-muted group-open:rotate-180">
+            ▾
+          </span>
+        </summary>
+        <div className="border-t border-line px-4 py-4 sm:px-5">
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <Detail label="Alert ID">
+              <span className="num">{alert.id}</span>
+            </Detail>
+            <Detail label="Event ID">
+              <span className="break-all">{alert.event_id ?? "Not recorded for this alert"}</span>
+            </Detail>
+            <Detail label="School">{schoolLabel(alert)}</Detail>
+            <Detail label="Device">
+              {alert.device_display_name || alert.device_code || alert.device_id || "Device not recorded"}
+              {alert.device_code && alert.device_display_name ? ` (${alert.device_code})` : ""}
+            </Detail>
+            <Detail label="What triggered it">
+              {triggerTypeLabel(alert)}, schema version {alert.schema_version ?? "legacy"}
+            </Detail>
+            <Detail label="Delivery and phone notifications">
+              Delivery: {deliveryStatusLabel(alert)}. Phone notification: {pushStatusLabel(alert)}.
+            </Detail>
+          </dl>
+          <section className="mt-5" aria-labelledby="event-timeline-title">
+            <h3 id="event-timeline-title" className="text-body font-semibold text-ink">
+              Event timeline
+            </h3>
+            <dl className="mt-2 grid gap-4 sm:grid-cols-3">
+              <Detail label="Sound started">
+                <span className="num">{timestamp(alert.event_start_timestamp)}</span>
+              </Detail>
+              <Detail label="Alert triggered">
+                <span className="num">{timestamp(alert.trigger_timestamp)}</span>
+              </Detail>
+              <Detail label="Sound ended">
+                <span className="num">{timestamp(alert.event_end_timestamp)}</span>
+              </Detail>
+            </dl>
+          </section>
+          <div className="mt-6 border-t border-line pt-5">
+            <AlertEvidence alert={alert} defaultExpanded hideToggle part="technical" />
+          </div>
+        </div>
+      </details>
+    </Page>
   );
 }

@@ -44,6 +44,8 @@ interface AlertsContextValue {
   lastUpdated: Date | null;
   isStale: boolean;
   refresh: () => Promise<void>;
+  /** Apply a server-confirmed change (e.g. a review) before the next poll arrives. */
+  updateAlert: (alert: Alert) => void;
 }
 
 const AlertsContext = createContext<AlertsContextValue>({
@@ -60,6 +62,7 @@ const AlertsContext = createContext<AlertsContextValue>({
   lastUpdated: null,
   isStale: false,
   refresh: async () => {},
+  updateAlert: () => {},
 });
 
 export function useAlerts(): AlertsContextValue {
@@ -128,27 +131,12 @@ export default function AlertsProvider({
         if (latestHigh) {
           showAlertBrowserNotification(latestHigh);
           if (latestHigh.test_mode || latestHigh.trigger_type === "TEST") {
-            toast(`TEST alert — high-priority synthetic test — ${latestHigh.location}`, {
+            toast(`Test alert (not a real incident) in ${latestHigh.classroom_name || latestHigh.location}`, {
               duration: 6000,
-              icon: "🧪",
-              style: {
-                background: "#eff6ff",
-                color: "#1e3a8a",
-                border: "2px solid #3b82f6",
-                fontWeight: "700",
-                borderRadius: "12px",
-              },
             });
           } else {
-            toast.error(`High priority possible alert — ${latestHigh.location}`, {
-              duration: 6000,
-              style: {
-                background: "#fff7ed",
-                color: "#9a3412",
-                border: "1px solid #fdba74",
-                fontWeight: "600",
-                borderRadius: "12px",
-              },
+            toast(`New High alert in ${latestHigh.classroom_name || latestHigh.location}. It needs review.`, {
+              duration: 8000,
             });
           }
           setFlashKey((k) => k + 1);
@@ -165,6 +153,11 @@ export default function AlertsProvider({
       setLoading(false);
     }
     });
+  }, []);
+
+  const updateAlert = useCallback((updated: Alert) => {
+    alertsRef.current = alertsRef.current.map((alert) => (alert.id === updated.id ? updated : alert));
+    setAlerts(alertsRef.current);
   }, []);
 
   useEffect(() => {
@@ -217,6 +210,7 @@ export default function AlertsProvider({
         lastUpdated,
         isStale,
         refresh: poll,
+        updateAlert,
       }}
     >
       {children}

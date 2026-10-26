@@ -46,6 +46,8 @@ import type {
   DeviceFilters,
   DeviceRegistrationResult,
   DeviceRotationResult,
+  DeviceStatusResponse,
+  SchoolSummaryCard,
   DeviceUpdateRequest,
   EdgeDevice,
   HeartbeatStatus,
@@ -250,6 +252,9 @@ export async function getAlertsWithMetadata(
   if (params?.language) qs.set("language", params.language);
   if (params?.severity) qs.set("severity", params.severity);
   if (params?.duration_gate) qs.set("duration_gate", params.duration_gate);
+  if (params?.status) qs.set("status", params.status);
+  if (params?.date_from) qs.set("date_from", params.date_from);
+  if (params?.date_to) qs.set("date_to", params.date_to);
   if (params?.skip !== undefined) qs.set("skip", String(params.skip));
   if (params?.limit !== undefined) qs.set("limit", String(params.limit));
   const query = qs.toString();
@@ -412,12 +417,39 @@ export async function getAlert(alertId: number): Promise<Alert> {
   );
 }
 
+/** Mark an alert reviewed or resolved, or set it back to needing review. */
+export async function reviewAlert(
+  alertId: number,
+  status: "active" | "reviewed" | "resolved"
+): Promise<Alert> {
+  const endpoint = `/alerts/${alertId}/review`;
+  return parseAlertResponse(
+    await apiFetch<unknown>(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    }),
+    endpoint
+  );
+}
+
 export async function getCategoryStats(): Promise<CategoryStats> {
   return apiFetch<CategoryStats>("/alerts/analytics/categories");
 }
 
 export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
   return apiFetch<AnalyticsSummary>("/alerts/analytics/summary");
+}
+
+/** Each classroom device's own check-in and Online/Offline state, for any signed-in role. */
+export async function getDeviceStatuses(): Promise<DeviceStatusResponse> {
+  return apiFetch<DeviceStatusResponse>("/devices/status");
+}
+
+/** One card per school for the super admin's All schools page. */
+export async function getSchoolSummaries(): Promise<SchoolSummaryCard[]> {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  return apiFetch<SchoolSummaryCard[]>(`/schools/summary?tz=${encodeURIComponent(tz)}`);
 }
 
 export async function getHeartbeat(): Promise<HeartbeatStatus> {

@@ -21,7 +21,6 @@ import {
   matchedTermEvidenceLabel,
   monitoredTermSummary,
   NO_MATCHED_TERMS_MESSAGE,
-  REQUIRED_REVIEW_NOTICE,
   severityReasonLabel,
   storedTranscript,
   supportingEvidenceLabel,
@@ -45,6 +44,8 @@ interface AlertEvidenceProps {
   alert: Alert;
   defaultExpanded?: boolean;
   hideToggle?: boolean;
+  /** "summary": why it was flagged and the transcript; "technical": terms, sound evidence and models. */
+  part?: "all" | "summary" | "technical";
 }
 
 function MetricBar({
@@ -81,7 +82,10 @@ export default function AlertEvidence({
   alert,
   defaultExpanded = false,
   hideToggle = false,
+  part = "all",
 }: AlertEvidenceProps) {
+  const showSummary = part !== "technical";
+  const showTechnical = part !== "summary";
   const [open, setOpen] = useState(defaultExpanded);
   const isOpen = hideToggle || open;
 
@@ -124,7 +128,8 @@ export default function AlertEvidence({
       )}
 
       {isOpen && (
-        <div className="space-y-6 rounded-panel border border-line bg-bg p-5">
+        <div className={part === "technical" ? "space-y-6" : "space-y-6 rounded-panel border border-line bg-bg p-4 sm:p-5"}>
+          {showSummary && (<>
           <section aria-labelledby={`severity-explanation-${alert.id}`}>
             <div className="flex items-start gap-3">
               <CircleHelp
@@ -211,7 +216,7 @@ export default function AlertEvidence({
                           className="flex items-start gap-2"
                         >
                           <span
-                            className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-600"
+                            className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-chart"
                             aria-hidden="true"
                           />
                           <span>{supportingEvidenceLabel(evidence)}</span>
@@ -222,7 +227,7 @@ export default function AlertEvidence({
                 )}
               </div>
             ) : (
-              <div className="mt-4 rounded-control border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100">
+              <div className="mt-4 rounded-control bg-surface p-4 text-body text-muted">
                 {severityEvidence === null
                   ? HISTORICAL_SEVERITY_EVIDENCE_MESSAGE
                   : UNAVAILABLE_SEVERITY_EVIDENCE_MESSAGE}
@@ -245,18 +250,18 @@ export default function AlertEvidence({
                 {exactTranscript(alert)}
               </p>
             )}
-            <div className="mt-3 flex gap-2 rounded-control bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
-              <Info className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
-              <p>
-                {HUMAN_REVIEW_NOTE}
-              </p>
-            </div>
+            <p className="mt-3 flex gap-2 rounded-control bg-surface px-3 py-2.5 text-body text-muted">
+              <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{HUMAN_REVIEW_NOTE}</span>
+            </p>
             <p className="mt-3 text-sm text-ink">
               <span className="font-medium">Transcription status:</span>{" "}
               {alert.transcription_status ?? "Not recorded"}
             </p>
           </section>
 
+          </>)}
+          {showTechnical && (<>
           <section aria-labelledby={`matched-terms-${alert.id}`}>
             <h2
               id={`matched-terms-${alert.id}`}
@@ -299,13 +304,6 @@ export default function AlertEvidence({
                 {NO_MATCHED_TERMS_MESSAGE}
               </p>
             )}
-            <div className="mt-3 flex gap-2 rounded-control bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
-              <Info
-                className="mt-1 h-4 w-4 shrink-0"
-                aria-hidden="true"
-              />
-              <p>{REQUIRED_REVIEW_NOTICE}</p>
-            </div>
           </section>
 
           <section aria-labelledby={`finalized-terms-${alert.id}`}>
@@ -359,17 +357,17 @@ export default function AlertEvidence({
               </h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {hardHits.map((word, index) => (
-                  <span key={`hard-${word}-${index}`} className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100">
+                  <span key={`hard-${word}-${index}`} className="rounded-tag border border-sev-high/40 bg-sev-high-bg px-2 py-1 text-body font-medium text-sev-high">
                     {word}
                   </span>
                 ))}
                 {softHits.map((word, index) => (
-                  <span key={`soft-${word}-${index}`} className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-800 dark:border-orange-900 dark:bg-orange-950/30 dark:text-orange-100">
+                  <span key={`soft-${word}-${index}`} className="rounded-tag border border-sev-medium/40 bg-sev-medium-bg px-2 py-1 text-body font-medium text-sev-medium">
                     {word}
                   </span>
                 ))}
                 {fallbackWords.map((word, index) => (
-                  <span key={`word-${word}-${index}`} className="rounded-full border border-line-strong bg-surface px-3 py-1.5 text-sm font-medium text-ink">
+                  <span key={`word-${word}-${index}`} className="rounded-tag border border-line-strong bg-surface px-3 py-1.5 text-sm font-medium text-ink">
                     {word}
                   </span>
                 ))}
@@ -384,7 +382,7 @@ export default function AlertEvidence({
               </h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {categories.map((category) => (
-                  <span key={category} className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${categoryBadgeColor(category)}`}>
+                  <span key={category} className={`rounded-tag border px-3 py-1.5 text-sm font-semibold ${categoryBadgeColor(category)}`}>
                     {categoryLabel(category)}
                   </span>
                 ))}
@@ -439,21 +437,21 @@ export default function AlertEvidence({
           <details className="rounded-control border border-line bg-surface p-4">
             <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-semibold text-ink">
               <ChevronDown className="h-4 w-4" aria-hidden="true" />
-              Technical Details
+              Sound measurements
             </summary>
 
             <div className="mt-4 space-y-5 border-t border-line pt-4">
               <div className="flex flex-wrap gap-2">
-                {alert.confidence != null && <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-link">
+                {alert.confidence != null && <span className="inline-flex items-center gap-1.5 rounded-tag border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-link">
                   <BarChart2 className="h-3.5 w-3.5" aria-hidden="true" />
                   Detection Confidence: {Math.round(alert.confidence * 100)}%
                 </span>}
-                {alert.duration != null && <span className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-bg px-3 py-1.5 text-xs font-semibold text-ink">
+                {alert.duration != null && <span className="inline-flex items-center gap-1.5 rounded-tag border border-line-strong bg-bg px-3 py-1.5 text-xs font-semibold text-ink">
                   <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
                   Duration: {alert.duration.toFixed(1)}s
                 </span>}
                 {alert.required_duration != null && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-bg px-3 py-1.5 text-xs font-semibold text-ink">
+                  <span className="inline-flex items-center gap-1.5 rounded-tag border border-line-strong bg-bg px-3 py-1.5 text-xs font-semibold text-ink">
                     <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
                     Required duration: {alert.required_duration.toFixed(1)}s
                   </span>
@@ -466,12 +464,12 @@ export default function AlertEvidence({
                 alert.yamnet_score != null) && (
                 <div className="flex flex-wrap gap-2">
                   {alert.emotion && (
-                    <span className={`rounded-full border px-3 py-1.5 text-xs font-semibold  ${emotionBadgeColor(alert.emotion)}`}>
+                    <span className={`rounded-tag border px-3 py-1.5 text-xs font-semibold  ${emotionBadgeColor(alert.emotion)}`}>
                       Possible vocal tone: {alert.emotion}
                     </span>
                   )}
                   {(alert.yamnet_class || alert.yamnet_score != null) && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-medium text-cyan-900">
+                    <span className="inline-flex items-center gap-1.5 rounded-tag border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink">
                       <Waves className="h-3.5 w-3.5" aria-hidden="true" />
                       Stored acoustic model result:{" "}
                       {alert.yamnet_class ?? "Class unavailable"}
@@ -487,10 +485,10 @@ export default function AlertEvidence({
                   <MetricBar label="Volume measurement (RMS)" value={(alert.rms / 3000) * 100} display={Math.round(alert.rms).toString()} barClass="bg-brand" icon={Volume2} />
                 )}
                 {alert.zero_crossing_rate != null && (
-                  <MetricBar label="Zero-crossing rate" value={(alert.zero_crossing_rate / 0.3) * 100} display={alert.zero_crossing_rate.toFixed(3)} barClass="bg-purple-600" icon={Activity} />
+                  <MetricBar label="Zero-crossing rate" value={(alert.zero_crossing_rate / 0.3) * 100} display={alert.zero_crossing_rate.toFixed(3)} barClass="bg-chart" icon={Activity} />
                 )}
                 {alert.energy_variance != null && (
-                  <MetricBar label="Energy variance" value={(alert.energy_variance / 15000) * 100} display={Math.round(alert.energy_variance).toString()} barClass="bg-cyan-600" icon={Activity} />
+                  <MetricBar label="Energy variance" value={(alert.energy_variance / 15000) * 100} display={Math.round(alert.energy_variance).toString()} barClass="bg-chart" icon={Activity} />
                 )}
               </div>
 
@@ -517,6 +515,7 @@ export default function AlertEvidence({
               </p>
             </div>
           </details>
+          </>)}
         </div>
       )}
     </div>

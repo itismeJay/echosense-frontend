@@ -29,6 +29,8 @@
   --sev-low-bg: #eef4ff;
   --danger: #b42318;
   --danger-bg: #fef3f2;
+  /* Single-series data marks: neutral, so green stays for actions. */
+  --chart: #46574c;
 
   --shadow-pop: 0 8px 24px rgb(22 26 22 / 0.12), 0 1px 2px rgb(22 26 22 / 0.08);
   color-scheme: light;
@@ -56,6 +58,7 @@
   --sev-low-bg: #0f1c30;
   --danger: #ff8b80;
   --danger-bg: #2a1210;
+  --chart: #c9cfca;
 
   --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.6), 0 0 0 1px #262626;
   color-scheme: dark;
@@ -83,6 +86,7 @@
   --color-sev-low-bg: var(--sev-low-bg);
   --color-danger: var(--danger);
   --color-danger-bg: var(--danger-bg);
+  --color-chart: var(--chart);
 
   /* Radius by hierarchy: panel > control > tag. */
   --radius-panel: 12px;

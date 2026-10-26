@@ -15,8 +15,6 @@ import {
   ChevronRight,
   ClipboardList,
   Download,
-  Info,
-  LockKeyhole,
   RefreshCw,
   Search,
   X,
@@ -59,7 +57,7 @@ function AuditTimestamp({
 
   if (timestamp === null) {
     return (
-      <span className="font-semibold text-amber-700 dark:text-amber-300">
+      <span className="font-semibold text-sev-medium">
         {label}
       </span>
     );
@@ -71,20 +69,20 @@ function AuditTimestamp({
 function StatusBadge({ status }: { status: AuditLogStatus | null }) {
   if (status === "SUCCESS") {
     return (
-      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+      <span className="inline-flex rounded-tag border border-line-strong bg-surface px-2.5 py-1 text-xs font-semibold text-ink">
         Success
       </span>
     );
   }
   if (status === "FAILURE") {
     return (
-      <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+      <span className="inline-flex rounded-tag border border-danger/40 bg-danger-bg px-2.5 py-1 text-xs font-semibold text-danger">
         Failure
       </span>
     );
   }
   return (
-    <span className="inline-flex rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-semibold text-muted">
+    <span className="inline-flex rounded-tag border border-line bg-surface px-2.5 py-1 text-xs font-semibold text-muted">
       Status unavailable
     </span>
   );
@@ -301,86 +299,43 @@ export default function AuditLogDashboard() {
 
 
   return (
-    <div className="mx-auto max-w-[100rem] p-4 md:p-6 lg:p-8">
-      <header className="mb-6">
-        <p className="text-sm font-semibold text-link">
-          Administrator
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p id="audit-export-help" className="max-w-2xl text-body text-muted">
+          Sign-ins, account changes and setting changes. This history can&apos;t be edited. Download CSV includes every
+          record matching the filters, not only this page.
         </p>
-        <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-ink sm:text-3xl">
-              Audit History
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Review important account, security, and administrative activity.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex min-h-11 items-center gap-2 rounded-control bg-surface px-3 py-2 text-xs font-semibold text-ink">
-              <LockKeyhole className="h-4 w-4" aria-hidden="true" />
-              Administrator only · Read only
-            </span>
-            <button
-              type="button"
-              onClick={() => void loadLogs()}
-              disabled={loading}
-              className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-bg px-4 py-2 text-sm font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
-                aria-hidden="true"
-              />
-              Refresh
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleExport()}
-              disabled={loading || exporting || !page || page.total === 0}
-              aria-label="Export all audit records matching the selected filters as CSV"
-              aria-describedby="audit-export-help"
-              className="inline-flex min-h-11 items-center gap-2 rounded-control bg-brand px-4 py-2 text-sm font-semibold text-brand-ink hover:bg-brand-hover focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-offset-slate-950"
-            >
-              {exporting ? (
-                <RefreshCw
-                  className="h-4 w-4 animate-spin"
-                  aria-hidden="true"
-                />
-              ) : (
-                <Download className="h-4 w-4" aria-hidden="true" />
-              )}
-              {exporting ? "Preparing…" : "Export CSV"}
-            </button>
-          </div>
-        </div>
-        <p
-          id="audit-export-help"
-          className="mt-2 text-xs text-muted"
-        >
-          Filters, sorting, pagination, and CSV export are applied by the
-          backend. Export includes the records matching the selected filters,
-          not only the page currently shown.
-        </p>
-        {exportError && (
-          <p
-            role="alert"
-            className="mt-2 text-sm font-semibold text-danger"
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void loadLogs()}
+            disabled={loading}
+            className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-bg px-4 text-body font-medium text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
           >
-            We couldn&apos;t prepare the CSV export. Please try again.
-          </p>
-        )}
-      </header>
-
-      <div
-        role="note"
-        className="mb-5 flex gap-3 rounded-panel border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950"
-      >
-        <Info className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-        <p>
-          Audit History is read-only and separate from Technical Logs. Missing
-          legacy values are displayed as unavailable rather than being
-          fabricated.
-        </p>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
+            Refresh
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleExport()}
+            disabled={loading || exporting || !page || page.total === 0}
+            aria-describedby="audit-export-help"
+            className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong bg-bg px-4 text-body font-medium text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {exporting ? (
+              <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Download className="h-4 w-4" aria-hidden="true" />
+            )}
+            {exporting ? "Preparing…" : "Download CSV"}
+          </button>
+        </div>
       </div>
+      {exportError && (
+        <p role="alert" className="mb-4 text-body font-medium text-danger">
+          The CSV couldn&apos;t be prepared. Try again, or narrow the filters.
+        </p>
+      )}
 
       <section
         aria-labelledby="audit-filters-heading"
@@ -638,7 +593,7 @@ export default function AuditLogDashboard() {
         ) : errorStatus !== null ? (
           <div
             role="alert"
-            className="rounded-panel border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
+            className="rounded-panel border border-danger/40 bg-danger-bg p-6"
           >
             <h3 className="font-semibold text-ink">
               {errorStatus === 403
@@ -674,41 +629,41 @@ export default function AuditLogDashboard() {
         ) : (
           <>
             <div className="hidden overflow-hidden rounded-panel border border-line bg-bg xl:block">
-              <table className="w-full table-fixed border-collapse text-left text-xs">
+              <table className="w-full table-fixed border-collapse text-left text-small">
                 <caption className="sr-only">
                   Administrative audit history with a dedicated details action
                   for each record.
                 </caption>
                 <thead className="bg-surface text-ink">
                   <tr>
-                    <th scope="col" className="w-44 px-3 py-3 font-semibold">
+                    <th scope="col" className="w-44 px-3 py-2.5 font-medium">
                       Timestamp
                     </th>
-                    <th scope="col" className="w-48 px-3 py-3 font-semibold">
+                    <th scope="col" className="w-52 px-3 py-2.5 font-medium">
                       User
                     </th>
                     <th
                       scope="col"
-                      className="hidden w-32 px-3 py-3 font-semibold xl:table-cell"
+                      className="hidden w-32 px-3 py-2.5 font-medium xl:table-cell"
                     >
                       Role
                     </th>
-                    <th scope="col" className="w-40 px-3 py-3 font-semibold">
+                    <th scope="col" className="w-32 px-3 py-2.5 font-medium">
                       Action
                     </th>
-                    <th scope="col" className="w-36 px-3 py-3 font-semibold">
+                    <th scope="col" className="w-28 px-3 py-2.5 font-medium">
                       Resource
                     </th>
                     <th
                       scope="col"
-                      className="hidden w-40 px-3 py-3 font-semibold xl:table-cell"
+                      className="hidden w-40 px-3 py-2.5 font-medium xl:table-cell"
                     >
                       Target
                     </th>
-                    <th scope="col" className="w-36 px-3 py-3 font-semibold">
+                    <th scope="col" className="w-28 px-3 py-2.5 font-medium">
                       Status
                     </th>
-                    <th scope="col" className="w-28 px-3 py-3 font-semibold">
+                    <th scope="col" className="w-28 px-3 py-2.5 font-medium">
                       Details
                     </th>
                   </tr>
@@ -719,33 +674,33 @@ export default function AuditLogDashboard() {
                       key={log.id}
                       className="align-top hover:bg-surface"
                     >
-                      <td className="px-3 py-4 text-ink">
+                      <td className="px-3 py-2.5 text-ink">
                         <AuditTimestamp
                           value={log.occurred_at}
                           recordId={log.id}
                         />
                       </td>
-                      <td className="break-words px-3 py-4 font-medium text-ink">
+                      <td className="break-words px-3 py-2.5 font-medium text-ink">
                         {log.actor_email ?? "Unknown user"}
                       </td>
-                      <td className="hidden px-3 py-4 text-ink xl:table-cell">
+                      <td className="hidden px-3 py-2.5 text-ink xl:table-cell">
                         {formatAuditRole(log.actor_role)}
                       </td>
-                      <td className="px-3 py-4">
-                        <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 font-semibold text-blue-800">
+                      <td className="px-3 py-2.5">
+                        <span className="inline-flex rounded-full bg-surface px-2.5 py-1 font-semibold text-ink">
                           {formatAuditAction(log.action)}
                         </span>
                       </td>
-                      <td className="break-words px-3 py-4 text-ink">
+                      <td className="break-words px-3 py-2.5 text-ink">
                         {log.resource}
                       </td>
-                      <td className="hidden break-words px-3 py-4 text-ink xl:table-cell">
+                      <td className="hidden break-words px-3 py-2.5 text-ink xl:table-cell">
                         {log.target ?? "—"}
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-2.5">
                         <StatusBadge status={log.status} />
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-2.5">
                         <button
                           type="button"
                           onClick={() => setSelectedLog(log)}
@@ -775,7 +730,7 @@ export default function AuditLogDashboard() {
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">
+                      <span className="inline-flex rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-ink">
                         {formatAuditAction(log.action)}
                       </span>
                       <h3 className="mt-3 break-words font-semibold text-ink">

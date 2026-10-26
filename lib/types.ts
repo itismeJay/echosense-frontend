@@ -239,6 +239,10 @@ export interface AlertFilters {
   language?: AlertLanguage;
   severity?: string;
   duration_gate?: string;
+  status?: "active" | "reviewed" | "resolved";
+  /** ISO timestamps; date_to is exclusive. */
+  date_from?: string;
+  date_to?: string;
   skip?: number;
   limit?: number;
 }
@@ -368,9 +372,12 @@ export interface SystemSettings {
 }
 
 export interface Report {
-  report_id: string;
+  report_id: string | number;
   generated_at: string;
   total_incidents: number;
+  date_from?: string;
+  date_to?: string;
+  generated_by_email?: string | null;
 }
 
 export interface PiLog {
@@ -383,4 +390,36 @@ export interface PiLog {
 export interface SystemLogsResponse {
   lines: PiLog[];
   total: number;
+}
+
+export interface DeviceStatusItem {
+  id: string;
+  display_name: string;
+  device_code: string;
+  school_id: string | null;
+  school_name: string | null;
+  classroom_id: string | null;
+  classroom_name: string | null;
+  is_active: boolean;
+  last_seen_at: string | null;
+  online: boolean;
+}
+
+export interface DeviceStatusResponse {
+  checked_at: string;
+  online_window_seconds: number;
+  devices: DeviceStatusItem[];
+}
+
+export interface SchoolSummaryCard {
+  id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  alerts_needing_review: number;
+  high_today: number;
+  alerts_this_week: number;
+  devices_online: number;
+  devices_total: number;
+  users: { admin: number; counselor: number; staff: number };
 }

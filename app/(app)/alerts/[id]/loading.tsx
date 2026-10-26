@@ -1,10 +1,13 @@
-import AlertListSkeleton from "@/components/AlertListSkeleton";
+import { LoadingRows, Page, Skeleton } from "@/components/ui";
 
-export default function Loading() {
+export default function AlertLoading() {
   return (
-    <div className="mx-auto max-w-4xl p-4 md:p-6 lg:p-8">
-      <div className="mb-6 h-28 animate-pulse rounded-panel bg-surface" />
-      <AlertListSkeleton count={1} />
-    </div>
+    <Page>
+      <Skeleton className="h-9 w-40" />
+      <Skeleton className="mt-6 h-11 w-72" />
+      <div className="mt-6 rounded-panel border border-line">
+        <LoadingRows rows={5} label="Loading alert" />
+      </div>
+    </Page>
   );
 }

@@ -5,24 +5,10 @@ interface WaveformDisplayProps {
   emotion?: string;
 }
 
-// Bar color keyed by emotion (acoustic-signature palette).
-// angry/aggressive → red, distressed → yellow, upset → orange,
-// neutral/silent → green, unknown/missing → gray.
+// One neutral color: the emotion is stated in words beside the evidence, never by color alone.
 function waveformColor(emotion?: string): string {
-  switch ((emotion ?? "").toLowerCase()) {
-    case "angry":
-    case "aggressive":
-      return "#ef4444";
-    case "distressed":
-      return "#f59e0b";
-    case "upset":
-      return "#f97316";
-    case "neutral":
-    case "silent":
-      return "#10b981";
-    default:
-      return "#6b7280";
-  }
+  void emotion;
+  return "var(--chart)";
 }
 
 const BARS = 40;

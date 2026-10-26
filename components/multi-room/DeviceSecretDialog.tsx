@@ -24,7 +24,7 @@ export default function DeviceSecretDialog({
     try {
       await navigator.clipboard.writeText(result.device_key);
       setCopied(true);
-      toast.success("Device key copied.");
+      toast.success("Key copied");
     } catch {
       keyRef.current?.focus();
       keyRef.current?.select();
@@ -34,18 +34,16 @@ export default function DeviceSecretDialog({
 
   return (
     <AccessibleDialog
-      title={`Device ${operation} successfully.`}
-      description="Save this device key now. It will not be shown again."
+      title={operation === "registered" ? "Device added. Save its key now" : "New key created. Save it now"}
+      description="Enter this key on the classroom device. It is shown only once."
       onClose={onClose}
     >
-      <div className="rounded-control border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-        <div className="flex gap-3">
-          <KeyRound className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-          <p className="text-sm leading-6">
-            Store this credential securely before closing this dialog. Closing it
-            permanently removes the plaintext key from this page.
-          </p>
-        </div>
+      <div className="flex gap-3 rounded-control border border-sev-medium/40 bg-sev-medium-bg p-4 text-ink">
+        <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-sev-medium" aria-hidden="true" />
+        <p className="text-body">
+          Copy the key before you close this window. After that, EchoSense can&apos;t show it again, and you would
+          need to create a new one.
+        </p>
       </div>
 
       <dl className="mt-5 grid gap-3 text-sm">
@@ -65,7 +63,7 @@ export default function DeviceSecretDialog({
 
       <div className="mt-4">
         <label htmlFor="one-time-device-key" className="mb-1.5 block text-sm font-semibold text-ink">
-          One-time device key
+          Device key
         </label>
         <input
           ref={keyRef}
@@ -83,7 +81,7 @@ export default function DeviceSecretDialog({
         <button
           type="button"
           onClick={() => void copyKey()}
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-control border border-line bg-bg px-4 py-2 text-sm font-semibold text-link hover:bg-surface"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-control border border-line-strong bg-bg px-4 py-2 text-body font-medium text-ink hover:bg-surface"
         >
           {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
           {copied ? "Copied" : "Copy key"}
@@ -91,7 +89,7 @@ export default function DeviceSecretDialog({
         <button
           type="button"
           onClick={onClose}
-          className="min-h-11 flex-1 rounded-control bg-brand px-4 py-2 text-sm font-semibold text-brand-ink hover:bg-brand-hover"
+          className="min-h-11 flex-1 rounded-control bg-brand px-4 py-2 text-body font-medium text-brand-ink hover:bg-brand-hover"
         >
           I have saved it
         </button>

@@ -262,3 +262,33 @@ export function localDateKey(value: Date): string {
   const day = String(value.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
+/**
+ * The words the device heard that made this alert, for the inbox. Matched dictionary
+ * terms first, then finalized monitored terms, then raw detected words; deduplicated
+ * case-insensitively without changing the original spelling.
+ */
+export function wordsHeard(alert: Alert, limit = 4): string[] {
+  const candidates = [
+    ...uniqueMatchedTerms(alert.matched_terms).map((term) => term.term),
+    ...alert.monitored_terms.filter((term): term is string => typeof term === "string"),
+    ...(alert.detected_words ?? []),
+  ];
+  const seen = new Set<string>();
+  const words: string[] = [];
+  for (const word of candidates) {
+    const trimmed = word.trim();
+    const key = trimmed.toLocaleLowerCase();
+    if (!trimmed || seen.has(key)) continue;
+    seen.add(key);
+    words.push(trimmed);
+    if (words.length === limit) break;
+  }
+  return words;
+}
+
+/** What to show when no words were recorded: why the device flagged it, in plain words. */
+export function noWordsReason(alert: Alert): string {
+  if (alert.trigger_type === "ACOUSTIC") return "Raised voices or a loud sound";
+  return "No words recorded";
+}

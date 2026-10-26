@@ -12,9 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Globe2,
-  Info,
   Loader2,
-  Plus,
   RefreshCw,
   Save,
   Search,
@@ -165,52 +163,26 @@ export default function DictionaryPage() {
   const lastShown = Math.min(total, page * DICTIONARY_PAGE_SIZE + entries.length);
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">
-      <header className="mb-6">
-        <p className="text-sm font-semibold text-link">
-          {canEdit ? "Super administrator" : "Administrator"}
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">
-          Monitored Terms
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          Terms and alert weights used by the monitoring system in every school.
-          These terms support detection and do not confirm an incident.
-        </p>
-      </header>
-
+    <div className="max-w-[960px]">
+      <p className="mb-4 max-w-2xl text-body text-muted">
+        Words and phrases classroom devices listen for, in every school. A match only flags an alert for review; it
+        doesn&apos;t confirm anything happened.
+      </p>
       {canEdit ? (
-        <section
-          aria-labelledby="add-term-title"
-          className="rounded-panel border border-line bg-bg p-5 sm:p-6"
-        >
-          <div className="flex gap-3">
-            <span className="rounded-control bg-emerald-50 p-2.5 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200">
-              <Plus className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div>
-              <h2
-                id="add-term-title"
-                className="font-semibold text-ink"
-              >
-                Add Monitored Term
-              </h2>
-              <p className="mt-1 text-sm text-muted">
-                The value is saved to the monitored-terms list.
-              </p>
-            </div>
-          </div>
-
+        <section aria-labelledby="add-term-title" className="rounded-panel border border-line bg-bg p-4 sm:p-5">
+          <h2 id="add-term-title" className="text-body-lg font-semibold text-ink">
+            Add a word
+          </h2>
           <form
             onSubmit={(event) => void handleSave(event)}
-            className="mt-5 grid gap-4 md:grid-cols-3"
+            className="mt-3 grid gap-4 md:grid-cols-3"
           >
             <div>
               <label
                 htmlFor="monitored-term"
                 className="mb-1.5 block text-sm font-medium text-ink"
               >
-                Term
+                Word or phrase
               </label>
               <input
                 id="monitored-term"
@@ -250,7 +222,7 @@ export default function DictionaryPage() {
                   htmlFor="term-alert-weight"
                   className="text-sm font-medium text-ink"
                 >
-                  Alert Weight
+                  How strongly it counts
                 </label>
                 <span className="text-sm font-semibold text-link">
                   {alertWeight.toFixed(1)}
@@ -281,23 +253,12 @@ export default function DictionaryPage() {
                 ) : (
                   <Save className="h-4 w-4" aria-hidden="true" />
                 )}
-                {submitting ? "Saving…" : "Save Term"}
+                {submitting ? "Adding…" : "Add word"}
               </button>
             </div>
           </form>
         </section>
-      ) : currentUser ? (
-        <div
-          role="note"
-          className="flex gap-3 rounded-control border border-line bg-surface p-4 text-sm leading-6 text-link"
-        >
-          <Info className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-          <p>
-            This list is read-only for school administrators. Only a super
-            administrator can add or remove monitored terms.
-          </p>
-        </div>
-      ) : null}
+) : null}
 
       <section className="mt-8" aria-labelledby="saved-terms-title">
         <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -371,7 +332,7 @@ export default function DictionaryPage() {
         ) : error ? (
           <div
             role="alert"
-            className="rounded-panel border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
+            className="rounded-panel border border-danger/40 bg-danger-bg p-6"
           >
             <h3 className="font-semibold text-ink">
               We couldn&apos;t load monitored terms.
@@ -415,7 +376,7 @@ export default function DictionaryPage() {
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(entry)}
-                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-muted hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30 dark:hover:text-red-300"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-muted hover:bg-danger-bg hover:text-danger"
                       aria-label={`Delete ${entry.slur_text}`}
                     >
                       <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -425,7 +386,7 @@ export default function DictionaryPage() {
                 <div className="mt-4 flex items-center gap-3 rounded-control bg-surface p-3">
                   <SlidersHorizontal className="h-4 w-4 text-muted" aria-hidden="true" />
                   <span className="text-sm text-muted">
-                    Alert Weight
+                    How strongly it counts
                   </span>
                   <span className="ml-auto font-semibold text-ink">
                     {entry.severity_weight.toFixed(1)}

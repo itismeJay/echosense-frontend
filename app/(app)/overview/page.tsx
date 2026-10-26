@@ -1,341 +1,153 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  AlertTriangle,
-  ArrowRight,
-  BellRing,
-  CheckCircle2,
-  CircleHelp,
-  Clock3,
-  RefreshCw,
-  Wifi,
-  WifiOff,
-} from "lucide-react";
-import AlertCard from "@/components/AlertCard";
-import AlertListSkeleton from "@/components/AlertListSkeleton";
-import { localDateKey } from "@/lib/alert-presentation";
-import { getHeartbeat } from "@/lib/api";
+import { BellRing, Cpu } from "lucide-react";
+import AlertInbox from "@/components/AlertInbox";
+import { EmptyState, ErrorState, LoadingRows, Page } from "@/components/ui";
+import { DeviceStatus } from "@/components/ui/status";
 import { useAlerts } from "@/lib/AlertsProvider";
-import { formatTimestamp } from "@/lib/format";
-import type { HeartbeatStatus } from "@/lib/types";
+import { localDateKey, needsReview } from "@/lib/alert-presentation";
+import { useDeviceStatus } from "@/lib/useDeviceStatus";
 
-interface DashboardMetricProps {
-  label: string;
-  value: string;
-  helpText: string;
-  icon: typeof BellRing;
-  tone: "indigo" | "red" | "emerald" | "slate";
-  loading?: boolean;
+const INBOX_LIMIT = 8;
+
+function greeting(hour: number): string {
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
-const METRIC_TONES = {
-  indigo: "bg-surface text-link  ",
-  red: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-200",
-  emerald: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200",
-  slate: "bg-surface text-ink  ",
-};
-
-function DashboardMetric({
-  label,
-  value,
-  helpText,
-  icon: Icon,
-  tone,
-  loading = false,
-}: DashboardMetricProps) {
+function SummaryItem({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <article className="rounded-panel border border-line bg-bg p-5">
-      <div className="flex items-start gap-4">
-        <span className={`rounded-control p-3 ${METRIC_TONES[tone]}`}>
-          <Icon className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-muted">
-            {label}
-          </p>
-          {loading ? (
-            <div
-              className="mt-2 h-8 w-24 animate-pulse rounded-control bg-surface"
-              aria-label={`Loading ${label}`}
-            />
-          ) : (
-            <p className="mt-1 text-2xl font-semibold text-ink">
-              {value}
-            </p>
-          )}
-          <p className="mt-2 text-sm leading-5 text-muted">
-            {helpText}
-          </p>
-        </div>
-      </div>
-    </article>
+    <li className="border-line sm:border-l sm:pl-4 sm:first:border-l-0 sm:first:pl-0">
+      <Link href={href} className="text-body-lg text-ink underline-offset-4 hover:underline">
+        {children}
+      </Link>
+    </li>
   );
 }
 
-function isDeviceConnected(heartbeat: HeartbeatStatus): boolean | null {
-  if (heartbeat.device_status === "online") return true;
-  if (heartbeat.device_status === "offline") return false;
-  if (heartbeat.last_heartbeat) {
-    const heartbeatTime = new Date(heartbeat.last_heartbeat).getTime();
-    if (Number.isFinite(heartbeatTime)) {
-      return Date.now() - heartbeatTime < 3 * 60 * 1000;
-    }
-  }
-  return null;
-}
+export default function OverviewPage() {
+  const { alerts, loading, error, errorStatus, refresh } = useAlerts();
+  const devices = useDeviceStatus();
+  const [now] = useState(() => new Date());
+  const todayKey = localDateKey(now);
 
-export default function DashboardPage() {
-  const { alerts, loading, error, refresh } = useAlerts();
-  const [todayKey] = useState(() => localDateKey(new Date()));
-  const [heartbeat, setHeartbeat] = useState<HeartbeatStatus | null>(null);
-  const [deviceConnected, setDeviceConnected] = useState<boolean | null>(null);
-  const [deviceLoading, setDeviceLoading] = useState(true);
-  const [deviceError, setDeviceError] = useState(false);
+  const waiting = useMemo(() => alerts.filter(needsReview), [alerts]);
+  const highToday = alerts.filter(
+    (alert) => alert.severity === "high" && localDateKey(new Date(alert.created_at)) === todayKey
+  ).length;
+  const deviceList = devices.devices ?? [];
+  const online = deviceList.filter((device) => device.online).length;
 
-  const loadDeviceStatus = useCallback(async () => {
-    try {
-      const nextHeartbeat = await getHeartbeat();
-      setHeartbeat(nextHeartbeat);
-      setDeviceConnected(isDeviceConnected(nextHeartbeat));
-      setDeviceError(false);
-    } catch {
-      setHeartbeat(null);
-      setDeviceConnected(null);
-      setDeviceError(true);
-    } finally {
-      setDeviceLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const initialTimer = setTimeout(() => {
-      void loadDeviceStatus();
-    }, 0);
-    const intervalId = setInterval(() => {
-      void loadDeviceStatus();
-    }, 30_000);
-    return () => {
-      clearTimeout(initialTimer);
-      clearInterval(intervalId);
-    };
-  }, [loadDeviceStatus]);
-
-  const todayAlerts = useMemo(
-    () =>
-      alerts.filter(
-        (alert) => localDateKey(new Date(alert.created_at)) === todayKey
-      ),
-    [alerts, todayKey]
-  );
-  const highPriorityToday = useMemo(
-    () => todayAlerts.filter((alert) => alert.severity === "high").length,
-    [todayAlerts]
-  );
-  const recentAlerts = useMemo(
-    () =>
-      [...alerts]
-        .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .slice(0, 4),
-    [alerts]
-  );
-
-  const handleRetry = () => {
-    setDeviceLoading(true);
-    void refresh();
-    void loadDeviceStatus();
-  };
+  const date = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(now);
 
   return (
-    <div className="mx-auto max-w-6xl p-4 md:p-6 lg:p-8">
+    <Page>
       <header className="mb-6">
-        <p className="text-sm font-semibold text-link">
-          Classroom Monitoring System
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">
-          What needs your attention today?
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          See recent possible classroom concerns and check whether the classroom
-          device is connected.
-        </p>
+        <p className="text-body text-muted">{date}</p>
+        <h1 className="mt-1 text-display font-semibold text-ink">{greeting(now.getHours())}</h1>
+        <ul className="mt-3 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-4">
+          <SummaryItem href="/alerts">
+            <span className="num font-semibold">{loading ? "…" : waiting.length}</span>{" "}
+            {waiting.length === 1 ? "alert needs" : "alerts need"} review
+          </SummaryItem>
+          <SummaryItem href="/alerts/all">
+            <span className="num font-semibold">{loading ? "…" : highToday}</span> High{" "}
+            {highToday === 1 ? "alert" : "alerts"} today
+          </SummaryItem>
+          {devices.devices && deviceList.length > 0 && (
+            <SummaryItem href="#classroom-devices">
+              <span className="num font-semibold">
+                {online} of {deviceList.length}
+              </span>{" "}
+              classroom {deviceList.length === 1 ? "device" : "devices"} online
+            </SummaryItem>
+          )}
+        </ul>
       </header>
 
-      {error && (
-        <div
-          role="alert"
-          className="mb-6 flex flex-col gap-4 rounded-panel border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-red-900/60 dark:bg-red-950/30"
-        >
-          <div>
-            <p className="font-semibold text-ink">
-              We couldn&apos;t load classroom alerts.
-            </p>
-            <p className="mt-1 text-sm text-danger">
-              Please try again.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleRetry}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-red-300 bg-bg px-4 py-2.5 text-sm font-semibold text-red-800 hover:bg-red-100 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
-          >
-            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            Retry
-          </button>
-        </div>
-      )}
-
-      {!deviceLoading && deviceConnected === false && (
-        <section
-          aria-labelledby="device-offline-title"
-          className="mb-6 flex gap-3 rounded-panel border border-amber-300 bg-amber-50 p-4 dark:border-amber-900/70 dark:bg-amber-950/30"
-        >
-          <WifiOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-800 dark:text-amber-200" aria-hidden="true" />
-          <div>
-            <h2
-              id="device-offline-title"
-              className="font-semibold text-amber-950 dark:text-amber-100"
-            >
-              Classroom Device Offline
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-amber-900 dark:text-amber-200">
-              New classroom alerts may not appear until the device reconnects.
-              Contact an administrator if this continues.
-            </p>
-          </div>
-        </section>
-      )}
-
-      {!deviceLoading && deviceError && (
-        <section
-          aria-labelledby="device-unavailable-title"
-          className="mb-6 flex gap-3 rounded-panel border border-line-strong bg-surface p-4"
-        >
-          <CircleHelp
-            className="mt-0.5 h-5 w-5 shrink-0 text-ink"
-            aria-hidden="true"
-          />
-          <div>
-            <h2
-              id="device-unavailable-title"
-              className="font-semibold text-ink"
-            >
-              Classroom Device Status Unavailable
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-ink">
-              EchoSense could not check the device right now. This does not
-              mean the classroom device is offline.
-            </p>
-          </div>
-        </section>
-      )}
-
-      <section aria-labelledby="today-summary-title">
-        <h2 id="today-summary-title" className="sr-only">
-          Today&apos;s summary
-        </h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          <DashboardMetric
-            label="Alerts Today"
-            value={todayAlerts.length.toString()}
-            helpText={
-              todayAlerts.length === 0
-                ? "No alerts need attention today."
-                : "Possible alerts recorded since midnight."
-            }
-            icon={BellRing}
-            tone="indigo"
-            loading={loading && alerts.length === 0}
-          />
-          <DashboardMetric
-            label="High Priority Alerts"
-            value={highPriorityToday.toString()}
-            helpText="High-priority possible alerts recorded today."
-            icon={AlertTriangle}
-            tone={highPriorityToday > 0 ? "red" : "slate"}
-            loading={loading && alerts.length === 0}
-          />
-          <DashboardMetric
-            label="Classroom Device Status"
-            value={
-              deviceConnected
-                ? "Connected"
-                : deviceConnected === false
-                  ? "Offline"
-                  : "Unavailable"
-            }
-            helpText={
-              heartbeat?.last_heartbeat
-                ? `Last Device Check-in: ${formatTimestamp(heartbeat.last_heartbeat)}`
-                : "Last Device Check-in is unavailable."
-            }
-            icon={
-              deviceConnected
-                ? Wifi
-                : deviceConnected === false
-                  ? WifiOff
-                  : CircleHelp
-            }
-            tone={
-              deviceConnected
-                ? "emerald"
-                : deviceConnected === false
-                  ? "red"
-                  : "slate"
-            }
-            loading={deviceLoading}
-          />
-        </div>
-      </section>
-
-      <section className="mt-8" aria-labelledby="recent-alerts-title">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2
-              id="recent-alerts-title"
-              className="text-xl font-semibold text-ink"
-            >
-              Recent Alerts
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              Automated alerts are possible concerns and have not been verified.
-            </p>
-          </div>
-          <Link
-            href="/alerts"
-            className="inline-flex min-h-11 items-center gap-2 rounded-control px-3 py-2 text-sm font-semibold text-link hover:bg-surface"
-          >
-            View all alerts
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      <section aria-labelledby="needs-review-title">
+        <div className="mb-3 flex items-end justify-between gap-4">
+          <h2 id="needs-review-title" className="text-title font-semibold text-ink">
+            Alerts that need review
+          </h2>
+          <Link href="/alerts/all" className="min-h-11 content-center text-body font-medium text-link underline-offset-4 hover:underline">
+            See all alerts
           </Link>
         </div>
 
-        {loading && alerts.length === 0 ? (
-          <AlertListSkeleton count={4} />
-        ) : recentAlerts.length === 0 && !error ? (
-          <div className="rounded-panel border border-line bg-bg p-8 text-center">
-            <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
-            <h3 className="mt-3 font-semibold text-ink">
-              No alerts need attention today.
-            </h3>
-            <p className="mt-1 text-sm text-muted">
-              Recent classroom alerts will appear here when they are received.
-            </p>
+        {error && alerts.length === 0 ? (
+          <ErrorState
+            title={errorStatus === 403 ? "Your account can't view alerts" : "EchoSense can't load alerts right now"}
+            onRetry={errorStatus === 403 ? undefined : () => void refresh()}
+          >
+            {errorStatus === 403
+              ? "Ask your school administrator to check your account."
+              : "Check the internet connection. Alerts load again by themselves once EchoSense is reachable."}
+          </ErrorState>
+        ) : loading ? (
+          <div className="rounded-panel border border-line">
+            <LoadingRows rows={3} label="Loading alerts" />
+          </div>
+        ) : waiting.length === 0 ? (
+          <div className="rounded-panel border border-line">
+            <EmptyState title="No alerts need review" icon={BellRing}>
+              You&apos;re up to date. New alerts appear here within a few seconds, and High alerts also show a
+              notice in the corner of the screen.
+            </EmptyState>
           </div>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {recentAlerts.map((alert) => (
-              <AlertCard key={alert.id} alert={alert} compact />
-            ))}
-          </div>
+          <>
+            <AlertInbox alerts={waiting.slice(0, INBOX_LIMIT)} mode="review" label="Alerts that need review" />
+            {waiting.length > INBOX_LIMIT && (
+              <p className="mt-3 text-body text-muted">
+                Showing the newest {INBOX_LIMIT} of {waiting.length}.{" "}
+                <Link href="/alerts" className="font-medium text-link underline underline-offset-4">
+                  Review the rest
+                </Link>
+              </p>
+            )}
+          </>
         )}
       </section>
 
-      <p className="mt-6 flex items-center gap-2 text-xs leading-5 text-muted">
-        <Clock3 className="h-4 w-4 shrink-0" aria-hidden="true" />
-        Alert information refreshes automatically while this page is open.
-      </p>
-    </div>
+      <section id="classroom-devices" aria-labelledby="devices-title" className="mt-10 scroll-mt-20">
+        <h2 id="devices-title" className="mb-3 text-title font-semibold text-ink">
+          Classroom devices
+        </h2>
+        {devices.error && !devices.devices ? (
+          <ErrorState title="Device status isn't available right now" onRetry={() => void devices.reload()}>
+            Alerts still arrive while this is unavailable. Try again in a minute.
+          </ErrorState>
+        ) : !devices.devices ? (
+          <div className="rounded-panel border border-line">
+            <LoadingRows rows={1} label="Loading devices" />
+          </div>
+        ) : deviceList.length === 0 ? (
+          <div className="rounded-panel border border-line">
+            <EmptyState title="No classroom devices yet" icon={Cpu}>
+              A school administrator adds devices from the Classrooms page. Alerts start once a device is set up in a
+              classroom.
+            </EmptyState>
+          </div>
+        ) : (
+          <ul className="divide-y divide-line rounded-panel border border-line">
+            {deviceList.map((device) => (
+              <li key={device.id} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-body-lg font-medium text-ink">
+                    {device.classroom_name ?? "Not in a classroom"}
+                  </p>
+                  <p className="truncate text-small text-muted">{device.display_name}</p>
+                </div>
+                <DeviceStatus lastSeenAt={device.last_seen_at} online={device.online} disabled={!device.is_active} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </Page>
   );
 }

@@ -139,34 +139,46 @@ test("central API exposes every verified Multi-Room endpoint and server alert fi
   assert.match(api, /qs\.set\("school_id", params\.school_id\)/);
 });
 
-test("classroom management includes lifecycle, detail, loading, empty, error, and confirmation UX", async () => {
-  const source = await readSource("components/multi-room/ClassroomManagement.tsx");
-  assert.match(source, /createClassroom/);
-  assert.match(source, /updateClassroom/);
-  assert.match(source, /Classroom reactivated\./);
-  assert.match(source, /Classroom deactivated\./);
-  assert.match(source, /No classrooms have been created yet\./);
-  assert.match(source, /ResourceError/);
-  assert.match(source, /ConfirmDialog/);
-  assert.match(source, /href=\{`\/classrooms\/\$\{classroom\.id\}`\}/);
+test("classrooms include lifecycle, detail, loading, empty, error, and confirmation UX", async () => {
+  const [list, detail] = await Promise.all([
+    readSource("app/(app)/classrooms/page.tsx"),
+    readSource("app/(app)/classrooms/[id]/page.tsx"),
+  ]);
+  assert.match(list, /createClassroom/);
+  assert.match(list, /No classrooms yet/);
+  assert.match(list, /Classrooms couldn't be loaded/);
+  assert.match(list, /LoadingRows/);
+  assert.match(list, /href=\{`\/classrooms\/\$\{classroom\.id\}`\}/);
+  assert.match(detail, /updateClassroom\(classroom\.id, \{ is_active: active \}\)/);
+  assert.match(detail, /updateClassroom\(classroom\.id, \{ name \}\)/);
+  assert.match(detail, /ConfirmDialog/);
+  assert.match(detail, /Classroom not found/);
 });
 
-test("device management includes protected reassignment and every lifecycle action", async () => {
-  const source = await readSource("components/multi-room/DeviceManagement.tsx");
-  assert.match(source, /expected_current_classroom_id: assigning\.classroom_id/);
-  assert.match(source, /This device assignment changed\. Refresh and try again\./);
-  assert.match(source, /registerDevice/);
+test("each classroom card shows its device, online status, last check-in and area map", async () => {
+  const list = await readSource("app/(app)/classrooms/page.tsx");
+  assert.match(list, /<DeviceStatus lastSeenAt=\{device\.last_seen_at\} online=\{status\?\.online\}/);
+  assert.match(list, /Last check-in/);
+  assert.match(list, /Area map/);
+  assert.match(list, /alerts this week/);
+});
+
+test("device management lives inside the classroom with protected moves and every lifecycle action", async () => {
+  const source = await readSource("app/(app)/classrooms/[id]/page.tsx");
+  assert.match(source, /expected_current_classroom_id: dialog\.device\.classroom_id/);
+  assert.match(source, /caught\.status === 409/);
+  assert.match(source, /Someone else just changed this/);
+  assert.match(source, /registerDevice\(\{ \.\.\.input, school_id: classroom\.school_id, classroom_id: classroom\.id \}\)/);
   assert.match(source, /unassignDevice/);
   assert.match(source, /disableDevice/);
   assert.match(source, /enableDevice/);
   assert.match(source, /rotateDeviceKey/);
-  assert.match(source, /No Edge devices registered\./);
-  assert.match(source, /ResourceError/);
+  assert.match(source, /No device in this classroom/);
 });
 
 test("one-time device keys are copied temporarily, cleared on close, never stored, and never logged", async () => {
   const [management, dialog] = await Promise.all([
-    readSource("components/multi-room/DeviceManagement.tsx"),
+    readSource("app/(app)/classrooms/[id]/page.tsx"),
     readSource("components/multi-room/DeviceSecretDialog.tsx"),
   ]);
   const combined = `${management}\n${dialog}`;
@@ -176,23 +188,23 @@ test("one-time device keys are copied temporarily, cleared on close, never store
   assert.doesNotMatch(combined, /console\.(log|debug|info|warn|error)/);
 });
 
-test("alerts use server-side room filters while preserving existing human-review and detail UI", async () => {
-  const [collection, card] = await Promise.all([
-    readSource("components/AlertCollection.tsx"),
-    readSource("components/AlertCard.tsx"),
+test("alerts filter by severity, date and classroom; the entered school scopes the data", async () => {
+  const [view, api, detail] = await Promise.all([
+    readSource("components/AlertsView.tsx"),
+    readSource("lib/api.ts"),
+    readSource("app/(app)/alerts/[id]/page.tsx"),
   ]);
-  assert.match(collection, /getAlertsWithMetadata/);
-  assert.match(collection, /classroom_id: classroomId/);
-  assert.match(collection, /device_id: deviceId/);
-  assert.match(collection, /school_id: activeSchoolId/);
-  assert.match(collection, /Promise\.all\(\[getClassrooms\(\), getDevices\(\)\]\)/);
-  assert.match(collection, /managementClassrooms\.forEach/);
-  assert.match(collection, /managementDevices\.forEach/);
-  assert.match(collection, /Concern category/);
-  assert.match(collection, /Language/);
-  assert.match(collection, /Detection reason/);
-  assert.match(card, /REQUIRED_REVIEW_NOTICE/);
-  assert.match(card, /Device:/);
+  for (const label of ["Severity", "Classroom", "From", "To"]) {
+    assert.match(view, new RegExp(`>\\s*${label}\\s*<`), label);
+  }
+  assert.match(view, /alert\.severity !== severity/);
+  assert.match(view, /classroomLabel\(alert\) !== classroom/);
+  assert.match(view, /day < from/);
+  assert.match(view, /day > to/);
+  assert.match(view, /\{ href: "\/alerts", label: "Needs review", count: waitingCount \}/);
+  assert.match(view, /\{ href: "\/alerts\/all", label: "All alerts" \}/);
+  assert.match(api, /qs\.set\("status", params\.status\)/);
+  assert.match(detail, /REQUIRED_REVIEW_NOTICE/);
 });
 
 test("management routes remain admin-only and API errors distinguish permission and conflict", async () => {

@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { KeyRound, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+import AuthShell from "@/components/AuthShell";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
-import ThemeToggle from "@/components/ThemeToggle";
 import { logout, refreshCurrentUser, useCurrentUser } from "@/lib/auth";
 import { accessRoleOf, homePathFor } from "@/lib/access";
 
@@ -19,55 +19,31 @@ export default function ChangePasswordPage() {
   const handleChanged = async () => {
     const refreshed = await refreshCurrentUser();
     if (refreshed?.must_change_password) {
-      toast.error("Your account still requires a password change. Please try again.");
+      toast.error("Your account still needs a new password. Try again.");
       return;
     }
-    toast.success("Password changed.");
+    toast.success("Password changed");
     router.replace(homePathFor(accessRoleOf(refreshed)));
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-surface px-4 py-16">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-
-      <div className="w-full max-w-md">
-        <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <span className="flex min-h-11 items-center justify-center rounded-control bg-surface px-3 text-link">
-            <KeyRound className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <h1 className="text-xl font-semibold tracking-tight text-ink">
-            {forced ? "Set a new password" : "Change password"}
-          </h1>
-          <p className="text-sm text-muted">
-            {forced
-              ? "Your account was created with a temporary password. Choose a new one to continue."
-              : "Choose a new password for your account."}
-          </p>
-          {user && (
-            <p className="text-sm font-medium text-ink">
-              {user.email}
-            </p>
-          )}
-        </div>
-
-        <div className="rounded-control border border-line bg-bg p-6">
-          <ChangePasswordForm
-            submitLabel={forced ? "Save and continue" : "Change password"}
-            onChanged={handleChanged}
-          />
-        </div>
-
-        <div className="mt-4 flex items-center justify-between gap-4 text-sm">
+    <AuthShell
+      title={forced ? "Choose your own password" : "Change password"}
+      description={
+        <>
+          {forced
+            ? "You signed in with a temporary password. Choose a new one to continue."
+            : "Enter your current password, then choose a new one."}
+          {user && <span className="mt-1 block text-body text-ink">{user.email}</span>}
+        </>
+      }
+      footer={
+        <div className="flex items-center justify-between gap-4 text-body">
           {forced ? (
             <span />
           ) : (
-            <Link
-              href="/overview"
-              className="inline-flex min-h-11 items-center font-medium text-link hover:underline"
-            >
-              Back to Dashboard
+            <Link href={homePathFor(accessRoleOf(user))} className="inline-flex min-h-11 items-center font-medium text-link underline-offset-4 hover:underline">
+              Back to EchoSense
             </Link>
           )}
           <button
@@ -79,7 +55,9 @@ export default function ChangePasswordPage() {
             Sign out
           </button>
         </div>
-      </div>
-    </main>
+      }
+    >
+      <ChangePasswordForm submitLabel={forced ? "Save and continue" : "Change password"} onChanged={handleChanged} />
+    </AuthShell>
   );
 }

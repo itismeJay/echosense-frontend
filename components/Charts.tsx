@@ -1,612 +1,276 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useTheme } from "next-themes";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
-  ResponsiveContainer,
-} from "recharts";
-import type { Alert, LogsStats, CategoryStats } from "@/lib/types";
+// Report charts. Single-series marks use the neutral --chart token; severity uses the
+// reserved severity tokens with a word beside every bar. All bucketing is in local time.
 
-const GLASS =
-  "rounded-panel border border-line bg-bg p-5   ";
+import { useEffect, useState } from "react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import type { Alert, CategoryStats } from "@/lib/types";
+import { categoryLabel, languageLabel } from "@/lib/format";
+import { Panel, Skeleton } from "@/components/ui";
 
-function useTooltipStyle(theme: string | undefined) {
-  const isDark = theme === "dark";
-  return {
-    contentStyle: isDark
-      ? {
-          background: "#1a1a2e",
-          border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: "12px",
-          color: "#e5e7eb",
-          fontSize: 12,
-        }
-      : {
-          background: "#ffffff",
-          border: "1px solid rgba(0,0,0,0.08)",
-          borderRadius: "12px",
-          color: "#1e293b",
-          fontSize: 12,
-        },
-    itemStyle: { color: isDark ? "#e5e7eb" : "#1e293b" },
-    cursor: { fill: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" },
-  };
-}
-
-// Recharts needs the DOM, guard SSR — use setTimeout to avoid setState-in-effect lint
-function useIsMounted() {
+function useMounted() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    const id = setTimeout(() => setMounted(true), 0);
-    return () => clearTimeout(id);
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
   return mounted;
 }
 
-function ChartSkeleton() {
-  return <div className="h-48 bg-surface rounded-control animate-pulse" />;
+function localDayKey(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function getAlertsPerDay(alerts: Alert[]) {
-  const today = new Date();
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() - (6 - i));
-    const dateStr = d.toISOString().slice(0, 10);
-    const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const count = alerts.filter((a) => a.created_at.startsWith(dateStr)).length;
-    return { date: label, count };
-  });
-}
-
-function getSeverityBreakdown(alerts: Alert[]) {
-  const high   = alerts.filter((a) => a.severity === "high").length;
-  const medium = alerts.filter((a) => a.severity === "medium").length;
-  const low    = alerts.filter((a) => a.severity === "low").length;
-  return [
-    { name: "High",   value: high,   color: "#ef4444" },
-    { name: "Medium", value: medium, color: "#f59e0b" },
-    { name: "Low",    value: low,    color: "#10b981" },
-  ];
-}
-
-function getConfidenceOverTime(alerts: Alert[]) {
-  return [...alerts]
-    .sort((a, b) => a.created_at.localeCompare(b.created_at))
-    .slice(-20)
-    .map((a, i) => ({
-      index: i + 1,
-      confidence: a.confidence == null ? null : Math.round(a.confidence * 100),
-    }));
-}
-
-const EMOTION_COLORS: Record<string, string> = {
-  angry:      "#ef4444",
-  aggressive: "#f97316",
-  distressed: "#eab308",
-  upset:      "#f59e0b",
-  neutral:    "#10b981",
-  unknown:    "#6b7280",
-};
-
-function getEmotionBreakdown(stats: LogsStats) {
-  const b = stats.emotion_breakdown;
-  if (!b) return [];
-  return (Object.keys(EMOTION_COLORS) as (keyof typeof EMOTION_COLORS)[])
-    .map((key) => ({
-      name: key.charAt(0).toUpperCase() + key.slice(1),
-      value: b[key as keyof typeof b] ?? 0,
-      color: EMOTION_COLORS[key],
-    }))
-    .filter((d) => d.value > 0);
-}
-
-function getTopKeywords(alerts: Alert[], stats: LogsStats) {
-  const counts = new Map<string, number>();
-  for (const a of alerts) {
-    for (const raw of a.detected_words ?? []) {
-      const w = raw.trim();
-      if (!w) continue;
-      counts.set(w, (counts.get(w) ?? 0) + 1);
-    }
-  }
-  const ordered =
-    stats.top_detected_words && stats.top_detected_words.length > 0
-      ? stats.top_detected_words
-      : [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([w]) => w);
-  return ordered.slice(0, 10).map((word) => ({
-    word,
-    count: counts.get(word) ?? counts.get(word.trim()) ?? 0,
-  }));
-}
-
-function getPeakHours(alerts: Alert[]) {
-  const counts: number[][] = Array.from({ length: 7 }, () =>
-    new Array(24).fill(0)
+/** A visually hidden table so every chart has a non-visual equivalent. */
+function DataTable({ caption, headers, rows }: { caption: string; headers: [string, string]; rows: [string, number][] }) {
+  return (
+    <table className="sr-only">
+      <caption>{caption}</caption>
+      <thead>
+        <tr>
+          <th scope="col">{headers[0]}</th>
+          <th scope="col">{headers[1]}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(([label, value]) => (
+          <tr key={label}>
+            <th scope="row">{label}</th>
+            <td>{value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
-  alerts.forEach((a) => {
-    const d = new Date(a.created_at);
-    counts[d.getUTCDay()][d.getUTCHours()]++;
-  });
-  const max = Math.max(...counts.flat(), 1);
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return { counts, max, dayNames };
 }
 
-// ─── Components ─────────────────────────────────────────────────────────────
+// ── Alerts per day (last 7 days) ───────────────────────────────────
+
+export function alertsPerDay(alerts: Alert[], today: Date = new Date()) {
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(today);
+    day.setDate(today.getDate() - (6 - index));
+    const key = localDayKey(day);
+    return {
+      date: day.toLocaleDateString("en-US", { weekday: "short", day: "numeric" }),
+      count: alerts.filter((alert) => localDayKey(new Date(alert.created_at)) === key).length,
+    };
+  });
+}
+
+function DayTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
+  if (!active || !payload?.length) return null;
+  const count = payload[0].value;
+  return (
+    <div className="rounded-control border border-line bg-bg px-3 py-2 text-small text-ink shadow-pop">
+      <p className="font-medium">{label}</p>
+      <p className="num text-muted">
+        {count} {count === 1 ? "alert" : "alerts"}
+      </p>
+    </div>
+  );
+}
 
 export function AlertsPerDayBar({ alerts }: { alerts: Alert[] }) {
-  const mounted = useIsMounted();
-  const { theme } = useTheme();
-  const tooltipStyle = useTooltipStyle(theme);
-  const data = useMemo(() => getAlertsPerDay(alerts), [alerts]);
-
+  const mounted = useMounted();
+  const data = alertsPerDay(alerts);
   return (
-    <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-ink mb-4">
-        Alerts Per Day — Last 7 Days
-      </h3>
-      {!mounted ? (
-        <ChartSkeleton />
-      ) : (
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#6366f1" />
-                <stop offset="100%" stopColor="#a855f7" />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="date"
-              tick={{ fill: "#6b7280", fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fill: "#6b7280", fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-            />
-            <Tooltip {...tooltipStyle} />
-            <Bar
-              dataKey="count"
-              fill="url(#barGrad)"
-              radius={[4, 4, 0, 0]}
-              name="Alerts"
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-    </div>
-  );
-}
-
-export function SeverityPie({ alerts }: { alerts: Alert[] }) {
-  const mounted = useIsMounted();
-  const { theme } = useTheme();
-  const tooltipStyle = useTooltipStyle(theme);
-  const data = useMemo(() => getSeverityBreakdown(alerts), [alerts]);
-
-  return (
-    <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-ink mb-4">
-        Priority Breakdown
-      </h3>
-      {!mounted ? (
-        <ChartSkeleton />
-      ) : (
-        <>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                innerRadius={45}
-                paddingAngle={3}
-              >
-                {data.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={tooltipStyle.contentStyle}
-                itemStyle={tooltipStyle.itemStyle}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex justify-center gap-5 mt-1">
-            {data.map((d) => (
-              <div key={d.name} className="flex items-center gap-1.5">
-                <span
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ background: d.color }}
-                />
-                <span className="text-xs text-muted">
-                  {d.name} ({d.value})
-                </span>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-export function ConfidenceOverTimeLine({ alerts }: { alerts: Alert[] }) {
-  const mounted = useIsMounted();
-  const { theme } = useTheme();
-  const tooltipStyle = useTooltipStyle(theme);
-  const data = useMemo(() => getConfidenceOverTime(alerts), [alerts]);
-
-  return (
-    <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-ink mb-4">
-        Detection Confidence Over Time (Last 20 Alerts)
-      </h3>
-      {!mounted ? (
-        <ChartSkeleton />
-      ) : (
-        <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="confGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#a855f7" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="index"
-              tick={{ fill: "#6b7280", fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              domain={[0, 100]}
-              tick={{ fill: "#6b7280", fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              unit="%"
-            />
-            <Tooltip
-              {...tooltipStyle}
-              formatter={(v) => [`${v}%`, "Confidence"]}
-            />
-            <Area
-              type="monotone"
-              dataKey="confidence"
-              stroke="#a855f7"
-              strokeWidth={2}
-              fill="url(#confGrad)"
-              dot={false}
-              name="Confidence"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      )}
-    </div>
-  );
-}
-
-export function PeakHoursHeatmap({ alerts }: { alerts: Alert[] }) {
-  const { counts, max, dayNames } = useMemo(() => getPeakHours(alerts), [alerts]);
-  const hours = Array.from({ length: 24 }, (_, i) => {
-    if (i === 0) return "12a";
-    if (i < 12) return `${i}a`;
-    if (i === 12) return "12p";
-    return `${i - 12}p`;
-  });
-
-  return (
-    <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-ink mb-4">
-        Most Common Alert Times
-      </h3>
-      <div className="overflow-x-auto">
-        <div className="min-w-max">
-          {/* Hour labels */}
-          <div className="flex mb-1 ml-9">
-            {hours.map((h, i) => (
-              <div
-                key={i}
-                className="w-5 text-center"
-                style={{ fontSize: 8, color: "#4b5563" }}
-              >
-                {i % 4 === 0 ? h : ""}
-              </div>
-            ))}
-          </div>
-          {/* Rows */}
-          {dayNames.map((day, di) => (
-            <div key={day} className="flex items-center mb-0.5">
-              <div
-                className="w-9 text-right pr-2 text-muted shrink-0"
-                style={{ fontSize: 9 }}
-              >
-                {day}
-              </div>
-              {counts[di].map((count, hi) => (
-                <div
-                  key={hi}
-                  className="w-5 h-4 rounded-sm mx-px transition-colors"
-                  style={{
-                    background:
-                      count > 0
-                        ? `rgba(99, 102, 241, ${0.15 + (count / max) * 0.85})`
-                        : "rgba(0,0,0,0.04)",
-                  }}
-                  title={`${day} ${hours[hi]}: ${count} alert${count !== 1 ? "s" : ""}`}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function EmotionDonut({ stats }: { stats: LogsStats }) {
-  const mounted = useIsMounted();
-  const { theme } = useTheme();
-  const tooltipStyle = useTooltipStyle(theme);
-  const data = useMemo(() => getEmotionBreakdown(stats), [stats]);
-
-  return (
-    <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-ink mb-1">
-        Possible Vocal Tone
-      </h3>
-      <p className="text-xs text-muted mb-4">
-        Possible vocal tone in alerts
-      </p>
-      {!mounted ? (
-        <ChartSkeleton />
-      ) : data.length === 0 ? (
-        <div className="h-48 flex items-center justify-center text-sm text-muted">
-          No emotion data yet
-        </div>
-      ) : (
-        <>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                innerRadius={45}
-                paddingAngle={3}
-              >
-                {data.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={tooltipStyle.contentStyle}
-                itemStyle={tooltipStyle.itemStyle}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex flex-wrap justify-center gap-x-5 gap-y-1.5 mt-1">
-            {data.map((d) => (
-              <div key={d.name} className="flex items-center gap-1.5">
-                <span
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ background: d.color }}
-                />
-                <span className="text-xs text-muted">
-                  {d.name} ({d.value})
-                </span>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-const CATEGORY_CHART_DATA = [
-  { key: "academic_shaming",   label: "Academic",   color: "#3b82f6" },
-  { key: "appearance_shaming", label: "Appearance", color: "#a855f7" },
-  { key: "body_shaming",       label: "Body",       color: "#f97316" },
-  { key: "emotional_taunting", label: "Emotional",  color: "#eab308" },
-  { key: "threat",             label: "Threat",     color: "#ef4444" },
-];
-
-export function CategoryBarChart({ stats }: { stats: CategoryStats | null; loading?: boolean }) {
-  const mounted = useIsMounted();
-  const { theme } = useTheme();
-  const tooltipStyle = useTooltipStyle(theme);
-
-  const data = useMemo(() => {
-    if (!stats) return [];
-    return CATEGORY_CHART_DATA.map((d) => ({
-      name: d.label,
-      count: stats[d.key] ?? 0,
-      color: d.color,
-    }));
-  }, [stats]);
-
-  return (
-    <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-ink mb-1">
-        Possible Concern Categories
-      </h3>
-      <p className="text-xs text-muted mb-4">
-        Alert count by possible concern category
-      </p>
-      {!mounted ? (
-        <ChartSkeleton />
-      ) : !stats || data.every((d) => d.count === 0) ? (
-        <div className="h-48 flex items-center justify-center text-sm text-muted">
-          No category data yet
-        </div>
-      ) : (
-        <>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="name" tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip {...tooltipStyle} />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Alerts">
-                {data.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} fillOpacity={0.85} />
-                ))}
-              </Bar>
+    <Panel title="Alerts per day" description="The last 7 days">
+      {mounted ? (
+        <div className="h-52" aria-hidden="true">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 4, right: 4, left: -24, bottom: 0 }} barCategoryGap={10}>
+              <CartesianGrid vertical={false} stroke="var(--line)" />
+              <XAxis dataKey="date" tick={{ fill: "var(--muted)", fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis allowDecimals={false} tick={{ fill: "var(--muted)", fontSize: 12 }} axisLine={false} tickLine={false} />
+              <Tooltip cursor={{ fill: "var(--surface)" }} content={<DayTooltip />} />
+              <Bar dataKey="count" fill="var(--chart)" radius={[4, 4, 0, 0]} maxBarSize={36} />
             </BarChart>
           </ResponsiveContainer>
-          <div className="flex flex-wrap justify-center gap-x-5 gap-y-1.5 mt-2">
-            {data.map((d) => (
-              <div key={d.name} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
-                <span className="text-xs text-muted">{d.name} ({d.count})</span>
-              </div>
-            ))}
-          </div>
-        </>
+        </div>
+      ) : (
+        <Skeleton className="h-52" />
       )}
-    </div>
+      <DataTable caption="Alerts per day, last 7 days" headers={["Day", "Alerts"]} rows={data.map((d) => [d.date, d.count])} />
+    </Panel>
+  );
+}
+
+// ── Labelled bar lists (severity, concern types, languages, words) ─
+
+function BarList({
+  rows,
+  emptyText,
+  caption,
+}: {
+  rows: { label: string; count: number; barClass?: string }[];
+  emptyText: string;
+  caption: string;
+}) {
+  const max = Math.max(1, ...rows.map((row) => row.count));
+  if (rows.every((row) => row.count === 0)) {
+    return <p className="py-6 text-body text-muted">{emptyText}</p>;
+  }
+  return (
+    <>
+      <ul className="space-y-3" aria-hidden="true">
+        {rows.map((row) => (
+          <li key={row.label}>
+            <div className="flex items-baseline justify-between gap-3 text-body">
+              <span className="truncate text-ink">{row.label}</span>
+              <span className="num text-muted">{row.count}</span>
+            </div>
+            <div className="mt-1 h-2 rounded-full bg-surface">
+              <div
+                className={`h-2 rounded-full ${row.barClass ?? "bg-chart"}`}
+                style={{ width: `${row.count === 0 ? 0 : Math.max(2, (row.count / max) * 100)}%` }}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+      <DataTable caption={caption} headers={["Item", "Alerts"]} rows={rows.map((row) => [row.label, row.count])} />
+    </>
+  );
+}
+
+export function SeverityBreakdown({ alerts }: { alerts: Alert[] }) {
+  const count = (severity: string) => alerts.filter((alert) => alert.severity === severity).length;
+  return (
+    <Panel title="By severity" description="All alerts in this view">
+      <BarList
+        caption="Alerts by severity"
+        emptyText="No alerts yet."
+        rows={[
+          { label: "High", count: count("high"), barClass: "bg-sev-high" },
+          { label: "Medium", count: count("medium"), barClass: "bg-sev-medium" },
+          { label: "Low", count: count("low"), barClass: "bg-sev-low" },
+        ]}
+      />
+    </Panel>
+  );
+}
+
+const CATEGORY_KEYS = ["threat", "emotional_taunting", "academic_shaming", "appearance_shaming", "body_shaming"];
+
+export function ConcernTypes({ stats, alerts }: { stats: CategoryStats | null; alerts: Alert[] }) {
+  const counts = new Map<string, number>();
+  if (stats) {
+    for (const key of CATEGORY_KEYS) counts.set(key, Number(stats[key] ?? 0));
+  } else {
+    for (const alert of alerts) for (const category of alert.categories ?? []) counts.set(category, (counts.get(category) ?? 0) + 1);
+  }
+  const rows = CATEGORY_KEYS.map((key) => ({ label: categoryLabel(key), count: counts.get(key) ?? 0 }));
+  return (
+    <Panel title="Types of concern" description="What the words were about">
+      <BarList caption="Alerts by type of concern" rows={rows} emptyText="No concern types recorded yet. They appear when monitored words match a category." />
+    </Panel>
   );
 }
 
 export function LanguageBreakdown({ alerts }: { alerts: Alert[] }) {
-  const data = useMemo(() => {
-    const counts: Record<string, number> = {
-      fil: 0,
-      ceb: 0,
-      en: 0,
-      mixed: 0,
-      unknown: 0,
-    };
-    for (const a of alerts) {
-      const k = a.language ?? "unknown";
-      counts[k]++;
-    }
-    return [
-      { code: "fil", label: "Filipino", count: counts.fil, color: "#6366f1" },
-      { code: "ceb", label: "Bisaya/Cebuano", count: counts.ceb, color: "#a855f7" },
-      { code: "en", label: "English", count: counts.en, color: "#22d3ee" },
-      { code: "mixed", label: "Mixed language", count: counts.mixed, color: "#f59e0b" },
-      { code: "unknown", label: "Language unavailable", count: counts.unknown, color: "#6b7280" },
-    ].filter((d) => d.count > 0);
-  }, [alerts]);
-
-  const total = data.reduce((s, d) => s + d.count, 0);
-
+  const counts = new Map<string, number>();
+  for (const alert of alerts) {
+    const label = languageLabel(alert.language);
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+  const rows = [...counts.entries()].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
   return (
-    <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-ink mb-1">
-        Alert Languages
-      </h3>
-      <p className="text-xs text-muted mb-4">
-        Language information included with recorded alerts
-      </p>
-      {total === 0 ? (
-        <div className="h-24 flex items-center justify-center text-sm text-muted">
-          No data yet
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {data.map((d) => {
-            const pct = total > 0 ? Math.round((d.count / total) * 100) : 0;
-            return (
-              <div key={d.code}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-ink">{d.label}</span>
-                  <span className="text-xs text-muted font-mono">
-                    {d.count} alert{d.count !== 1 ? "s" : ""} · {pct}%
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
-                  <div
-                    className="h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${pct}%`, background: d.color }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <Panel title="Languages heard">
+      <BarList caption="Alerts by language" rows={rows} emptyText="No alerts yet." />
+    </Panel>
   );
 }
 
-export function TopKeywordsBar({
-  alerts,
-  stats,
-}: {
-  alerts: Alert[];
-  stats: LogsStats;
-}) {
-  const mounted = useIsMounted();
-  const { theme } = useTheme();
-  const tooltipStyle = useTooltipStyle(theme);
-  const data = useMemo(() => getTopKeywords(alerts, stats), [alerts, stats]);
-
+export function CommonWords({ alerts }: { alerts: Alert[] }) {
+  const counts = new Map<string, number>();
+  for (const alert of alerts) {
+    for (const raw of alert.detected_words ?? []) {
+      const word = raw.trim();
+      if (word) counts.set(word, (counts.get(word) ?? 0) + 1);
+    }
+  }
+  const rows = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([word, count]) => ({ label: `“${word}”`, count }));
   return (
-    <div className={GLASS}>
-      <h3 className="text-sm font-semibold text-ink mb-1">
-        Possible Detected Terms
-      </h3>
-      <p className="text-xs text-muted mb-4">
-        Most frequent terms included with recorded alerts
-      </p>
-      {!mounted ? (
-        <ChartSkeleton />
-      ) : data.length === 0 ? (
-        <div className="h-48 flex items-center justify-center text-sm text-muted">
-          No keyword data yet
-        </div>
-      ) : (
-        <ResponsiveContainer width="100%" height={Math.max(200, data.length * 28)}>
-          <BarChart
-            data={data}
-            layout="vertical"
-            margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
-          >
-            <XAxis
-              type="number"
-              tick={{ fill: "#6b7280", fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-            />
-            <YAxis
-              type="category"
-              dataKey="word"
-              width={90}
-              tick={{ fill: "#6b7280", fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip {...tooltipStyle} />
-            <Bar dataKey="count" fill="#6366f1" radius={[0, 4, 4, 0]} name="Count" />
-          </BarChart>
-        </ResponsiveContainer>
+    <Panel title="Words heard most often">
+      <BarList caption="Most common words heard" rows={rows} emptyText="No words recorded yet." />
+    </Panel>
+  );
+}
+
+// ── When alerts happen (weekday × school hours) ────────────────────
+
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const HOURS = Array.from({ length: 12 }, (_, index) => index + 6); // 6 AM – 5 PM
+
+function hourLabel(hour: number) {
+  return hour === 12 ? "12p" : hour > 12 ? `${hour - 12}p` : `${hour}a`;
+}
+
+export function CommonTimes({ alerts }: { alerts: Alert[] }) {
+  const counts = DAYS.map(() => HOURS.map(() => 0));
+  let outside = 0;
+  for (const alert of alerts) {
+    const date = new Date(alert.created_at);
+    const day = (date.getDay() + 6) % 7;
+    const hourIndex = HOURS.indexOf(date.getHours());
+    if (hourIndex === -1) outside++;
+    else counts[day][hourIndex]++;
+  }
+  const max = Math.max(1, ...counts.flat());
+  return (
+    <Panel title="When alerts happen" description="Weekdays and school hours, 6 AM to 6 PM">
+      <div className="overflow-x-auto" aria-hidden="true">
+        <table className="w-full min-w-[30rem] table-fixed border-separate border-spacing-[2px]">
+          <thead>
+            <tr>
+              <th className="w-10" />
+              {HOURS.map((hour) => (
+                <th key={hour} className="num text-center text-small font-normal text-muted">
+                  {hourLabel(hour)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {DAYS.map((day, dayIndex) => (
+              <tr key={day}>
+                <th className="pr-2 text-left text-small font-normal text-muted">{day}</th>
+                {HOURS.map((hour, hourIndex) => {
+                  const count = counts[dayIndex][hourIndex];
+                  return (
+                    <td
+                      key={hour}
+                      title={`${day} ${hourLabel(hour)}: ${count} ${count === 1 ? "alert" : "alerts"}`}
+                      className="h-6 rounded-[3px]"
+                      style={{
+                        background:
+                          count === 0
+                            ? "var(--surface)"
+                            : `color-mix(in oklab, var(--chart) ${25 + (count / max) * 75}%, var(--bg))`,
+                      }}
+                    />
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {outside > 0 && (
+        <p className="num mt-2 text-small text-muted">
+          {outside} {outside === 1 ? "alert was" : "alerts were"} outside these hours.
+        </p>
       )}
-    </div>
+      <DataTable
+        caption="Alerts by weekday during school hours"
+        headers={["Weekday", "Alerts"]}
+        rows={DAYS.map((day, index) => [day, counts[index].reduce((sum, value) => sum + value, 0)])}
+      />
+    </Panel>
   );
 }

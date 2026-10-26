@@ -1,340 +1,212 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import {
-  CalendarDays,
-  ChevronDown,
-  FileText,
-  Loader2,
-  RefreshCw,
-} from "lucide-react";
+import { FileText } from "lucide-react";
 import {
   AlertsPerDayBar,
-  CategoryBarChart,
-  ConfidenceOverTimeLine,
-  EmotionDonut,
+  CommonTimes,
+  CommonWords,
+  ConcernTypes,
   LanguageBreakdown,
-  PeakHoursHeatmap,
-  SeverityPie,
-  TopKeywordsBar,
+  SeverityBreakdown,
 } from "@/components/Charts";
+import { Button, EmptyState, ErrorState, LoadingRows, Page, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
 import { useAlerts } from "@/lib/AlertsProvider";
-import {
-  generateReport,
-  getCategoryStats,
-  getReports,
-} from "@/lib/api";
-import { formatTimestamp } from "@/lib/format";
+import { generateReport, getCategoryStats, getReports } from "@/lib/api";
+import { formatDate, formatTimestamp } from "@/lib/format";
 import type { CategoryStats, Report } from "@/lib/types";
 
-const INPUT =
-  "min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink       ";
+function isoDay(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
 
-export default function AnalyticsPage() {
-  const {
-    alerts,
-    stats,
-    loading,
-    error: alertsError,
-    refresh,
-  } = useAlerts();
-  const [today] = useState(() => new Date().toISOString().slice(0, 10));
+function startOfWeek(now: Date): number {
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+  return start.getTime();
+}
+
+export default function ReportsPage() {
+  const { alerts, loading, error, refresh } = useAlerts();
+  const [now] = useState(() => new Date());
   const [dateFrom, setDateFrom] = useState(() => {
-    const start = new Date();
+    const start = new Date(now);
     start.setDate(start.getDate() - 30);
-    return start.toISOString().slice(0, 10);
+    return isoDay(start);
   });
-  const [dateTo, setDateTo] = useState(today);
+  const [dateTo, setDateTo] = useState(() => isoDay(now));
   const [generating, setGenerating] = useState(false);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [reportsLoading, setReportsLoading] = useState(true);
+  const [reports, setReports] = useState<Report[] | null>(null);
   const [reportsError, setReportsError] = useState(false);
-  const [categoryStats, setCategoryStats] =
-    useState<CategoryStats | null>(null);
+  const [categoryStats, setCategoryStats] = useState<CategoryStats | null>(null);
 
-  const loadReportData = useCallback(async () => {
-    setReportsLoading(true);
+  const load = useCallback(async () => {
     setReportsError(false);
-    const [reportsResult, categoryResult] = await Promise.allSettled([
-      getReports(),
-      getCategoryStats(),
-    ]);
-    if (reportsResult.status === "fulfilled") {
-      setReports(reportsResult.value);
-    } else {
-      setReportsError(true);
-    }
-    if (categoryResult.status === "fulfilled") {
-      setCategoryStats(categoryResult.value);
-    }
-    setReportsLoading(false);
+    const [reportsResult, categoryResult] = await Promise.allSettled([getReports(), getCategoryStats()]);
+    if (reportsResult.status === "fulfilled") setReports(reportsResult.value);
+    else setReportsError(true);
+    if (categoryResult.status === "fulfilled") setCategoryStats(categoryResult.value);
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void loadReportData();
-    }, 0);
+    const timer = setTimeout(() => void load(), 0);
     return () => clearTimeout(timer);
-  }, [loadReportData]);
+  }, [load]);
 
-  const handleGenerateReport = async () => {
+  const week = useMemo(() => {
+    const since = startOfWeek(now);
+    const inWeek = alerts.filter((alert) => new Date(alert.created_at).getTime() >= since);
+    return {
+      total: inWeek.length,
+      high: inWeek.filter((alert) => alert.severity === "high").length,
+      reviewed: inWeek.filter((alert) => alert.status === "reviewed" || alert.status === "resolved").length,
+    };
+  }, [alerts, now]);
+
+  const handleGenerate = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!dateFrom || !dateTo || dateFrom > dateTo) {
-      toast.error("Choose a valid date range.");
+      toast.error("The start date must be on or before the end date.");
       return;
     }
     setGenerating(true);
     try {
-      const report = await generateReport({
-        date_from: dateFrom,
-        date_to: dateTo,
-      });
-      setReports((current) => [report, ...current]);
-      toast.success("Report generated.");
-    } catch {
-      toast.error("We couldn’t generate the report. Please try again.");
+      const report = await generateReport({ date_from: dateFrom, date_to: dateTo });
+      setReports((current) => [report, ...(current ?? [])]);
+      toast.success("Report generated");
+    } catch (caught) {
+      toast.error(caught instanceof Error ? `${caught.message} The report was not generated.` : "The report was not generated. Try again.");
     } finally {
       setGenerating(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-6xl p-4 md:p-6 lg:p-8">
-      <header className="mb-6">
-        <p className="text-sm font-semibold text-link">
-          Guidance and administration
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">
-          Reports and Trends
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          View patterns in recorded alerts. These summaries describe automated,
-          unverified alerts rather than confirmed incidents.
-        </p>
-      </header>
+    <Page>
+      <PageHeader
+        title="Reports"
+        description="Patterns in recorded alerts. These count possible concerns flagged by devices, not confirmed incidents."
+      />
 
-      {alertsError && (
-        <div
-          role="alert"
-          className="mb-6 flex flex-col gap-3 rounded-panel border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-red-900/60 dark:bg-red-950/30"
-        >
-          <div>
-            <p className="font-semibold text-ink">
-              We couldn&apos;t load alert trends.
-            </p>
-            <p className="mt-1 text-sm text-danger">
-              Please try again.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void refresh()}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
-          >
-            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            Retry
-          </button>
+      {error && alerts.length === 0 && (
+        <div className="mb-6">
+          <ErrorState title="EchoSense can't load alert trends right now" onRetry={() => void refresh()}>
+            Check the internet connection, then try again.
+          </ErrorState>
         </div>
       )}
 
-      <section
-        aria-labelledby="generate-report-title"
-        className="rounded-panel border border-line bg-bg p-5"
-      >
-        <div className="flex gap-3">
-          <span className="rounded-control bg-surface p-2.5 text-link">
-            <CalendarDays className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div>
-            <h2
-              id="generate-report-title"
-              className="font-semibold text-ink"
-            >
-              Generate Report
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              Create and save a report for a selected date range.
-            </p>
-          </div>
-        </div>
+      <section aria-labelledby="week-title" className="mb-8">
+        <h2 id="week-title" className="text-title font-semibold text-ink">
+          This week
+        </h2>
+        <dl className="mt-3 grid grid-cols-3 gap-4 sm:max-w-xl">
+          {[
+            ["Alerts", week.total],
+            ["High", week.high],
+            ["Reviewed or resolved", week.reviewed],
+          ].map(([label, value]) => (
+            <div key={label} className="border-l-2 border-line pl-3">
+              <dt className="text-small text-muted">{label}</dt>
+              <dd className="num text-figure font-medium text-ink">{loading ? "…" : value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AlertsPerDayBar alerts={alerts} />
+        <SeverityBreakdown alerts={alerts} />
+        <CommonTimes alerts={alerts} />
+        <ConcernTypes stats={categoryStats} alerts={alerts} />
+        <LanguageBreakdown alerts={alerts} />
+        <CommonWords alerts={alerts} />
+      </div>
+
+      <section aria-labelledby="generate-title" className="mt-10">
+        <h2 id="generate-title" className="text-title font-semibold text-ink">
+          Saved reports
+        </h2>
+        <p className="mt-1 text-body text-muted">Generate a report to keep a count of alerts for a date range.</p>
+        <form onSubmit={handleGenerate} className="mt-4 flex flex-wrap items-end gap-3">
           <div>
-            <label
-              htmlFor="report-date-from"
-              className="mb-1.5 block text-sm font-medium text-ink"
-            >
+            <label htmlFor="report-from" className={labelClass}>
               From
             </label>
             <input
-              id="report-date-from"
+              id="report-from"
               type="date"
               value={dateFrom}
               max={dateTo}
               onChange={(event) => setDateFrom(event.target.value)}
-              className={INPUT}
+              className={`${inputClass} w-44`}
             />
           </div>
           <div>
-            <label
-              htmlFor="report-date-to"
-              className="mb-1.5 block text-sm font-medium text-ink"
-            >
+            <label htmlFor="report-to" className={labelClass}>
               To
             </label>
             <input
-              id="report-date-to"
+              id="report-to"
               type="date"
               value={dateTo}
               min={dateFrom}
-              max={today}
+              max={isoDay(now)}
               onChange={(event) => setDateTo(event.target.value)}
-              className={INPUT}
+              className={`${inputClass} w-44`}
             />
           </div>
-          <button
-            type="button"
-            onClick={() => void handleGenerateReport()}
-            disabled={generating}
-            aria-busy={generating}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {generating ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <FileText className="h-4 w-4" aria-hidden="true" />
-            )}
-            {generating ? "Generating…" : "Generate Report"}
-          </button>
-        </div>
-      </section>
+          <Button type="submit" variant="primary" icon={FileText} pending={generating}>
+            Generate report
+          </Button>
+        </form>
 
-      <section className="mt-8" aria-labelledby="alert-trends-title">
-        <h2
-          id="alert-trends-title"
-          className="text-xl font-semibold text-ink"
-        >
-          Alert Trends
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Summaries based on the alert records currently available.
-        </p>
-
-        {loading && alerts.length === 0 ? (
-          <div
-            role="status"
-            className="mt-4 grid gap-4 lg:grid-cols-2"
-          >
-            <span className="sr-only">Loading alert trends</span>
-            {[0, 1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="h-72 animate-pulse rounded-panel border border-line bg-bg"
-              />
-            ))}
-          </div>
-        ) : (
-          <>
-            <div className="mt-4 grid gap-4 lg:grid-cols-2">
-              <AlertsPerDayBar alerts={alerts} />
-              <SeverityPie alerts={alerts} />
-              <CategoryBarChart stats={categoryStats} />
-              <LanguageBreakdown alerts={alerts} />
-              <PeakHoursHeatmap alerts={alerts} />
-              <EmotionDonut stats={stats} />
+        <Panel className="mt-4" bodyClassName="">
+          {reportsError ? (
+            <div className="p-4">
+              <ErrorState title="Saved reports couldn't be loaded" onRetry={() => void load()}>
+                Check the internet connection, then try again.
+              </ErrorState>
             </div>
-
-            <details className="mt-4 rounded-panel border border-line bg-bg p-5">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 font-semibold text-ink">
-                <ChevronDown className="h-4 w-4" aria-hidden="true" />
-                Additional Signal Analysis
-              </summary>
-              <p className="mt-2 text-sm leading-6 text-muted">
-                These technical and potentially sensitive summaries are supporting
-                information only and do not confirm an incident.
-              </p>
-              <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                <ConfidenceOverTimeLine alerts={alerts} />
-                <TopKeywordsBar alerts={alerts} stats={stats} />
-              </div>
-            </details>
-          </>
-        )}
-      </section>
-
-      <section className="mt-8" aria-labelledby="report-history-title">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2
-              id="report-history-title"
-              className="text-xl font-semibold text-ink"
-            >
-              Report History
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              Previously generated alert reports.
-            </p>
-          </div>
-          {reportsError && (
-            <button
-              type="button"
-              onClick={() => void loadReportData()}
-              className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
-            >
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              Retry
-            </button>
+          ) : reports === null ? (
+            <LoadingRows rows={2} label="Loading reports" />
+          ) : reports.length === 0 ? (
+            <EmptyState title="No reports yet" icon={FileText}>
+              Choose a date range above and select Generate report.
+            </EmptyState>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-body">
+                <thead className="border-b border-line text-small text-muted">
+                  <tr>
+                    <th scope="col" className="px-4 py-2.5 font-normal">Date range</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-normal">Alerts</th>
+                    <th scope="col" className="hidden px-4 py-2.5 font-normal sm:table-cell">Created by</th>
+                    <th scope="col" className="px-4 py-2.5 font-normal">Created</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {reports.map((report) => (
+                    <tr key={report.report_id}>
+                      <td className="num px-4 py-3 text-ink">
+                        {report.date_from && report.date_to
+                          ? `${formatDate(`${report.date_from}T00:00:00`)} to ${formatDate(`${report.date_to}T00:00:00`)}`
+                          : "Date range not recorded"}
+                      </td>
+                      <td className="num px-4 py-3 text-right text-ink">{report.total_incidents}</td>
+                      <td className="hidden px-4 py-3 text-muted sm:table-cell">{report.generated_by_email ?? "—"}</td>
+                      <td className="num px-4 py-3 text-muted">{formatTimestamp(report.generated_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-        </div>
-
-        {reportsLoading ? (
-          <div role="status" className="mt-4 grid gap-3 sm:grid-cols-2">
-            <span className="sr-only">Loading report history</span>
-            {[0, 1].map((item) => (
-              <div
-                key={item}
-                className="h-28 animate-pulse rounded-panel bg-surface"
-              />
-            ))}
-          </div>
-        ) : reportsError ? (
-          <div
-            role="alert"
-            className="mt-4 rounded-panel border border-red-200 bg-red-50 p-5 text-red-950 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-100"
-          >
-            We couldn&apos;t load report history.
-          </div>
-        ) : reports.length === 0 ? (
-          <div className="mt-4 rounded-panel border border-line bg-bg p-8 text-center">
-            <p className="font-semibold text-ink">
-              No reports have been generated yet.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {reports.map((report) => (
-              <article
-                key={report.report_id}
-                className="rounded-panel border border-line bg-bg p-5"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <FileText className="h-5 w-5 shrink-0 text-link" aria-hidden="true" />
-                  <span className="rounded-full bg-surface px-3 py-1 text-sm font-semibold text-link">
-                    {report.total_incidents} alert
-                    {report.total_incidents === 1 ? "" : "s"}
-                  </span>
-                </div>
-                <p className="mt-4 text-sm font-semibold text-ink">
-                  Generated {formatTimestamp(report.generated_at)}
-                </p>
-                <p className="mt-2 break-all text-xs text-muted">
-                  Report reference: {report.report_id}
-                </p>
-              </article>
-            ))}
-          </div>
-        )}
+        </Panel>
       </section>
-    </div>
+    </Page>
   );
 }

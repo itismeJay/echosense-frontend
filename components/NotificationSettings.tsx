@@ -78,7 +78,7 @@ export default function NotificationSettings() {
       className="rounded-panel border border-line bg-bg p-5 sm:p-6"
     >
       <div className="flex items-start gap-3">
-        <span className="rounded-control bg-amber-50 p-2.5 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
+        <span className="mt-0.5 text-muted">
           {enabled ? (
             <BellRing className="h-5 w-5" aria-hidden="true" />
           ) : (
@@ -90,30 +90,30 @@ export default function NotificationSettings() {
             <div>
               <h2
                 id="notification-settings-title"
-                className="font-semibold text-ink"
+                className="text-body-lg font-semibold text-ink"
               >
-                Browser Alert Notifications
+                Notifications on this computer
               </h2>
               <p className="mt-1 text-sm leading-6 text-muted">
-                Show a notification on this device when a new high-priority
-                possible alert arrives.
+                Show a pop-up notification when a new High alert arrives, even
+                when EchoSense is in another tab.
               </p>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={enabled}
-              aria-label="Browser alert notifications"
+              aria-labelledby="notification-settings-title"
               disabled={updating || permission === "unsupported"}
               onClick={() => void handleToggle()}
-              className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors   focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-tag border transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 enabled
                   ? "border-line bg-brand"
                   : "border-line-strong bg-surface  "
               }`}
             >
               <span
-                className={`inline-flex h-6 w-6 items-center justify-center rounded-full bg-bg  transition-transform ${
+                className={`inline-flex h-6 w-6 items-center justify-center rounded-tag border border-line-strong bg-bg transition-transform ${
                   enabled ? "translate-x-7" : "translate-x-1"
                 }`}
               >

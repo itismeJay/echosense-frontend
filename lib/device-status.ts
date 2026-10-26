@@ -11,9 +11,13 @@ export function isDeviceOnline(lastSeenAt: string | null | undefined, now: numbe
   return now - seen <= DEVICE_ONLINE_WINDOW_MS;
 }
 
-/** "Online", "Offline · last seen 8:15 AM", or "Offline · never checked in". */
-export function deviceStatusLabel(lastSeenAt: string | null | undefined, now: Date = new Date()): string {
-  if (isDeviceOnline(lastSeenAt, now.getTime())) return "Online";
+/** "Offline · last seen 8:15 AM", or "Offline · never checked in". */
+export function offlineLabel(lastSeenAt: string | null | undefined, now: Date = new Date()): string {
   if (!lastSeenAt || Number.isNaN(Date.parse(lastSeenAt))) return "Offline · never checked in";
   return `Offline · last seen ${formatWhen(lastSeenAt, now)}`;
+}
+
+/** "Online", "Offline · last seen 8:15 AM", or "Offline · never checked in". */
+export function deviceStatusLabel(lastSeenAt: string | null | undefined, now: Date = new Date()): string {
+  return isDeviceOnline(lastSeenAt, now.getTime()) ? "Online" : offlineLabel(lastSeenAt, now);
 }

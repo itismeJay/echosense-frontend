@@ -11,7 +11,7 @@ export default function LanguageBadge({ language, size = "sm" }: LanguageBadgePr
     ? "px-2.5 py-1 text-xs"
     : "px-2 py-0.5 text-[11px]";
   return (
-    <span className={`inline-flex items-center font-medium rounded-full border ${sizeClass} bg-gray-500/10 text-muted border-line-strong   `}>
+    <span className={`inline-flex items-center font-medium rounded-tag border ${sizeClass} bg-surface text-muted border-line-strong   `}>
       {languageLabel(language)}
     </span>
   );

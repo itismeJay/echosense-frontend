@@ -1,59 +1,57 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import {
-  AlertCircle,
-  Building2,
-  Loader2,
-  Pencil,
-  Plus,
-  Power,
-  RefreshCw,
-} from "lucide-react";
+import { Building2, MoreHorizontal, Pencil, Plus, Power } from "lucide-react";
 import AccessibleDialog from "@/components/AccessibleDialog";
 import ConfirmDialog from "@/components/multi-room/ConfirmDialog";
-import { ApiError, createSchool, updateSchool } from "@/lib/api";
-import { formatTimestamp } from "@/lib/format";
-import { schoolErrorMessage } from "@/lib/schools-contract";
-import { useSchools } from "@/lib/useSchools";
-import type { School } from "@/lib/types";
+import Menu from "@/components/ui/Menu";
+import { Button, EmptyState, ErrorState, Field, FormError, LoadingRows, Page, PageHeader, inputClass } from "@/components/ui";
+import { ApiError, createSchool, getSchoolSummaries, updateSchool } from "@/lib/api";
+import { clearSchoolScope, enterSchool } from "@/lib/school-scope";
+import type { SchoolSummaryCard } from "@/lib/types";
 
-const INPUT =
-  "min-h-11 w-full rounded-control border border-line-strong bg-bg px-3 py-2 text-sm text-ink       ";
-
-function errorText(error: unknown, fallback: string): string {
-  return error instanceof ApiError ? schoolErrorMessage(error.status, fallback) : fallback;
+function plural(count: number, one: string, many: string) {
+  return `${count} ${count === 1 ? one : many}`;
 }
 
-interface SchoolNameDialogProps {
-  school: School | null;
+function SchoolNameDialog({
+  school,
+  onClose,
+  onSaved,
+}: {
+  school: SchoolSummaryCard | null;
   onClose: () => void;
-  onSaved: (school: School) => void;
-}
-
-function SchoolNameDialog({ school, onClose, onSaved }: SchoolNameDialogProps) {
+  onSaved: () => Promise<void>;
+}) {
   const [name, setName] = useState(school?.name ?? "");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const handleSubmit = async (event: FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const trimmed = name.trim();
+    const trimmed = name.trim().replace(/\s+/g, " ");
     if (!trimmed) {
-      setError("Enter a school name.");
-      return;
-    }
-    if (school && trimmed === school.name) {
-      onClose();
+      setError("Enter the school's name.");
       return;
     }
     setPending(true);
-    setError("");
+    setError(null);
     try {
-      onSaved(school ? await updateSchool(school.id, { name: trimmed }) : await createSchool(trimmed));
-    } catch (err) {
-      setError(errorText(err, "We couldn’t save the school. Please try again."));
+      if (school) await updateSchool(school.id, { name: trimmed });
+      else await createSchool(trimmed);
+      toast.success(school ? "School renamed" : `${trimmed} added`);
+      await onSaved();
+      onClose();
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError && caught.status === 409
+          ? "Another school already has this name."
+          : caught instanceof Error
+            ? caught.message
+            : "The school was not saved. Try again."
+      );
     } finally {
       setPending(false);
     }
@@ -61,233 +59,217 @@ function SchoolNameDialog({ school, onClose, onSaved }: SchoolNameDialogProps) {
 
   return (
     <AccessibleDialog
-      title={school ? "Edit school name" : "Add school"}
-      description={
-        school
-          ? "The new name appears everywhere this school is shown."
-          : "Create a school, then add its classrooms, devices and users."
-      }
+      title={school ? "Rename school" : "Add school"}
+      description={school ? undefined : "Use the school's official name. You can add classrooms and people after you enter it."}
       onClose={onClose}
       closeDisabled={pending}
     >
-      <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4" noValidate>
-        <div>
-          <label
-            htmlFor="school-name"
-            className="mb-1.5 block text-sm font-medium text-ink"
-          >
-            School name
-          </label>
+      <form onSubmit={(event) => void submit(event)} noValidate>
+        <Field id="school-name" label="School name">
           <input
             id="school-name"
-            required
+            autoFocus
             maxLength={200}
             value={name}
-            aria-invalid={Boolean(error)}
-            aria-describedby={error ? "school-name-error" : undefined}
             onChange={(event) => setName(event.target.value)}
-            className={INPUT}
+            aria-invalid={Boolean(error)}
+            className={inputClass}
           />
-        </div>
+        </Field>
         {error && (
-          <p
-            id="school-name-error"
-            role="alert"
-            className="flex items-start gap-2 text-sm font-medium text-danger"
-          >
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            {error}
-          </p>
+          <div className="mt-3">
+            <FormError>{error}</FormError>
+          </div>
         )}
-        <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={pending}
-            className="min-h-11 rounded-control border border-line-strong px-4 py-2.5 text-sm font-semibold text-ink hover:bg-surface disabled:opacity-50"
-          >
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button onClick={onClose} disabled={pending}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={pending}
-            aria-busy={pending}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink hover:bg-brand-hover disabled:opacity-60"
-          >
-            {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-            {pending ? "Saving…" : school ? "Save name" : "Create school"}
-          </button>
+          </Button>
+          <Button type="submit" variant="primary" pending={pending}>
+            {school ? "Save name" : "Add school"}
+          </Button>
         </div>
       </form>
     </AccessibleDialog>
   );
 }
 
-export default function SchoolsPage() {
-  // The (app) page guard only renders this page for super admins.
-  const { schools, setSchools, loading, error, reload } = useSchools(true);
-  const [editing, setEditing] = useState<School | "new" | null>(null);
-  const [toggling, setToggling] = useState<School | null>(null);
+function Stat({ value, label, emphasis = false }: { value: number | string; label: string; emphasis?: boolean }) {
+  return (
+    <div>
+      <dt className="text-small text-muted">{label}</dt>
+      <dd className={`num text-title ${emphasis ? "font-semibold text-ink" : "font-medium text-ink"}`}>{value}</dd>
+    </div>
+  );
+}
+
+export default function AllSchoolsPage() {
+  const router = useRouter();
+  const [schools, setSchools] = useState<SchoolSummaryCard[] | null>(null);
+  const [error, setError] = useState(false);
+  const [editing, setEditing] = useState<SchoolSummaryCard | null | "new">(null);
+  const [toggling, setToggling] = useState<SchoolSummaryCard | null>(null);
   const [togglePending, setTogglePending] = useState(false);
 
-  const saveSchool = (saved: School) => {
-    setSchools((current) =>
-      [...current.filter((school) => school.id !== saved.id), saved].sort((a, b) =>
-        a.name.localeCompare(b.name)
-      )
-    );
-    toast.success(editing === "new" ? "School created." : "School name saved.");
-    setEditing(null);
+  const load = useCallback(async () => {
+    setError(false);
+    try {
+      setSchools(await getSchoolSummaries());
+    } catch {
+      setError(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    // All schools is platform mode: leave any school the super admin was viewing.
+    clearSchoolScope();
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
+  }, [load]);
+
+  const enter = (school: SchoolSummaryCard) => {
+    enterSchool({ id: school.id, name: school.name });
+    router.push("/overview");
   };
 
-  const handleToggle = async () => {
+  const toggleActive = async () => {
     if (!toggling) return;
     setTogglePending(true);
     try {
-      const saved = await updateSchool(toggling.id, { is_active: !toggling.is_active });
-      setSchools((current) => current.map((school) => (school.id === saved.id ? saved : school)));
-      toast.success(saved.is_active ? "School activated." : "School deactivated.");
+      await updateSchool(toggling.id, { is_active: !toggling.is_active });
+      toast.success(toggling.is_active ? `${toggling.name} turned off` : `${toggling.name} turned on`);
       setToggling(null);
-    } catch (err) {
-      toast.error(errorText(err, "We couldn’t change the school status."));
+      await load();
+    } catch (caught) {
+      toast.error(caught instanceof Error ? `${caught.message} Nothing was changed.` : "Nothing was changed.");
     } finally {
       setTogglePending(false);
     }
   };
 
-  return (
-    <div className="mx-auto max-w-5xl p-4 md:p-6 lg:p-8">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-link">
-            Super administrator
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl">
-            Schools
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-            Create schools, rename them, and turn their access on or off.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setEditing("new")}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink hover:bg-brand-hover"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          Add School
-        </button>
-      </header>
+  const sorted = [...(schools ?? [])].sort((a, b) => Number(b.is_active) - Number(a.is_active) || a.name.localeCompare(b.name));
 
-      {loading ? (
-        <div role="status" className="grid gap-4 sm:grid-cols-2">
-          <span className="sr-only">Loading schools</span>
-          {[0, 1, 2, 3].map((item) => (
-            <div
-              key={item}
-              className="h-36 animate-pulse rounded-panel border border-line bg-bg"
-            />
-          ))}
+  return (
+    <Page>
+      <PageHeader
+        title="All schools"
+        description="Each school's alerts, devices and people. Enter a school to work inside it."
+        actions={
+          <Button variant="primary" icon={Plus} onClick={() => setEditing("new")}>
+            Add school
+          </Button>
+        }
+      />
+
+      {error ? (
+        <ErrorState title="Schools couldn't be loaded" onRetry={() => void load()}>
+          Check the internet connection, then try again.
+        </ErrorState>
+      ) : !schools ? (
+        <div className="rounded-panel border border-line">
+          <LoadingRows rows={2} label="Loading schools" />
         </div>
-      ) : error ? (
-        <div
-          role="alert"
-          className="rounded-panel border border-red-200 bg-red-50 p-6 dark:border-red-900/60 dark:bg-red-950/30"
-        >
-          <h2 className="font-semibold text-ink">We couldn&apos;t load schools.</h2>
-          <button
-            type="button"
-            onClick={() => void reload()}
-            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-control bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+      ) : sorted.length === 0 ? (
+        <div className="rounded-panel border border-line">
+          <EmptyState
+            title="No schools yet"
+            icon={Building2}
+            action={
+              <Button variant="primary" icon={Plus} onClick={() => setEditing("new")}>
+                Add school
+              </Button>
+            }
           >
-            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            Retry
-          </button>
-        </div>
-      ) : schools.length === 0 ? (
-        <div className="rounded-panel border border-line bg-bg p-8 text-center">
-          <Building2 className="mx-auto h-7 w-7 text-muted" aria-hidden="true" />
-          <h2 className="mt-3 font-semibold text-ink">No schools yet.</h2>
+            Add the first school, then enter it to add classrooms, devices and people.
+          </EmptyState>
         </div>
       ) : (
-        <section aria-label="Schools">
-          <p className="mb-3 text-sm text-muted">
-            {schools.length} school{schools.length === 1 ? "" : "s"}
-          </p>
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {schools.map((school) => (
-              <li
-                key={school.id}
-                className="rounded-panel border border-line bg-bg p-5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="min-w-0 break-words font-semibold text-ink">
-                    {school.name}
-                  </h2>
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      school.is_active
-                        ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
-                        : "bg-surface text-ink  "
-                    }`}
-                  >
-                    {school.is_active ? "Active" : "Inactive"}
-                  </span>
+        <ul className="grid gap-4 lg:grid-cols-2">
+          {sorted.map((school) => (
+            <li key={school.id} className="flex flex-col rounded-panel border border-line bg-bg p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-title font-semibold text-ink">{school.name}</h2>
+                  <p className={`mt-0.5 text-small ${school.is_active ? "text-muted" : "font-medium text-ink"}`}>
+                    {school.is_active ? "Active" : "Turned off. Its people can't sign in."}
+                  </p>
                 </div>
-                <p className="mt-1 text-xs text-muted">
-                  Created {formatTimestamp(school.created_at)}
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditing(school)}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong px-3 py-2 text-sm font-semibold text-ink hover:bg-surface"
-                  >
-                    <Pencil className="h-4 w-4" aria-hidden="true" />
-                    Edit name
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setToggling(school)}
-                    className={`inline-flex min-h-11 items-center gap-2 rounded-control px-3 py-2 text-sm font-semibold  ${
-                      school.is_active
-                        ? "border border-red-300 text-red-700 hover:bg-red-50  dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30"
-                        : "border border-emerald-300 text-emerald-800 hover:bg-emerald-50  dark:border-emerald-900 dark:text-emerald-200 dark:hover:bg-emerald-950/30"
-                    }`}
-                  >
-                    <Power className="h-4 w-4" aria-hidden="true" />
-                    {school.is_active ? "Deactivate" : "Activate"}
-                  </button>
+                <Menu
+                  label={`Manage ${school.name}`}
+                  triggerClassName="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-line-strong px-3 text-body font-medium text-ink hover:bg-surface"
+                  trigger={
+                    <>
+                      Manage
+                      <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+                    </>
+                  }
+                  items={[
+                    {
+                      kind: "action",
+                      label: "Rename",
+                      onSelect: () => setEditing(school),
+                      icon: <Pencil className="h-4 w-4 text-muted" aria-hidden="true" />,
+                    },
+                    {
+                      kind: "action",
+                      label: school.is_active ? "Turn off school" : "Turn on school",
+                      danger: school.is_active,
+                      onSelect: () => setToggling(school),
+                      icon: <Power className="h-4 w-4" aria-hidden="true" />,
+                    },
+                  ]}
+                />
+              </div>
+
+              <dl className="mt-5 grid grid-cols-3 gap-4 border-t border-line pt-4">
+                <Stat value={school.alerts_needing_review} label="Need review" emphasis={school.alerts_needing_review > 0} />
+                <Stat value={school.high_today} label="High today" emphasis={school.high_today > 0} />
+                <Stat value={school.alerts_this_week} label="This week" />
+              </dl>
+              <dl className="mt-4 grid gap-1 text-body">
+                <div className="flex gap-2">
+                  <dt className="text-muted">Devices online</dt>
+                  <dd className="num text-ink">
+                    {school.devices_total === 0 ? "No devices yet" : `${school.devices_online} of ${school.devices_total}`}
+                  </dd>
                 </div>
-              </li>
-            ))}
-          </ul>
-        </section>
+                <div className="flex flex-wrap gap-x-2">
+                  <dt className="text-muted">People</dt>
+                  <dd className="num text-ink">
+                    {plural(school.users.admin, "admin", "admins")}, {plural(school.users.counselor, "counselor", "counselors")},{" "}
+                    {plural(school.users.staff, "teacher", "teachers")}
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="mt-5 flex justify-end">
+                <Button variant="primary" onClick={() => enter(school)} aria-label={`Enter ${school.name}`}>
+                  Enter school
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
 
       {editing && (
-        <SchoolNameDialog
-          school={editing === "new" ? null : editing}
-          onClose={() => setEditing(null)}
-          onSaved={saveSchool}
-        />
+        <SchoolNameDialog school={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSaved={load} />
       )}
-
       {toggling && (
         <ConfirmDialog
-          title={toggling.is_active ? `Deactivate ${toggling.name}?` : `Activate ${toggling.name}?`}
+          title={toggling.is_active ? `Turn off ${toggling.name}?` : `Turn on ${toggling.name}?`}
           description={
             toggling.is_active
-              ? "Everyone in this school is signed out and can no longer sign in, and its edge devices can no longer send alerts. Super administrators are not affected. You can activate the school again later."
-              : "Users in this school can sign in again and its edge devices can send alerts again."
+              ? "Its people are signed out and can't sign in, and its devices stop sending alerts. Nothing is deleted."
+              : "Its people can sign in again and its devices can send alerts."
           }
-          confirmLabel={toggling.is_active ? "Deactivate school" : "Activate school"}
+          confirmLabel={toggling.is_active ? "Turn off school" : "Turn on school"}
           tone={toggling.is_active ? "danger" : "primary"}
           pending={togglePending}
           onCancel={() => setToggling(null)}
-          onConfirm={() => void handleToggle()}
+          onConfirm={() => void toggleActive()}
         />
       )}
-    </div>
+    </Page>
   );
 }
