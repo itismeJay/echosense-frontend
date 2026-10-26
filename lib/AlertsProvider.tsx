@@ -17,6 +17,7 @@ import {
   getLogsStats,
 } from "./api";
 import { showAlertBrowserNotification } from "./notifications";
+import { useSchoolScope } from "./school-scope";
 import {
   newlyObservedAlerts,
   runWithoutOverlap,
@@ -154,6 +155,24 @@ export default function AlertsProvider({
     }
     });
   }, []);
+
+  // Entering or leaving a school starts a fresh feed, so another school's alerts never
+  // show up as "new" (or linger) in the one being viewed.
+  const scopeId = useSchoolScope()?.id ?? null;
+  const scopeRef = useRef(scopeId);
+  useEffect(() => {
+    if (scopeRef.current === scopeId) return;
+    scopeRef.current = scopeId;
+    seenAlertIdsRef.current = null;
+    alertsRef.current = [];
+    const timer = setTimeout(() => {
+      setAlerts([]);
+      setLoading(true);
+      void poll();
+      void refreshOptionalData();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [scopeId, poll, refreshOptionalData]);
 
   const updateAlert = useCallback((updated: Alert) => {
     alertsRef.current = alertsRef.current.map((alert) => (alert.id === updated.id ? updated : alert));

@@ -1,4 +1,5 @@
-import { formatWhen } from "./format";
+// Explicit extension so node --test can load this module directly.
+import { formatWhen } from "./format.ts";
 
 // Mirrors ONLINE_WINDOW_SECONDS in the backend (app/services/device_status.py).
 export const DEVICE_ONLINE_WINDOW_MS = 2 * 60 * 1000;
