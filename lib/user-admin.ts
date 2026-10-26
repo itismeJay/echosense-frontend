@@ -4,12 +4,19 @@ import type { School } from "./types";
 
 export type NewUserRole = "admin" | "staff" | "counselor";
 
+/** The Add person role choices, in the order the dialog lists them. */
+export const NEW_USER_ROLE_OPTIONS: ReadonlyArray<{ value: NewUserRole; label: string }> = [
+  { value: "admin", label: "School administrator: manages the school" },
+  { value: "counselor", label: "Guidance counselor: reviews alerts and makes reports" },
+  { value: "staff", label: "Teacher: gets alerts for their classroom" },
+];
+
 export interface NewUserForm {
   email: string;
   password: string;
   role: NewUserRole;
+  /** The school a super admin has entered; empty for a school admin. */
   schoolId: string;
-  superAdmin: boolean;
 }
 
 export interface NewUserPayload {
@@ -17,13 +24,13 @@ export interface NewUserPayload {
   password: string;
   role: NewUserRole;
   school_id?: string;
-  is_super_admin?: boolean;
+  is_super_admin: false;
 }
 
 /**
- * Builds the POST /users/ body. A school admin never sends school_id: the backend
- * fills in their own school. A super admin must pick a school unless the new account
- * is itself a super admin.
+ * Builds the POST /users/ body. Add person only ever creates school accounts: the body
+ * always says is_super_admin: false. A school admin never sends school_id (the backend
+ * fills in their own school); a super admin creates accounts for the school they entered.
  */
 export function buildNewUserPayload(
   form: NewUserForm,
@@ -39,19 +46,13 @@ export function buildNewUserPayload(
   if (new TextEncoder().encode(form.password).length > 72) {
     return { error: "The temporary password must be at most 72 bytes." };
   }
-  if (!creatorIsSuperAdmin) {
-    return { payload: { email, password: form.password, role: form.role } };
+  if (!NEW_USER_ROLE_OPTIONS.some((option) => option.value === form.role)) {
+    return { error: "Choose a role for this account." };
   }
-  const superAdmin = form.superAdmin && form.role === "admin";
-  if (superAdmin) {
-    return {
-      payload: { email, password: form.password, role: "admin", is_super_admin: true },
-    };
-  }
-  if (!form.schoolId) return { error: "Choose the school for this account." };
-  return {
-    payload: { email, password: form.password, role: form.role, school_id: form.schoolId },
-  };
+  const base = { email, password: form.password, role: form.role, is_super_admin: false as const };
+  if (!creatorIsSuperAdmin) return { payload: base };
+  if (!form.schoolId) return { error: "Enter a school from All schools before adding people." };
+  return { payload: { ...base, school_id: form.schoolId } };
 }
 
 export function selectableSchools(schools: School[]): School[] {
@@ -73,7 +74,7 @@ export function userCreateErrorMessage(status: number, detail: string): string {
     if (/password must be at least 8/.test(detail)) {
       return "The temporary password must be at least 8 characters.";
     }
-    if (/school_id is required/.test(detail)) return "Choose the school for this account.";
+    if (/school_id is required/.test(detail)) return "Enter a school from All schools before adding people.";
     if (/email/.test(detail)) return "Enter a valid email address.";
     return "Please check the information you entered.";
   }

@@ -4,7 +4,7 @@ import {
   type ForbiddenKind,
   type SessionEnvironment,
 } from "./session-errors";
-import { clearSchoolScope } from "./school-scope";
+import { clearSchoolScope, getSchoolScope } from "./school-scope";
 
 export const AUTH_COOKIE = "echosense_token";
 
@@ -37,6 +37,8 @@ function browserSessionEnvironment(): SessionEnvironment {
     navigate: (destination) => {
       window.location.href = destination;
     },
+    hasSchoolScope: getSchoolScope() !== null,
+    clearSchoolScope,
   };
 }
 

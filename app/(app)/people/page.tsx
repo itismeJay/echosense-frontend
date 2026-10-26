@@ -14,7 +14,6 @@ import {
   LoadingRows,
   Page,
   PageHeader,
-  hintClass,
   inputClass,
   selectClass,
 } from "@/components/ui";
@@ -22,7 +21,12 @@ import { ApiError, createUser, deleteUser, getUsers } from "@/lib/api";
 import { isSuperAdmin } from "@/lib/access";
 import { useCurrentUser } from "@/lib/auth";
 import { useSchoolScope } from "@/lib/school-scope";
-import { buildNewUserPayload, userCreateErrorMessage, type NewUserRole } from "@/lib/user-admin";
+import {
+  NEW_USER_ROLE_OPTIONS,
+  buildNewUserPayload,
+  userCreateErrorMessage,
+  type NewUserRole,
+} from "@/lib/user-admin";
 import type { User } from "@/lib/types";
 
 const ROLE_LABELS: Record<User["role"], string> = {
@@ -45,7 +49,6 @@ export default function PeoplePage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<NewUserRole>("staff");
-  const [newSuperAdmin, setNewSuperAdmin] = useState(false);
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
@@ -69,7 +72,6 @@ export default function PeoplePage() {
     setEmail("");
     setPassword("");
     setRole("staff");
-    setNewSuperAdmin(false);
     setFormError("");
     setShowCreate(true);
   };
@@ -78,7 +80,7 @@ export default function PeoplePage() {
     event.preventDefault();
     const built = buildNewUserPayload(
       // Inside a school, a super admin creates accounts for that school.
-      { email, password, role, schoolId: scope?.id ?? "", superAdmin: newSuperAdmin },
+      { email, password, role, schoolId: scope?.id ?? "" },
       creatorIsSuperAdmin
     );
     if ("error" in built) {
@@ -243,25 +245,13 @@ export default function PeoplePage() {
                 onChange={(event) => setRole(event.target.value as NewUserRole)}
                 className={selectClass}
               >
-                <option value="staff">Teacher: sees Overview and Alerts</option>
-                <option value="counselor">Guidance counselor: also sees Reports</option>
-                <option value="admin">School administrator: manages the school</option>
+                {NEW_USER_ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </Field>
-            {creatorIsSuperAdmin && role === "admin" && (
-              <label className="flex min-h-11 items-start gap-3 text-body text-ink">
-                <input
-                  type="checkbox"
-                  checked={newSuperAdmin}
-                  onChange={(event) => setNewSuperAdmin(event.target.checked)}
-                  className="mt-0.5 h-5 w-5 rounded border-line-strong"
-                />
-                <span>
-                  Platform administrator
-                  <span className={`block ${hintClass} mt-0`}>Manages every school instead of this one.</span>
-                </span>
-              </label>
-            )}
             {formError && <FormError>{formError}</FormError>}
             <div className="mt-1 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button onClick={() => setShowCreate(false)} disabled={submitting}>

@@ -32,7 +32,8 @@ function fakeEnvironment(pathname = "/dashboard") {
 test("classifies the backend account-state 403 details exactly", () => {
   assert.equal(classifyForbiddenDetail("password_change_required"), "password_change_required");
   assert.equal(classifyForbiddenDetail("school_inactive"), "school_inactive");
-  assert.equal(classifyForbiddenDetail("Super-admin access required"), "no_permission");
+  assert.equal(classifyForbiddenDetail("Super-admin access required"), "super_admin_required");
+  assert.equal(classifyForbiddenDetail("Admin access required"), "no_permission");
   assert.equal(classifyForbiddenDetail(undefined), "no_permission");
   assert.equal(classifyForbiddenDetail({ detail: "school_inactive" }), "no_permission");
 });
@@ -140,4 +141,36 @@ test("new password rules match the backend", () => {
   assert.match(newPasswordProblem({ ...ok, newPassword: "temporary-1", confirmPassword: "temporary-1" }), /different/);
   assert.match(newPasswordProblem({ ...ok, confirmPassword: "brand-new-pasS" }), /do not match/);
   assert.match(newPasswordProblem({ ...ok, newPassword: "é".repeat(37), confirmPassword: "é".repeat(37) }), /72 bytes/);
+});
+
+test("a revoked super admin inside a school drops the scope and reloads the session", () => {
+  const { calls, environment } = fakeEnvironment("/people");
+  let scopeCleared = 0;
+  environment.hasSchoolScope = true;
+  environment.clearSchoolScope = () => {
+    scopeCleared += 1;
+  };
+
+  assert.equal(handleForbiddenDetail("Super-admin access required", environment), "super_admin_required");
+  assert.equal(scopeCleared, 1);
+  assert.deepEqual(calls.navigated, ["/overview"]);
+  assert.equal(calls.cleared, 0);
+});
+
+test("a revoked super admin on All schools is sent home to re-read /auth/me", () => {
+  const { calls, environment } = fakeEnvironment("/schools");
+  environment.hasSchoolScope = false;
+
+  handleForbiddenDetail("Super-admin access required", environment);
+
+  assert.deepEqual(calls.navigated, ["/overview"]);
+});
+
+test("a school admin's own pages never reload on a super-admin 403", () => {
+  const { calls, environment } = fakeEnvironment("/overview");
+  environment.hasSchoolScope = false;
+
+  handleForbiddenDetail("Super-admin access required", environment);
+
+  assert.deepEqual(calls.navigated, []);
 });
