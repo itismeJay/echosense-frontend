@@ -1,8 +1,7 @@
-import type {
-  Settings,
-  SystemSettings,
-  SystemSettingsUpdate,
-} from "./types";
+// Global engine information (super admins only). The old confidence/duration sliders were
+// removed from the backend: the edge never read them. Per-school settings live in
+// ./school-settings.
+import type { SystemSettings } from "./types";
 
 export class SettingsContractError extends Error {
   constructor(message: string) {
@@ -41,22 +40,6 @@ export function parseSystemSettings(value: unknown): SystemSettings {
     throw new SettingsContractError("setting_id must be an integer");
   }
   if (
-    typeof value.confidence_threshold !== "number" ||
-    !Number.isFinite(value.confidence_threshold)
-  ) {
-    throw new SettingsContractError(
-      "confidence_threshold must be a finite number"
-    );
-  }
-  if (
-    typeof value.aggression_duration_threshold !== "number" ||
-    !Number.isFinite(value.aggression_duration_threshold)
-  ) {
-    throw new SettingsContractError(
-      "aggression_duration_threshold must be a finite number"
-    );
-  }
-  if (
     value.device_status !== "online" &&
     value.device_status !== "offline"
   ) {
@@ -81,8 +64,6 @@ export function parseSystemSettings(value: unknown): SystemSettings {
 
   return {
     setting_id: value.setting_id as number,
-    confidence_threshold: value.confidence_threshold,
-    aggression_duration_threshold: value.aggression_duration_threshold,
     device_status: value.device_status,
     last_heartbeat:
       readNullableString(value.last_heartbeat, "last_heartbeat") ?? null,
@@ -99,41 +80,5 @@ export function parseSystemSettings(value: unknown): SystemSettings {
       value.uptime_seconds,
       "uptime_seconds"
     ),
-  };
-}
-
-export function systemSettingsToForm(settings: SystemSettings): Settings {
-  return {
-    confidence_threshold_percent: Math.round(
-      settings.confidence_threshold * 100
-    ),
-    aggression_duration_threshold:
-      settings.aggression_duration_threshold,
-  };
-}
-
-export function settingsToUpdatePayload(
-  settings: Settings
-): SystemSettingsUpdate {
-  if (
-    !Number.isFinite(settings.confidence_threshold_percent) ||
-    settings.confidence_threshold_percent < 0 ||
-    settings.confidence_threshold_percent > 100
-  ) {
-    throw new RangeError(
-      "Alert sensitivity must be between 0 and 100 percent"
-    );
-  }
-  if (
-    !Number.isFinite(settings.aggression_duration_threshold) ||
-    settings.aggression_duration_threshold <= 0
-  ) {
-    throw new RangeError("Minimum alert duration must be greater than zero");
-  }
-
-  return {
-    confidence_threshold: settings.confidence_threshold_percent / 100,
-    aggression_duration_threshold:
-      settings.aggression_duration_threshold,
   };
 }

@@ -102,6 +102,8 @@ export interface Alert {
   event_end_timestamp?: string | null;
   trigger_timestamp?: string | null;
   test_mode: boolean;
+  /** Stored but not pushed: it happened outside the school's hours. */
+  outside_school_hours: boolean;
   delivery_status: DeliveryStatus;
   push_status: PushStatus;
   push_attempt_count?: number | null;
@@ -295,16 +297,6 @@ export interface LogsStats {
   average_confidence?: number;
 }
 
-export interface Settings {
-  confidence_threshold_percent: number;
-  aggression_duration_threshold: number;
-}
-
-export interface SystemSettingsUpdate {
-  confidence_threshold: number;
-  aggression_duration_threshold: number;
-}
-
 export interface DictionaryEntry {
   term_id: number;
   slur_text: string;
@@ -358,8 +350,6 @@ export interface AuditLogListResponse {
 
 export interface SystemSettings {
   setting_id: number;
-  confidence_threshold: number;
-  aggression_duration_threshold: number;
   device_status: "online" | "offline";
   last_heartbeat: string | null;
   stt_model_version: string;

@@ -39,7 +39,10 @@ app/
     classrooms/         — classroom cards; classrooms/[id] = devices, area map, recent alerts
     people/             — user accounts
     activity/           — Account actions; activity/system = System logs
-    settings/           — Detection; settings/words = Monitored words (editable by super admins only)
+    settings/           — per school (school admin, or super admin inside a school): Notifications,
+                          settings/hours, settings/sensitivity, settings/words (global list with per-school
+                          turn-off + the school's own words). Super admin outside a school: settings = read-only
+                          Detection settings, settings/words = the editable global list
     schools/            — super admin: All schools (Enter school)
     profile/            — avatar menu: account + notifications
 ```
@@ -64,6 +67,12 @@ Device Online/Offline comes from each device's own `last_seen_at` via `GET /devi
 `system_settings` heartbeat.
 
 The backend URL is `NEXT_PUBLIC_API_URL` (`.env.local`).
+
+## School settings
+
+`lib/school-settings.ts` parses `/school-settings` (push levels, school hours, sensitivity) and
+`/school-settings/terms`; `components/settings/*` render them. `useSettingsMode()` picks school or platform
+view (super admin with no entered school = platform). Alerts carry `outside_school_hours` (stored, not pushed).
 
 ## Design system
 

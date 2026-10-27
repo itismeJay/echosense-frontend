@@ -41,7 +41,16 @@ export function homePathFor(role: AccessRole | null): string {
  * Pages that show one school's data. A super admin opens them only after entering a
  * school; outside a school they are sent to All schools to pick one.
  */
-const SCHOOL_PAGE_PREFIXES = ["/overview", "/alerts", "/alert", "/reports", "/classrooms", "/people"];
+const SCHOOL_PAGE_PREFIXES = [
+  "/overview",
+  "/alerts",
+  "/alert",
+  "/reports",
+  "/classrooms",
+  "/people",
+  "/settings/hours",
+  "/settings/sensitivity",
+];
 
 export function isSchoolPage(pathname: string): boolean {
   return SCHOOL_PAGE_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
@@ -91,7 +100,7 @@ export function isSuperAdmin(user: AccessSubject | null | undefined): boolean {
   return accessRoleOf(user) === "super_admin";
 }
 
-/** Global settings, OTA, monitored terms and schools are super-admin only on the backend. */
+/** Global engine info, OTA, the global word list and schools are super-admin only on the backend. */
 export function canEditGlobalConfig(user: AccessSubject | null | undefined): boolean {
   return isSuperAdmin(user);
 }

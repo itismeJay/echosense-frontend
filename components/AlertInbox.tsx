@@ -16,7 +16,7 @@ import {
 } from "@/lib/alert-presentation";
 import { formatWhen } from "@/lib/format";
 import { useReviewAlert } from "@/lib/useReviewAlert";
-import { ReviewState, SeverityStripe, SeverityTag } from "@/components/ui/status";
+import { OutsideHoursTag, ReviewState, SeverityStripe, SeverityTag } from "@/components/ui/status";
 
 interface AlertInboxProps {
   alerts: Alert[];
@@ -89,6 +89,7 @@ function AlertRow({
               Test alert, not a real incident
             </span>
           )}
+          {alert.outside_school_hours && <OutsideHoursTag />}
           {words.length > 0 ? (
             <>
               <span className="sr-only">Words heard:</span>

@@ -35,6 +35,15 @@ export function ReviewState({ status }: { status: AlertStatus }) {
   );
 }
 
+/** The alert was saved but no phone alert was sent: it happened outside school hours. */
+export function OutsideHoursTag() {
+  return (
+    <span className="inline-flex items-center rounded-tag border border-line-strong px-1.5 py-0.5 text-small font-medium text-muted">
+      Outside school hours
+    </span>
+  );
+}
+
 /** Solid dot + "Online", or hollow ring + "Offline · last seen …". The words carry the meaning. */
 export function DeviceStatus({
   lastSeenAt,

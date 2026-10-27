@@ -19,9 +19,19 @@ import {
 } from "./dictionary-contract";
 import {
   parseSystemSettings,
-  settingsToUpdatePayload,
-  systemSettingsToForm,
 } from "./settings";
+import {
+  parseGlobalTermForSchool,
+  parseSchoolSettings,
+  parseSchoolTerm,
+  parseSchoolTerms,
+  type GlobalTermForSchool,
+  type NewSchoolTermForm,
+  type SchoolSettings,
+  type SchoolSettingsUpdate,
+  type SchoolTerm,
+  type SchoolTerms,
+} from "./school-settings";
 import {
   parseClassroomListResponse,
   parseClassroomResponse,
@@ -56,7 +66,6 @@ import type {
   PiLog,
   Report,
   School,
-  Settings,
   SystemLogsResponse,
   SystemSettings,
   User,
@@ -480,17 +489,48 @@ export async function getLogsStats(): Promise<LogsStats> {
   return apiFetch<LogsStats>("/logs/stats");
 }
 
-export async function getSettings(): Promise<Settings> {
-  return systemSettingsToForm(await getSystemSettings());
+// Per-school settings. Inside a school, apiRequest adds the entered school's id, which is
+// how a super admin edits that school; a school admin always edits their own.
+export async function getSchoolSettings(): Promise<SchoolSettings> {
+  return parseSchoolSettings(await apiFetch<unknown>("/school-settings"));
 }
 
-export async function saveSettings(settings: Settings): Promise<Settings> {
-  const response = await apiFetch<unknown>("/system-settings/", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(settingsToUpdatePayload(settings)),
-  });
-  return systemSettingsToForm(parseSystemSettings(response));
+export async function updateSchoolSettings(update: SchoolSettingsUpdate): Promise<SchoolSettings> {
+  return parseSchoolSettings(
+    await apiFetch<unknown>("/school-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(update),
+    })
+  );
+}
+
+export async function getSchoolTerms(): Promise<SchoolTerms> {
+  return parseSchoolTerms(await apiFetch<unknown>("/school-settings/terms"));
+}
+
+export async function addSchoolTerm(term: NewSchoolTermForm): Promise<SchoolTerm> {
+  return parseSchoolTerm(
+    await apiFetch<unknown>("/school-settings/terms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(term),
+    })
+  );
+}
+
+export async function deleteSchoolTerm(termId: number): Promise<void> {
+  await apiRequest(`/school-settings/terms/${termId}`, { method: "DELETE" });
+}
+
+export async function setGlobalTermForSchool(termId: number, enabled: boolean): Promise<GlobalTermForSchool> {
+  return parseGlobalTermForSchool(
+    await apiFetch<unknown>(`/school-settings/global-terms/${termId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    })
+  );
 }
 
 export async function getUsers(): Promise<User[]> {

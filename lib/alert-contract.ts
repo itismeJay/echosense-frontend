@@ -374,6 +374,7 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
     event_end_timestamp: validOptionalTimestamp(value.event_end_timestamp),
     trigger_timestamp: validOptionalTimestamp(value.trigger_timestamp),
     test_mode: testMode,
+    outside_school_hours: value.outside_school_hours === true,
     delivery_status: delivery as DeliveryStatus,
     push_status: push,
     push_attempt_count: value.push_attempt_count === null ? null : Number.isInteger(value.push_attempt_count) && Number(value.push_attempt_count) >= 0 ? value.push_attempt_count as number : undefined,

@@ -1,16 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  SettingsContractError,
-  parseSystemSettings,
-  settingsToUpdatePayload,
-  systemSettingsToForm,
-} from "../lib/settings.ts";
+import { readFile } from "node:fs/promises";
+import { SettingsContractError, parseSystemSettings } from "../lib/settings.ts";
+
+const readSource = (relativePath) => readFile(new URL(`../${relativePath}`, import.meta.url), "utf8");
 
 const SYSTEM_SETTINGS_RESPONSE = {
   setting_id: 1,
-  confidence_threshold: 0.55,
-  aggression_duration_threshold: 2,
   device_status: "online",
   last_heartbeat: "2026-07-28T02:00:00Z",
   stt_model_version: "faster-whisper small int8",
@@ -19,56 +15,30 @@ const SYSTEM_SETTINGS_RESPONSE = {
   updated_at: "2026-07-28T02:00:00Z",
 };
 
-test("parses the deployed system-settings response", () => {
+test("parses the read-only engine information", () => {
   const parsed = parseSystemSettings(SYSTEM_SETTINGS_RESPONSE);
 
   assert.equal(parsed.setting_id, 1);
-  assert.equal(parsed.confidence_threshold, 0.55);
-  assert.equal(parsed.aggression_duration_threshold, 2);
+  assert.equal(parsed.stt_model_version, "faster-whisper small int8");
   assert.equal(parsed.device_status, "online");
+  assert.equal("confidence_threshold" in parsed, false);
+  assert.equal("aggression_duration_threshold" in parsed, false);
 });
 
-test("converts backend confidence decimals into UI percentages", () => {
-  const form = systemSettingsToForm(
-    parseSystemSettings(SYSTEM_SETTINGS_RESPONSE)
-  );
-
-  assert.deepEqual(form, {
-    confidence_threshold_percent: 55,
-    aggression_duration_threshold: 2,
-  });
+test("rejects malformed engine information", () => {
+  assert.throws(() => parseSystemSettings({ ...SYSTEM_SETTINGS_RESPONSE, setting_id: "1" }), SettingsContractError);
+  assert.throws(() => parseSystemSettings({ ...SYSTEM_SETTINGS_RESPONSE, yamnet_version: 1 }), SettingsContractError);
 });
 
-test("maps supported UI settings to the backend update contract", () => {
-  const payload = settingsToUpdatePayload({
-    confidence_threshold_percent: 55,
-    aggression_duration_threshold: 2,
-  });
-
-  assert.deepEqual(payload, {
-    confidence_threshold: 0.55,
-    aggression_duration_threshold: 2,
-  });
-  assert.equal("duration_threshold" in payload, false);
-  assert.equal("notifications" in payload, false);
-  assert.equal("location" in payload, false);
-});
-
-test("rejects malformed settings responses and invalid percentages", () => {
-  assert.throws(
-    () =>
-      parseSystemSettings({
-        ...SYSTEM_SETTINGS_RESPONSE,
-        confidence_threshold: "0.55",
-      }),
-    SettingsContractError
+test("the fake sliders are gone from the UI and the API client", async () => {
+  const sources = await Promise.all(
+    ["lib/api.ts", "lib/settings.ts", "lib/types.ts", "components/settings/DetectionInfo.tsx", "app/(app)/settings/page.tsx"].map(
+      readSource
+    )
   );
-  assert.throws(
-    () =>
-      settingsToUpdatePayload({
-        confidence_threshold_percent: 101,
-        aggression_duration_threshold: 2,
-      }),
-    RangeError
-  );
+  for (const source of sources) {
+    assert.doesNotMatch(source, /confidence_threshold|aggression_duration_threshold|Alert sensitivity|Minimum sound length/);
+    assert.doesNotMatch(source, /type="range"/);
+  }
+  assert.doesNotMatch(sources[0], /"\/system-settings\/", \{\s*method: "PUT"/);
 });

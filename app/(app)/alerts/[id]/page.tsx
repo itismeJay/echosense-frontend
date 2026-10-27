@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, Check, CheckCheck, FlaskConical, RotateCcw } from "lucide-react";
 import AlertEvidence from "@/components/AlertEvidence";
 import { Button, Detail, ErrorState, LoadingRows, Note, Page } from "@/components/ui";
-import { ReviewState, SeverityTag } from "@/components/ui/status";
+import { OutsideHoursTag, ReviewState, SeverityTag } from "@/components/ui/status";
 import {
   REQUIRED_REVIEW_NOTICE,
   classroomLabel,
@@ -163,6 +163,7 @@ export default function AlertDetailPage() {
         <div className="flex flex-wrap items-center gap-3">
           <SeverityTag severity={alert.severity} />
           <ReviewState status={alert.status} />
+          {alert.outside_school_hours && <OutsideHoursTag />}
         </div>
         <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
