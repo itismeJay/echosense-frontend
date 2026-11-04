@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { ChevronRight, Cpu, DoorOpen, MapPinned, Plus } from "lucide-react";
+import { ChevronRight, Cpu, DoorOpen, GraduationCap, MapPinned, Plus } from "lucide-react";
 import { ClassroomNameDialog, MoveDeviceDialog } from "@/components/classrooms/dialogs";
 import { Button, EmptyState, ErrorState, LoadingRows, Page, PageHeader } from "@/components/ui";
 import { DeviceStatus } from "@/components/ui/status";
@@ -155,6 +155,14 @@ export default function ClassroomsPage() {
                       );
                     })
                   )}
+                  <p className="flex items-start gap-2 text-small text-muted">
+                    <GraduationCap className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0 break-words">
+                      {classroom.teachers.length === 0
+                        ? "No teacher yet. Give a teacher this room in People."
+                        : `Teacher: ${classroom.teachers.map((teacher) => teacher.email).join(", ")}`}
+                    </span>
+                  </p>
                   <p className="flex items-center gap-2 text-small text-muted">
                     <MapPinned className="h-4 w-4" aria-hidden="true" />
                     Area map not available yet

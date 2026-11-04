@@ -2,9 +2,12 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Trash2, UserPlus, Users } from "lucide-react";
+import { DoorOpen, KeyRound, MoreHorizontal, Trash2, UserPlus, Users } from "lucide-react";
 import AccessibleDialog from "@/components/AccessibleDialog";
 import ConfirmDialog from "@/components/multi-room/ConfirmDialog";
+import AssignRoomsDialog from "@/components/people/AssignRoomsDialog";
+import TemporaryPasswordDialog from "@/components/people/TemporaryPasswordDialog";
+import Menu, { type MenuItem } from "@/components/ui/Menu";
 import {
   Button,
   EmptyState,
@@ -17,17 +20,30 @@ import {
   inputClass,
   selectClass,
 } from "@/components/ui";
-import { ApiError, createUser, deleteUser, getUsers } from "@/lib/api";
+import {
+  ApiError,
+  createUser,
+  deleteUser,
+  getClassrooms,
+  getUsers,
+  resetUserPassword,
+  setUserClassrooms,
+} from "@/lib/api";
 import { isSuperAdmin } from "@/lib/access";
 import { useCurrentUser } from "@/lib/auth";
 import { useSchoolScope } from "@/lib/school-scope";
 import {
   NEW_USER_ROLE_OPTIONS,
   buildNewUserPayload,
+  canAssignRooms,
+  canResetPassword,
+  resetPasswordErrorMessage,
+  roomNames,
+  roomsErrorMessage,
   userCreateErrorMessage,
   type NewUserRole,
 } from "@/lib/user-admin";
-import type { User } from "@/lib/types";
+import type { Classroom, PasswordResetResult, User } from "@/lib/types";
 
 const ROLE_LABELS: Record<User["role"], string> = {
   admin: "School administrator",
@@ -37,6 +53,19 @@ const ROLE_LABELS: Record<User["role"], string> = {
 
 function roleLabel(user: User): string {
   return isSuperAdmin(user) ? "Platform administrator" : ROLE_LABELS[user.role];
+}
+
+/** What alerts this person sees: a teacher's rooms, or the whole school. */
+function RoomsCell({ user, classrooms }: { user: User; classrooms: Classroom[] | null }) {
+  if (isSuperAdmin(user)) return <span className="text-muted">Every school</span>;
+  if (!canAssignRooms(user)) return <span className="text-muted">Whole school</span>;
+  if (classrooms === null) return <span className="text-muted">Loading</span>;
+  const names = roomNames(user, classrooms);
+  return names.length ? (
+    <span className="text-ink">{names.join(", ")}</span>
+  ) : (
+    <span className="text-muted">No room yet. Sees no alerts</span>
+  );
 }
 
 export default function PeoplePage() {
@@ -53,14 +82,21 @@ export default function PeoplePage() {
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [classrooms, setClassrooms] = useState<Classroom[] | null>(null);
+  const [roomsTarget, setRoomsTarget] = useState<User | null>(null);
+  const [roomsError, setRoomsError] = useState("");
+  const [savingRooms, setSavingRooms] = useState(false);
+  const [resetTarget, setResetTarget] = useState<User | null>(null);
+  const [resetting, setResetting] = useState(false);
+  const [resetResult, setResetResult] = useState<PasswordResetResult | null>(null);
 
   const loadUsers = useCallback(async () => {
     setError(false);
-    try {
-      setUsers(await getUsers());
-    } catch {
-      setError(true);
-    }
+    const [people, rooms] = await Promise.allSettled([getUsers(), getClassrooms()]);
+    if (people.status === "fulfilled") setUsers(people.value);
+    else setError(true);
+    // Without classrooms the list still works; teachers' rooms just can't be named.
+    setClassrooms(rooms.status === "fulfilled" ? rooms.value : []);
   }, []);
 
   useEffect(() => {
@@ -122,6 +158,73 @@ export default function PeoplePage() {
     }
   };
 
+  const saveRooms = async (classroomIds: string[]) => {
+    if (!roomsTarget) return;
+    setSavingRooms(true);
+    setRoomsError("");
+    try {
+      const updated = await setUserClassrooms(roomsTarget.id, classroomIds);
+      setUsers((current) => current?.map((user) => (user.id === updated.id ? { ...user, ...updated } : user)) ?? null);
+      setRoomsTarget(null);
+      toast.success(classroomIds.length ? "Rooms saved" : "Rooms removed. They see no alerts now.");
+    } catch (caught) {
+      setRoomsError(caught instanceof ApiError ? roomsErrorMessage(caught.status) : "The rooms were not saved. Try again.");
+    } finally {
+      setSavingRooms(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!resetTarget) return;
+    setResetting(true);
+    try {
+      const result = await resetUserPassword(resetTarget.id);
+      setUsers((current) => current?.map((user) => (user.id === result.user.id ? { ...user, ...result.user } : user)) ?? null);
+      setResetTarget(null);
+      setResetResult(result);
+    } catch (caught) {
+      const status = caught instanceof ApiError ? caught.status : 0;
+      toast.error(resetPasswordErrorMessage(status));
+      setResetTarget(null);
+      if (status === 404) await loadUsers();
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const actionsFor = (user: User): MenuItem[] => {
+    const items: MenuItem[] = [];
+    if (canAssignRooms(user)) {
+      items.push({
+        kind: "action",
+        label: "Rooms",
+        onSelect: () => {
+          setRoomsError("");
+          setRoomsTarget(user);
+        },
+        icon: <DoorOpen className="h-4 w-4 text-muted" aria-hidden="true" />,
+      });
+    }
+    if (canResetPassword(currentUser, user)) {
+      items.push({
+        kind: "action",
+        label: "Reset password",
+        onSelect: () => setResetTarget(user),
+        icon: <KeyRound className="h-4 w-4 text-muted" aria-hidden="true" />,
+      });
+    }
+    if (currentUser?.id !== user.id) {
+      items.push({
+        kind: "action",
+        label: "Remove account",
+        danger: true,
+        onSelect: () => setDeleteTarget(user),
+        icon: <Trash2 className="h-4 w-4" aria-hidden="true" />,
+      });
+    }
+    return items;
+  };
+
   const sorted = [...(users ?? [])].sort((a, b) => a.role.localeCompare(b.role) || a.email.localeCompare(b.email));
 
   return (
@@ -165,6 +268,7 @@ export default function PeoplePage() {
               <tr>
                 <th scope="col" className="px-4 py-2.5 font-normal">Email</th>
                 <th scope="col" className="px-4 py-2.5 font-normal">Role</th>
+                <th scope="col" className="hidden px-4 py-2.5 font-normal md:table-cell">Sees alerts from</th>
                 <th scope="col" className="hidden px-4 py-2.5 font-normal sm:table-cell">Status</th>
                 <th scope="col" className="px-4 py-2.5 font-normal"><span className="sr-only">Actions</span></th>
               </tr>
@@ -172,6 +276,7 @@ export default function PeoplePage() {
             <tbody className="divide-y divide-line">
               {sorted.map((user) => {
                 const isMe = currentUser?.id === user.id;
+                const actions = actionsFor(user);
                 return (
                   <tr key={user.id}>
                     <td className="max-w-[16rem] truncate px-4 py-3 text-ink">
@@ -179,19 +284,20 @@ export default function PeoplePage() {
                       {isMe && <span className="ml-2 text-small text-muted">(you)</span>}
                     </td>
                     <td className="px-4 py-3 text-ink">{roleLabel(user)}</td>
+                    <td className="hidden max-w-[16rem] px-4 py-3 md:table-cell">
+                      <RoomsCell user={user} classrooms={classrooms} />
+                    </td>
                     <td className="hidden px-4 py-3 text-muted sm:table-cell">
                       {user.must_change_password ? "Hasn't signed in yet" : "Active"}
                     </td>
                     <td className="px-2 py-1.5 text-right">
-                      {!isMe && (
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(user)}
-                          aria-label={`Remove ${user.email}`}
-                          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-muted hover:bg-danger-bg hover:text-danger"
-                        >
-                          <Trash2 className="h-4 w-4" aria-hidden="true" />
-                        </button>
+                      {actions.length > 0 && (
+                        <Menu
+                          label={`Manage ${user.email}`}
+                          triggerClassName="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-muted hover:bg-surface hover:text-ink"
+                          trigger={<MoreHorizontal className="h-4 w-4" aria-hidden="true" />}
+                          items={actions}
+                        />
                       )}
                     </td>
                   </tr>
@@ -264,6 +370,31 @@ export default function PeoplePage() {
           </form>
         </AccessibleDialog>
       )}
+
+      {roomsTarget && (
+        <AssignRoomsDialog
+          person={roomsTarget}
+          classrooms={classrooms ?? []}
+          pending={savingRooms}
+          error={roomsError}
+          onCancel={() => setRoomsTarget(null)}
+          onSubmit={(ids) => void saveRooms(ids)}
+        />
+      )}
+
+      {resetTarget && (
+        <ConfirmDialog
+          title={`Reset the password for ${resetTarget.email}?`}
+          description="Their current password stops working. You get a temporary password to give them, and they choose their own when they sign in."
+          confirmLabel="Reset password"
+          tone="primary"
+          pending={resetting}
+          onCancel={() => setResetTarget(null)}
+          onConfirm={() => void handleReset()}
+        />
+      )}
+
+      {resetResult && <TemporaryPasswordDialog result={resetResult} onClose={() => setResetResult(null)} />}
 
       {deleteTarget && (
         <ConfirmDialog

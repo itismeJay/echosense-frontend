@@ -65,6 +65,14 @@ export interface User {
   school_id?: string | null;
   is_super_admin?: boolean;
   must_change_password?: boolean;
+  /** Teachers only: the classrooms whose alerts they see and are pushed. */
+  classroom_ids?: string[];
+}
+
+export interface PasswordResetResult {
+  user: User;
+  /** Shown once to the administrator; the person changes it at next sign-in. */
+  temporary_password: string;
 }
 
 export interface School {
@@ -165,6 +173,11 @@ export interface ClassroomDeviceSummary {
   is_active: boolean;
 }
 
+export interface ClassroomTeacher {
+  id: string;
+  email: string;
+}
+
 export interface Classroom {
   id: string;
   school_id: string;
@@ -174,6 +187,8 @@ export interface Classroom {
   created_at: string;
   updated_at: string;
   devices: ClassroomDeviceSummary[];
+  /** Teachers who see and are pushed this classroom's alerts. */
+  teachers: ClassroomTeacher[];
 }
 
 export type DeviceAssignmentState = "assigned" | "unassigned";

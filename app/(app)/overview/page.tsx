@@ -7,6 +7,8 @@ import AlertInbox from "@/components/AlertInbox";
 import { EmptyState, ErrorState, LoadingRows, Page } from "@/components/ui";
 import { DeviceStatus } from "@/components/ui/status";
 import { useAlerts } from "@/lib/AlertsProvider";
+import { useCurrentUser } from "@/lib/auth";
+import { TEACHER_ROOMS_NOTE } from "@/lib/user-admin";
 import { localDateKey, needsReview } from "@/lib/alert-presentation";
 import { useDeviceStatus } from "@/lib/useDeviceStatus";
 
@@ -30,6 +32,7 @@ function SummaryItem({ href, children }: { href: string; children: React.ReactNo
 
 export default function OverviewPage() {
   const { alerts, loading, error, errorStatus, refresh } = useAlerts();
+  const isTeacher = useCurrentUser()?.role === "staff";
   const devices = useDeviceStatus();
   const [now] = useState(() => new Date());
   const todayKey = localDateKey(now);
@@ -96,6 +99,7 @@ export default function OverviewPage() {
             <EmptyState title="No alerts need review" icon={BellRing}>
               You&apos;re up to date. New alerts appear here within a few seconds, and High alerts also show a
               notice in the corner of the screen.
+              {isTeacher && ` ${TEACHER_ROOMS_NOTE}`}
             </EmptyState>
           </div>
         ) : (

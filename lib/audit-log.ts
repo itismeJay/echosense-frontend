@@ -159,6 +159,8 @@ const ACTION_LABELS: Record<string, string> = {
   CREATE_USER: "Created User",
   UPDATE_USER: "Updated User",
   DELETE_USER: "Deleted User",
+  RESET_PASSWORD: "Reset Password",
+  ASSIGN_TEACHER_CLASSROOMS: "Changed Teacher Rooms",
   CHANGE_USER_ROLE: "Changed User Role",
   ADD_MONITORED_TERM: "Added Monitored Term",
   UPDATE_MONITORED_TERM: "Updated Monitored Term",

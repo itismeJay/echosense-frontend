@@ -68,6 +68,7 @@ import type {
   School,
   SystemLogsResponse,
   SystemSettings,
+  PasswordResetResult,
   User,
 } from "./types";
 import { parseValidJwtClaims } from "./auth-token";
@@ -535,6 +536,22 @@ export async function setGlobalTermForSchool(termId: number, enabled: boolean): 
 
 export async function getUsers(): Promise<User[]> {
   return apiFetch<User[]>("/users");
+}
+
+/** Replace the classrooms a teacher sees and is pushed alerts for. */
+export async function setUserClassrooms(userId: string, classroomIds: string[]): Promise<User> {
+  return apiFetch<User>(`/users/${encodeURIComponent(userId)}/classrooms`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ classroom_ids: classroomIds }),
+  });
+}
+
+/** Set a temporary password the person must change at their next sign-in. */
+export async function resetUserPassword(userId: string): Promise<PasswordResetResult> {
+  return apiFetch<PasswordResetResult>(`/users/${encodeURIComponent(userId)}/reset-password`, {
+    method: "POST",
+  });
 }
 
 export async function createUser(data: NewUserPayload): Promise<User> {

@@ -80,3 +80,53 @@ export function userCreateErrorMessage(status: number, detail: string): string {
   }
   return "We couldn’t create the user account.";
 }
+
+// --- Rooms and password reset (People) ---------------------------------------------
+
+interface PersonLike {
+  id: string;
+  role: NewUserRole;
+  is_super_admin?: boolean;
+  classroom_ids?: string[];
+}
+
+/** Only teachers have rooms: they see and are pushed only those rooms' alerts. */
+export function canAssignRooms(person: PersonLike): boolean {
+  return person.role === "staff" && !person.is_super_admin;
+}
+
+/**
+ * Mirrors POST /users/{id}/reset-password: an administrator resets anyone in their school
+ * except themselves (they use Change password) and a super admin.
+ */
+export function canResetPassword(
+  actor: Pick<PersonLike, "id" | "role"> | null | undefined,
+  person: PersonLike
+): boolean {
+  return Boolean(actor && actor.role === "admin" && actor.id !== person.id && !person.is_super_admin);
+}
+
+/** The teacher's room names, in classroom order, for the People list. */
+export function roomNames(
+  person: PersonLike,
+  classrooms: ReadonlyArray<{ id: string; name: string }>
+): string[] {
+  const assigned = new Set(person.classroom_ids ?? []);
+  return classrooms.filter((room) => assigned.has(room.id)).map((room) => room.name);
+}
+
+export function roomsErrorMessage(status: number): string {
+  if (status === 403) return "Your account can't change this person's rooms.";
+  if (status === 422) return "Pick classrooms of this school that are in use, then try again.";
+  return "The rooms were not saved. Try again.";
+}
+
+export function resetPasswordErrorMessage(status: number): string {
+  if (status === 403) return "Your account can't reset this person's password.";
+  if (status === 404) return "This person no longer has an account. The list has been refreshed.";
+  return "The password was not reset. Try again.";
+}
+
+/** Said to a teacher whose alert list is empty: they only see their own rooms. */
+export const TEACHER_ROOMS_NOTE =
+  "You see alerts only from the classrooms your school administrator gave you. If you expect alerts, ask them to check your rooms in People.";

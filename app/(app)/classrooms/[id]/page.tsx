@@ -4,12 +4,12 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import toast from "react-hot-toast";
-import { ArrowLeft, BellRing, Cpu, KeyRound, MapPinned, MoveRight, Pencil, Plus, Power } from "lucide-react";
+import { ArrowLeft, BellRing, Cpu, GraduationCap, KeyRound, MapPinned, MoveRight, Pencil, Plus, Power } from "lucide-react";
 import AlertInbox from "@/components/AlertInbox";
 import { AddDeviceDialog, ClassroomNameDialog, MoveDeviceDialog, RenameDeviceDialog } from "@/components/classrooms/dialogs";
 import ConfirmDialog from "@/components/multi-room/ConfirmDialog";
 import DeviceSecretDialog from "@/components/multi-room/DeviceSecretDialog";
-import { Button, Detail, EmptyState, ErrorState, LoadingRows, Page, Panel } from "@/components/ui";
+import { Button, ButtonLink, Detail, EmptyState, ErrorState, LoadingRows, Page, Panel } from "@/components/ui";
 import { DeviceStatus } from "@/components/ui/status";
 import { useAlerts } from "@/lib/AlertsProvider";
 import {
@@ -271,6 +271,27 @@ export default function ClassroomDetailPage() {
                       Take out of classroom
                     </Button>
                   </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel
+          title="Teachers"
+          description="They see this classroom's alerts and get its phone alerts. Admins and counselors see every classroom."
+          actions={<ButtonLink href="/people" size="sm">Change in People</ButtonLink>}
+          bodyClassName=""
+        >
+          {classroom.teachers.length === 0 ? (
+            <EmptyState title="No teacher yet" icon={GraduationCap}>
+              Open People, choose a teacher and give them this room.
+            </EmptyState>
+          ) : (
+            <ul className="divide-y divide-line">
+              {classroom.teachers.map((teacher) => (
+                <li key={teacher.id} className="truncate px-4 py-3 text-body text-ink sm:px-5">
+                  {teacher.email}
                 </li>
               ))}
             </ul>

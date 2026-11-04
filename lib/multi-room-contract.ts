@@ -1,6 +1,7 @@
 import type {
   Classroom,
   ClassroomDeviceSummary,
+  ClassroomTeacher,
   DeviceRegistrationResult,
   EdgeDevice,
 } from "./types";
@@ -102,7 +103,20 @@ export function parseClassroomResponse(
     devices: value.devices.map((device, index) =>
       parseClassroomDevice(device, `devices[${index}]`, endpoint)
     ),
+    teachers: parseClassroomTeachers(value.teachers, endpoint),
   };
+}
+
+/** Older backends send no teachers: that is an empty list, not an error. */
+function parseClassroomTeachers(value: unknown, endpoint: string): ClassroomTeacher[] {
+  if (value === undefined) return [];
+  if (
+    !Array.isArray(value) ||
+    !value.every((item) => isRecord(item) && requiredString(item.id) && requiredString(item.email))
+  ) {
+    throw new MultiRoomContractError(endpoint, "classroom teachers do not match the schema");
+  }
+  return value.map((item) => ({ id: item.id, email: item.email }));
 }
 
 export function parseClassroomListResponse(

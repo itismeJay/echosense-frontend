@@ -37,7 +37,7 @@ app/
     alerts/             — Needs review tab; alerts/all = All alerts; alerts/[id] = detail + review actions
     reports/            — charts + saved reports (guidance and admins)
     classrooms/         — classroom cards; classrooms/[id] = devices, area map, recent alerts
-    people/             — user accounts
+    people/             — user accounts; per-person menu: Rooms (teachers), Reset password, Remove
     activity/           — Account actions; activity/system = System logs
     settings/           — per school (school admin, or super admin inside a school): Notifications,
                           settings/hours, settings/sensitivity, settings/words (global list with per-school
@@ -67,6 +67,14 @@ Device Online/Offline comes from each device's own `last_seen_at` via `GET /devi
 `system_settings` heartbeat.
 
 The backend URL is `NEXT_PUBLIC_API_URL` (`.env.local`).
+
+## Per-room alerts and password reset
+
+A teacher (`role: "staff"`) sees and is pushed only the alerts of the classrooms assigned to them
+(`User.classroom_ids`; none = no alerts); admins and counselors see the whole school. The backend
+enforces it. People → Rooms calls `PUT /users/{id}/classrooms`; classrooms list their `teachers`.
+People → Reset password calls `POST /users/{id}/reset-password` and shows the temporary password once
+(`TemporaryPasswordDialog`); never for yourself or a super admin (`lib/user-admin.ts` mirrors the rules).
 
 ## School settings
 

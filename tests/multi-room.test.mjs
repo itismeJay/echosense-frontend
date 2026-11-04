@@ -53,7 +53,20 @@ const CLASSROOM = {
 };
 
 test("parses classroom lists with exact school and assigned-device fields", () => {
-  assert.deepEqual(parseClassroomListResponse([CLASSROOM]), [CLASSROOM]);
+  // Older backends send no teachers: an empty list.
+  assert.deepEqual(parseClassroomListResponse([CLASSROOM]), [{ ...CLASSROOM, teachers: [] }]);
+});
+
+test("parses the teachers assigned to a classroom", () => {
+  const teachers = [{ id: "12", email: "teacher@school.test" }];
+
+  assert.deepEqual(parseClassroomListResponse([{ ...CLASSROOM, teachers }]), [
+    { ...CLASSROOM, teachers },
+  ]);
+  assert.throws(
+    () => parseClassroomListResponse([{ ...CLASSROOM, teachers: [{ id: "12" }] }]),
+    MultiRoomContractError
+  );
 });
 
 test("parses assigned and unassigned devices with exact nullable metadata", () => {

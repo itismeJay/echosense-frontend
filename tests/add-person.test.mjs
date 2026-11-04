@@ -78,3 +78,37 @@ test("the principal (school admin) sees only John Hopkins' 7 school pages", () =
   }
   assert.equal(canAccessPath(role, "/schools"), false);
 });
+
+// --- rooms and password reset ------------------------------------------------------
+
+test("only teachers get rooms", async () => {
+  const { canAssignRooms } = await import("../lib/user-admin.ts");
+  assert.equal(canAssignRooms({ id: "1", role: "staff" }), true);
+  assert.equal(canAssignRooms({ id: "2", role: "counselor" }), false);
+  assert.equal(canAssignRooms({ id: "3", role: "admin" }), false);
+});
+
+test("an admin resets anyone in the school except themselves and a super admin", async () => {
+  const { canResetPassword } = await import("../lib/user-admin.ts");
+  const admin = { id: "1", role: "admin" };
+  assert.equal(canResetPassword(admin, { id: "2", role: "staff" }), true);
+  assert.equal(canResetPassword(admin, { id: "3", role: "admin" }), true);
+  assert.equal(canResetPassword(admin, { id: "1", role: "admin" }), false);
+  assert.equal(canResetPassword(admin, { id: "4", role: "admin", is_super_admin: true }), false);
+  assert.equal(canResetPassword({ id: "5", role: "counselor" }, { id: "2", role: "staff" }), false);
+  assert.equal(canResetPassword(null, { id: "2", role: "staff" }), false);
+});
+
+test("a teacher's rooms are listed by name in classroom order", async () => {
+  const { roomNames } = await import("../lib/user-admin.ts");
+  const classrooms = [
+    { id: "a", name: "Grade 6 Rizal" },
+    { id: "b", name: "Grade 6 Mabini" },
+    { id: "c", name: "Library" },
+  ];
+  assert.deepEqual(roomNames({ id: "1", role: "staff", classroom_ids: ["c", "a"] }, classrooms), [
+    "Grade 6 Rizal",
+    "Library",
+  ]);
+  assert.deepEqual(roomNames({ id: "1", role: "staff" }, classrooms), []);
+});

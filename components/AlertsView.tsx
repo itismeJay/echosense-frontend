@@ -16,6 +16,8 @@ import {
   selectClass,
 } from "@/components/ui";
 import { useAlerts } from "@/lib/AlertsProvider";
+import { useCurrentUser } from "@/lib/auth";
+import { TEACHER_ROOMS_NOTE } from "@/lib/user-admin";
 import {
   classroomLabel,
   deliveryStatusLabel,
@@ -88,6 +90,7 @@ export default function AlertsView({
   initialClassroom?: string;
 }) {
   const { alerts, loading, error, errorStatus, warning, refresh } = useAlerts();
+  const isTeacher = useCurrentUser()?.role === "staff";
   const [severity, setSeverity] = useState<SeverityFilter>("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -258,10 +261,12 @@ export default function AlertsView({
           ) : tab === "review" ? (
             <EmptyState title="No alerts need review" icon={BellRing}>
               Everything has been looked at. New alerts appear here within a few seconds.
+              {isTeacher && ` ${TEACHER_ROOMS_NOTE}`}
             </EmptyState>
           ) : (
             <EmptyState title="No alerts yet" icon={BellRing}>
               Alerts appear here when a classroom device picks up a possible concern.
+              {isTeacher && ` ${TEACHER_ROOMS_NOTE}`}
             </EmptyState>
           )}
         </div>
