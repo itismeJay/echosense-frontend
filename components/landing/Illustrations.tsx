@@ -54,8 +54,8 @@ export function PrivacyDiagram() {
     >
       <title id="privacy-title">Audio stays in the classroom</title>
       <desc id="privacy-desc">
-        Inside the classroom, the device hears sound and analyzes it. Only a short text alert leaves the room for the
-        school&apos;s phones and dashboard.
+        Inside the classroom, the device hears sound and analyzes it. Only the alert leaves the room for the
+        school&apos;s phones and dashboard: the text of the flagged speech and a short sound outline, never audio.
       </desc>
       <rect x="12" y="24" width="300" height="252" rx="18" {...LINE} opacity="0.5" />
       <text x="36" y="62" fill="currentColor" opacity="0.7" fontSize="17">
@@ -80,7 +80,7 @@ export function PrivacyDiagram() {
         High · Grade 6
       </text>
       <text x="376" y="194" fill="currentColor" opacity="0.75" fontSize="15">
-        Text alert only
+        Text, no audio
       </text>
     </svg>
   );

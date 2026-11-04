@@ -26,7 +26,8 @@ import {
   supportingEvidenceLabel,
   termCategoryEvidenceLabel,
   UNAVAILABLE_SEVERITY_EVIDENCE_MESSAGE,
-  uniqueMatchedTerms,
+  alertTerms,
+  termSourceLabel,
   yamnetRanExplanation,
 } from "@/lib/alert-presentation";
 import {
@@ -96,7 +97,7 @@ export default function AlertEvidence({
       ? alert.detected_words ?? []
       : [];
   const categories = alert.categories ?? [];
-  const matchedTerms = uniqueMatchedTerms(alert.matched_terms);
+  const matchedTerms = alertTerms(alert);
   const waveform = alert.waveform_snapshot ?? [];
   const languageConfidence = formatLanguageConfidence(
     alert.language_confidence
@@ -273,7 +274,7 @@ export default function AlertEvidence({
               <ul className="mt-3 space-y-3">
                 {matchedTerms.map((matchedTerm, index) => (
                   <li
-                    key={`${matchedTerm.term_id}-${matchedTerm.match_type}-${index}`}
+                    key={`${matchedTerm.source}-${matchedTerm.term}-${matchedTerm.match_type}-${index}`}
                     className="rounded-control border border-line bg-surface p-4"
                   >
                     <div className="flex items-start gap-3">
@@ -288,11 +289,18 @@ export default function AlertEvidence({
                         <p className="mt-1 break-words font-semibold text-ink">
                           {matchedTerm.term}
                         </p>
-                        <div className="mt-2">
-                          <LanguageBadge
-                            language={matchedTerm.language}
-                            size="md"
-                          />
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {matchedTerm.language && (
+                            <LanguageBadge
+                              language={matchedTerm.language}
+                              size="md"
+                            />
+                          )}
+                          {termSourceLabel(matchedTerm.source) && (
+                            <span className="text-xs text-muted">
+                              {termSourceLabel(matchedTerm.source)}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

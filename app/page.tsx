@@ -64,7 +64,7 @@ const ROLES = [
 const TRUST = [
   {
     title: "No recordings stored",
-    text: "Audio is analyzed on the device and then discarded. EchoSense keeps the alert, never the sound.",
+    text: "Audio is analyzed on the device and then discarded. The alert keeps the text of the flagged speech and a short sound outline, never the audio.",
   },
   {
     title: "A possible concern, not proof",
@@ -129,8 +129,10 @@ export default function LandingPage() {
                 Audio never leaves the room.
               </h2>
               <p className={`mt-5 ${LEAD}`}>
-                Listening and analysis happen on the device itself. When something needs attention, only a short text
-                alert is sent: the level, the classroom, and the words that were heard.
+                Listening and analysis happen on the device itself. When something needs attention, the device sends a
+                short alert: the level, the classroom, the text of the flagged speech (which can include a few words
+                said just before it), and a short sound outline showing how loud it was. The audio itself is never
+                sent.
               </p>
               <ul className="mt-8 space-y-3 text-body-lg text-ink">
                 <li className="flex gap-3">
@@ -140,6 +142,10 @@ export default function LandingPage() {
                 <li className="flex gap-3">
                   <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ink" />
                   No recordings sent or stored
+                </li>
+                <li className="flex gap-3">
+                  <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ink" />
+                  The sound outline is a loudness line, not audio: nothing can be played back
                 </li>
                 <li className="flex gap-3">
                   <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ink" />

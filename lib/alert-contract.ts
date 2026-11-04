@@ -12,6 +12,7 @@ import type {
   PushStatus,
   RawAlertDto,
   SeverityEvidence,
+  UnlistedTerm,
 } from "./types";
 
 const REVIEW_MESSAGE =
@@ -229,6 +230,26 @@ function parseMatchedTerm(
   };
 }
 
+/** Lenient: an entry the dashboard cannot show is skipped, never fatal to the alert. */
+function parseUnlistedTerms(value: unknown): UnlistedTerm[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const parsed: UnlistedTerm[] = [];
+  for (const item of value) {
+    if (!isRecord(item)) continue;
+    const term = nonBlankString(item.term);
+    if (!term) continue;
+    parsed.push({
+      term,
+      language: MATCHED_TERM_LANGUAGES.has(String(item.language))
+        ? (item.language as UnlistedTerm["language"])
+        : null,
+      match_type: nonBlankString(item.match_type) ?? "exact",
+      source: item.source === "school" ? "school" : "unlisted",
+    });
+  }
+  return parsed;
+}
+
 function parseSeverityEvidence(value: unknown): SeverityEvidence | null | undefined {
   if (value === null) return null;
   if (!isRecord(value)) return undefined;
@@ -405,6 +426,7 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
     language,
     language_confidence: languageConfidence,
     matched_terms: matchedTerms as MatchedTerm[] | null | undefined,
+    unlisted_terms: parseUnlistedTerms(value.unlisted_terms),
     hard_hits: value.hard_hits === null ? null : stringArray(value.hard_hits),
     soft_hits: value.soft_hits === null ? null : stringArray(value.soft_hits),
     duration_gate: nullableString(value.duration_gate),

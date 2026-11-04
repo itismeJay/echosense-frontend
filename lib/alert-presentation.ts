@@ -2,6 +2,7 @@ import type {
   Alert,
   AlertSeverity,
   MatchedTerm,
+  MonitoredTermLanguage,
 } from "./types";
 
 export const REQUIRED_REVIEW_NOTICE =
@@ -119,7 +120,7 @@ export function monitoredTermCount(alert: Alert): number {
     return alert.monitored_word_occurrences.length;
   }
   if (alert.monitored_terms.length > 0) return alert.monitored_terms.length;
-  return uniqueMatchedTerms(alert.matched_terms).length || (alert.detected_words ?? []).length;
+  return alertTerms(alert).length || (alert.detected_words ?? []).length;
 }
 
 export function monitoredTermSummary(alert: Alert): string {
@@ -169,6 +170,40 @@ export function uniqueMatchedTerms(
     seen.add(key);
     return true;
   });
+}
+
+export interface DisplayTerm {
+  term: string;
+  language: MonitoredTermLanguage | null;
+  match_type: string;
+  /** global: in the dictionary; school: this school's word; unlisted: kept as heard. */
+  source: "global" | "school" | "unlisted";
+}
+
+/** Every term the device matched: dictionary terms, then school words and unlisted ones. */
+export function alertTerms(alert: Alert): DisplayTerm[] {
+  const terms: DisplayTerm[] = [
+    ...uniqueMatchedTerms(alert.matched_terms).map((term) => ({
+      term: term.term,
+      language: term.language,
+      match_type: term.match_type,
+      source: "global" as const,
+    })),
+    ...(alert.unlisted_terms ?? []),
+  ];
+  const seen = new Set<string>();
+  return terms.filter((term) => {
+    const key = [term.term.toLocaleLowerCase(), term.match_type].join("\u0000");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+export function termSourceLabel(source: DisplayTerm["source"]): string | null {
+  if (source === "school") return "School word";
+  if (source === "unlisted") return "Not in the word list";
+  return null;
 }
 
 export function exactTranscript(alert: Alert): string {
@@ -270,7 +305,7 @@ export function localDateKey(value: Date): string {
  */
 export function wordsHeard(alert: Alert, limit = 4): string[] {
   const candidates = [
-    ...uniqueMatchedTerms(alert.matched_terms).map((term) => term.term),
+    ...alertTerms(alert).map((term) => term.term),
     ...alert.monitored_terms.filter((term): term is string => typeof term === "string"),
     ...(alert.detected_words ?? []),
   ];

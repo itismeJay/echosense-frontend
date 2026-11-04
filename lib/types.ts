@@ -50,6 +50,14 @@ export interface MatchedTerm {
   match_type: string;
 }
 
+/** A matched term the global dictionary does not hold: a school word, or kept as heard. */
+export interface UnlistedTerm {
+  term: string;
+  language: MonitoredTermLanguage | null;
+  match_type: string;
+  source: "school" | "unlisted";
+}
+
 export interface User {
   id: string;
   email: string;
@@ -138,6 +146,7 @@ export interface Alert {
   language?: AlertLanguage | null;
   language_confidence?: number | null;
   matched_terms?: MatchedTerm[] | null;
+  unlisted_terms?: UnlistedTerm[] | null;
   hard_hits?: string[] | null;
   soft_hits?: string[] | null;
   duration_gate?: string | null;

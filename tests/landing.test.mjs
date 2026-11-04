@@ -50,3 +50,18 @@ test("copy makes no fake stats, testimonials or logos", async () => {
   assert.doesNotMatch(page, /testimonial|trusted by|\d+% |\d+,\d{3}\+? (schools|students)|revolutionary|cutting-edge|AI-powered/i);
   assert.match(page, /A DNSC BSIT capstone project, 2026\./);
 });
+
+test("privacy copy says what an alert really carries: flagged speech text and a sound outline, never audio", async () => {
+  const [page, illustrations] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("components/landing/Illustrations.tsx"),
+  ]);
+  // The old copy understated what is sent (it implied only the level, classroom and words).
+  assert.doesNotMatch(page, /only a short text\s+alert is sent/);
+  assert.doesNotMatch(page, /the level, the classroom, and the words that were heard/);
+  assert.match(page, /the text of the flagged speech/);
+  assert.match(page, /short sound outline/);
+  assert.match(page, /The audio itself is never\s+sent\./);
+  assert.doesNotMatch(illustrations, /Text alert only/);
+  assert.match(illustrations, /text of the flagged speech and a short sound outline, never audio/);
+});
