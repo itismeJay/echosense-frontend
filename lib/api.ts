@@ -39,6 +39,7 @@ import {
   parseEdgeDeviceListResponse,
   parseEdgeDeviceResponse,
 } from "./multi-room-contract";
+import { parseProvisionedBox, type ClaimCodes } from "./device-setup";
 import type {
   Alert,
   AlertFilters,
@@ -69,6 +70,7 @@ import type {
   SystemLogsResponse,
   SystemSettings,
   PasswordResetResult,
+  ProvisionedBox,
   User,
 } from "./types";
 import { parseValidJwtClaims } from "./auth-token";
@@ -176,7 +178,7 @@ async function readResponseBody(response: Response): Promise<unknown> {
 
 function responseErrorMessage(status: number, value: unknown): string {
   const fallback = getApiErrorMessage(status);
-  if (![400, 403, 404, 409, 422].includes(status) || !isRecord(value)) return fallback;
+  if (![400, 403, 404, 409, 422, 429].includes(status) || !isRecord(value)) return fallback;
   if (typeof value.detail === "string" && value.detail.trim()) {
     return value.detail.trim().slice(0, 300);
   }
@@ -417,6 +419,61 @@ export async function rotateDeviceKey(
     await apiFetch<unknown>(endpoint, { method: "POST" }),
     endpoint
   );
+}
+
+// --- QR device setup -------------------------------------------------------------
+
+/** Super admin: create unclaimed boxes. Their setup codes come back only in this answer. */
+export async function provisionBoxes(count: number): Promise<ProvisionedBox[]> {
+  const endpoint = "/devices/provision";
+  const body = await apiFetch<unknown>(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ count }),
+  });
+  const boxes = (body as { boxes?: unknown })?.boxes;
+  if (!Array.isArray(boxes)) throw new Error("The server's answer did not list the new boxes.");
+  return boxes.map((box) => parseProvisionedBox(box, (device) => parseEdgeDeviceResponse(device, endpoint)));
+}
+
+/** Super admin: revoke the key, detach, and issue a new sticker for a box. */
+export async function resetBox(deviceId: string): Promise<ProvisionedBox> {
+  const endpoint = `/devices/${encodeURIComponent(deviceId)}/reset`;
+  return parseProvisionedBox(
+    await apiFetch<unknown>(endpoint, { method: "POST" }),
+    (device) => parseEdgeDeviceResponse(device, endpoint)
+  );
+}
+
+/** School admin: add a scanned (or typed) box to a classroom. No key is ever shown. */
+export async function claimDevice(classroomId: string, codes: ClaimCodes): Promise<EdgeDevice> {
+  const endpoint = `/classrooms/${encodeURIComponent(classroomId)}/devices/claim`;
+  return parseEdgeDeviceResponse(
+    await apiFetch<unknown>(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device_code: codes.device_code, claim_code: codes.claim_code }),
+    }),
+    endpoint
+  );
+}
+
+/** Move a device to another classroom of the same school; it keeps working. */
+export async function moveDevice(deviceId: string, classroomId: string): Promise<EdgeDevice> {
+  const endpoint = `/devices/${encodeURIComponent(deviceId)}/move`;
+  return parseEdgeDeviceResponse(
+    await apiFetch<unknown>(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ classroom_id: classroomId }),
+    }),
+    endpoint
+  );
+}
+
+/** Take a device out of the school: its key stops working at once. */
+export async function removeDevice(deviceId: string): Promise<void> {
+  await apiFetch<unknown>(`/devices/${encodeURIComponent(deviceId)}/remove`, { method: "POST" });
 }
 
 export async function getAlert(alertId: number): Promise<Alert> {

@@ -2,6 +2,7 @@ import type {
   Classroom,
   ClassroomDeviceSummary,
   ClassroomTeacher,
+  DeviceLifecycleStatus,
   DeviceRegistrationResult,
   EdgeDevice,
 } from "./types";
@@ -45,6 +46,18 @@ function nullableString(value: unknown): value is string | null {
 
 function nullableTimestamp(value: unknown): value is string | null {
   return value === null || isTimestamp(value);
+}
+
+const LIFECYCLE_STATUSES: readonly DeviceLifecycleStatus[] = [
+  "unclaimed",
+  "claimed",
+  "active",
+  "disabled",
+  "removed",
+];
+
+function isLifecycleStatus(value: unknown): value is DeviceLifecycleStatus {
+  return LIFECYCLE_STATUSES.includes(value as DeviceLifecycleStatus);
 }
 
 function parseClassroomDevice(
@@ -151,7 +164,10 @@ export function parseEdgeDeviceResponse(
     !isTimestamp(value.updated_at) ||
     !nullableTimestamp(value.last_seen_at) ||
     !nullableTimestamp(value.assigned_at) ||
-    !nullableTimestamp(value.key_rotated_at)
+    !nullableTimestamp(value.key_rotated_at) ||
+    (value.status !== undefined && !isLifecycleStatus(value.status)) ||
+    (value.claimed_at !== undefined && !nullableTimestamp(value.claimed_at)) ||
+    (value.activated_at !== undefined && !nullableTimestamp(value.activated_at))
   ) {
     throw new MultiRoomContractError(
       endpoint,
@@ -182,6 +198,10 @@ export function parseEdgeDeviceResponse(
     last_seen_at: value.last_seen_at,
     assigned_at: value.assigned_at,
     key_rotated_at: value.key_rotated_at,
+    // QR setup fields, only when the backend sends them (older ones do not).
+    ...(value.status !== undefined ? { status: value.status } : {}),
+    ...(value.claimed_at !== undefined ? { claimed_at: value.claimed_at } : {}),
+    ...(value.activated_at !== undefined ? { activated_at: value.activated_at } : {}),
   };
 }
 

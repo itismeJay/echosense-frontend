@@ -178,11 +178,14 @@ test("each classroom card shows its device, online status, last check-in and are
 
 test("device management lives inside the classroom with protected moves and every lifecycle action", async () => {
   const source = await readSource("app/(app)/classrooms/[id]/page.tsx");
-  assert.match(source, /expected_current_classroom_id: dialog\.device\.classroom_id/);
+  // Moves go through the audited same-school /move; removal revokes the key.
+  assert.match(source, /moveDevice\(dialog\.device\.id, classroomId\)/);
+  assert.match(source, /removeDevice\(device\.id\)/);
+  assert.match(source, /AddDeviceFlow/);
   assert.match(source, /caught\.status === 409/);
   assert.match(source, /Someone else just changed this/);
+  // The manual key flow stays available under Advanced.
   assert.match(source, /registerDevice\(\{ \.\.\.input, school_id: classroom\.school_id, classroom_id: classroom\.id \}\)/);
-  assert.match(source, /unassignDevice/);
   assert.match(source, /disableDevice/);
   assert.match(source, /enableDevice/);
   assert.match(source, /rotateDeviceKey/);

@@ -251,3 +251,26 @@ input[type="range"] {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Box labels (Boxes page): print only the label sheet. */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .print-labels,
+  .print-labels * {
+    visibility: visible !important;
+  }
+  .print-labels {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .box-label {
+    break-inside: avoid;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

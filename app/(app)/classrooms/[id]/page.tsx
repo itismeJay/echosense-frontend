@@ -4,9 +4,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import toast from "react-hot-toast";
-import { ArrowLeft, BellRing, Cpu, GraduationCap, KeyRound, MapPinned, MoveRight, Pencil, Plus, Power } from "lucide-react";
+import { ArrowLeft, BellRing, Cpu, GraduationCap, KeyRound, LoaderCircle, MapPinned, MoveRight, Pencil, Plus, Power, Trash2 } from "lucide-react";
 import AlertInbox from "@/components/AlertInbox";
 import { AddDeviceDialog, ClassroomNameDialog, MoveDeviceDialog, RenameDeviceDialog } from "@/components/classrooms/dialogs";
+import AddDeviceFlow from "@/components/devices/AddDeviceFlow";
 import ConfirmDialog from "@/components/multi-room/ConfirmDialog";
 import DeviceSecretDialog from "@/components/multi-room/DeviceSecretDialog";
 import { Button, ButtonLink, Detail, EmptyState, ErrorState, LoadingRows, Page, Panel } from "@/components/ui";
@@ -14,21 +15,22 @@ import { DeviceStatus } from "@/components/ui/status";
 import { useAlerts } from "@/lib/AlertsProvider";
 import {
   ApiError,
-  assignDevice,
   disableDevice,
   enableDevice,
+  moveDevice,
   registerDevice,
+  removeDevice,
   rotateDeviceKey,
-  unassignDevice,
   updateClassroom,
   updateDevice,
 } from "@/lib/api";
+import { SETUP_PHASE_TEXT, lifecycleOf } from "@/lib/device-setup";
 import { formatTimestamp, formatWhen } from "@/lib/format";
 import { useClassroomData } from "@/lib/useClassroomData";
 import type { DeviceRegistrationResult, EdgeDevice } from "@/lib/types";
 
 type Confirmation =
-  | { kind: "rotate" | "disable" | "unassign"; device: EdgeDevice }
+  | { kind: "rotate" | "disable" | "remove"; device: EdgeDevice }
   | { kind: "deactivate" | "reactivate" };
 
 function BackLink() {
@@ -47,6 +49,7 @@ export default function ClassroomDetailPage() {
   const [dialog, setDialog] = useState<
     | { kind: "rename" }
     | { kind: "add-device" }
+    | { kind: "add-device-manual" }
     | { kind: "rename-device"; device: EdgeDevice }
     | { kind: "move-device"; device: EdgeDevice }
     | null
@@ -115,8 +118,9 @@ export default function ClassroomDetailPage() {
 
   const confirmText: Record<Confirmation["kind"], { title: string; description: string; label: string; tone: "danger" | "primary" }> = {
     rotate: {
-      title: "Create a new device key?",
-      description: "The old key stops working right away. Enter the new key on the device, or it will stop sending alerts.",
+      title: "Create a new device key? (Advanced)",
+      description:
+        "Only for a box set up by hand. The old key stops working right away. Enter the new key on the device, or it will stop sending alerts.",
       label: "Create new key",
       tone: "danger",
     },
@@ -126,10 +130,11 @@ export default function ClassroomDetailPage() {
       label: "Turn off device",
       tone: "danger",
     },
-    unassign: {
-      title: "Take this device out of the classroom?",
-      description: "It stops sending alerts for this classroom. You can put it in another classroom later.",
-      label: "Take out of classroom",
+    remove: {
+      title: "Remove this device from the school?",
+      description:
+        "It stops sending alerts right away and its key stops working. Past alerts stay. To use the box again, ask EchoSense support for a new sticker.",
+      label: "Remove device",
       tone: "danger",
     },
     deactivate: {
@@ -170,7 +175,7 @@ export default function ClassroomDetailPage() {
       return;
     }
     if (confirmation.kind === "disable") await run(() => disableDevice(device.id), "Device turned off");
-    if (confirmation.kind === "unassign") await run(() => unassignDevice(device.id), "Device taken out of the classroom");
+    if (confirmation.kind === "remove") await run(() => removeDevice(device.id), "Device removed");
   };
 
   return (
@@ -231,7 +236,14 @@ export default function ClassroomDetailPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-body-lg font-medium text-ink">{device.display_name}</p>
-                      <DeviceStatus lastSeenAt={device.last_seen_at} online={statuses.get(device.id)?.online} disabled={!device.is_active} className="mt-1" />
+                      {lifecycleOf(device) === "claimed" ? (
+                        <span className="mt-1 inline-flex items-center gap-2 text-body text-muted">
+                          <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                          {SETUP_PHASE_TEXT.waiting.title}. Plug the box in and turn it on.
+                        </span>
+                      ) : (
+                        <DeviceStatus lastSeenAt={device.last_seen_at} online={statuses.get(device.id)?.online} disabled={!device.is_active} className="mt-1" />
+                      )}
                     </div>
                   </div>
                   <dl className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -249,9 +261,6 @@ export default function ClassroomDetailPage() {
                     </Detail>
                   </dl>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <Button size="sm" icon={KeyRound} onClick={() => setConfirmation({ kind: "rotate", device })}>
-                      New key
-                    </Button>
                     <Button size="sm" icon={MoveRight} onClick={() => setDialog({ kind: "move-device", device })}>
                       Move
                     </Button>
@@ -267,8 +276,11 @@ export default function ClassroomDetailPage() {
                         Turn on
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" onClick={() => setConfirmation({ kind: "unassign", device })}>
-                      Take out of classroom
+                    <Button size="sm" variant="danger" icon={Trash2} onClick={() => setConfirmation({ kind: "remove", device })}>
+                      Remove device
+                    </Button>
+                    <Button size="sm" variant="ghost" icon={KeyRound} onClick={() => setConfirmation({ kind: "rotate", device })}>
+                      New key (advanced)
                     </Button>
                   </div>
                 </li>
@@ -338,6 +350,14 @@ export default function ClassroomDetailPage() {
         />
       )}
       {dialog?.kind === "add-device" && (
+        <AddDeviceFlow
+          classroom={classroom}
+          onClose={() => setDialog(null)}
+          onAdded={reload}
+          onAdvanced={() => setDialog({ kind: "add-device-manual" })}
+        />
+      )}
+      {dialog?.kind === "add-device-manual" && (
         <AddDeviceDialog
           classroom={classroom}
           pending={pending}
@@ -371,16 +391,7 @@ export default function ClassroomDetailPage() {
           classrooms={classrooms}
           pending={pending}
           onCancel={() => setDialog(null)}
-          onSubmit={(classroomId) =>
-            run(
-              () =>
-                assignDevice(dialog.device.id, {
-                  classroom_id: classroomId,
-                  expected_current_classroom_id: dialog.device.classroom_id,
-                }),
-              "Device moved"
-            )
-          }
+          onSubmit={(classroomId) => run(() => moveDevice(dialog.device.id, classroomId), "Device moved")}
         />
       )}
       {confirmation && (

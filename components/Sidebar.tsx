@@ -11,6 +11,7 @@ import {
   Building2,
   DoorOpen,
   Home,
+  Package,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
@@ -37,6 +38,7 @@ const NAV_ICONS: Record<NavIconKey, LucideIcon> = {
   activity: Activity,
   settings: Settings,
   schools: Building2,
+  boxes: Package,
   words: BookOpenText,
 };
 

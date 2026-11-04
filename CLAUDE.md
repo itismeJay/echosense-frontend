@@ -44,11 +44,12 @@ app/
                           turn-off + the school's own words). Super admin outside a school: settings = read-only
                           Detection settings, settings/words = the editable global list
     schools/            — super admin: All schools (Enter school)
+    boxes/              — super admin: Boxes (QR setup: new boxes + printable labels/identity files, reset)
     profile/            — avatar menu: account + notifications
 ```
 
 `lib/access.ts` is the single source of truth for page access and the sidebar (`navItemsFor(role, mode)`):
-staff 2 items, counselor 3, admin 7; a super admin sees 4 platform items, or the admin's 7 after entering a
+staff 2 items, counselor 3, admin 7; a super admin sees 5 platform items, or the admin's 7 after entering a
 school. `proxy.ts` and the `(app)` PageGuard both read it. Old URLs redirect from `next.config.ts`
 (`lib/legacy-routes.ts`). New protected pages must go inside `(app)/` and get a rule in `ROUTE_ACCESS`.
 
@@ -103,3 +104,7 @@ view (super admin with no entered school = platform). Alerts carry `outside_scho
 - `Alert` — includes `status: "active" | "reviewed" | "resolved"` ("active" = needs review)
 - `DeviceStatusItem`, `SchoolSummaryCard` — from `/devices/status` and `/schools/summary`
 - `AuthUser` — `{ id, email, role, school_id, is_super_admin, must_change_password }` (in `lib/auth.ts`)
+
+## QR device setup
+
+Classrooms → Add device (`components/devices/AddDeviceFlow.tsx`): Scan QR with the laptop camera (`QrScanner.tsx`, jsQR) or Type code instead, then live status (waiting for box → Online). Nobody sees a device key; the old manual key flow is under Advanced. Sticker parsing, setup-code format and plain status wording live in `lib/device-setup.ts`. The camera needs a secure origin (https or localhost).

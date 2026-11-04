@@ -36,6 +36,7 @@ export const config = {
     "/activity/:path*",
     "/settings/:path*",
     "/schools/:path*",
+    "/boxes/:path*",
     "/profile/:path*",
     "/change-password",
     "/no-access",

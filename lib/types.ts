@@ -193,6 +193,10 @@ export interface Classroom {
 
 export type DeviceAssignmentState = "assigned" | "unassigned";
 
+/** QR setup lifecycle. unclaimed: ready to add; claimed: in a room, waiting for the box;
+ * active: the box holds its key; disabled: turned off; removed: needs a super-admin reset. */
+export type DeviceLifecycleStatus = "unclaimed" | "claimed" | "active" | "disabled" | "removed";
+
 export interface EdgeDevice {
   id: string;
   device_code: string;
@@ -208,6 +212,19 @@ export interface EdgeDevice {
   last_seen_at: string | null;
   assigned_at: string | null;
   key_rotated_at: string | null;
+  /** Absent from older backends; use lifecycleOf() from lib/device-setup. */
+  status?: DeviceLifecycleStatus;
+  claimed_at?: string | null;
+  activated_at?: string | null;
+}
+
+/** A box from POST /devices/provision or a reset: the codes are shown only once. */
+export interface ProvisionedBox {
+  device: EdgeDevice;
+  device_code: string;
+  claim_code: string;
+  box_secret: string;
+  qr_payload: string;
 }
 
 export interface ClassroomCreateRequest {
@@ -415,6 +432,7 @@ export interface DeviceStatusItem {
   classroom_id: string | null;
   classroom_name: string | null;
   is_active: boolean;
+  status?: DeviceLifecycleStatus;
   last_seen_at: string | null;
   online: boolean;
 }

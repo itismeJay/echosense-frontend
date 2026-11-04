@@ -30,6 +30,7 @@ export const ROUTE_ACCESS: ReadonlyArray<{ prefix: string; roles: readonly Acces
   { prefix: "/activity", roles: ADMINS },
   { prefix: "/settings", roles: ADMINS },
   { prefix: "/schools", roles: SUPER_ADMIN },
+  { prefix: "/boxes", roles: SUPER_ADMIN },
 ];
 
 /** Where each role lands after signing in (super admins start at All schools). */
@@ -114,6 +115,7 @@ export type NavIconKey =
   | "activity"
   | "settings"
   | "schools"
+  | "boxes"
   | "words";
 
 export interface NavItemConfig {
@@ -138,6 +140,7 @@ const SCHOOL_NAV: NavItemConfig[] = [
 /** A super admin outside any school. */
 const PLATFORM_NAV: NavItemConfig[] = [
   { href: "/schools", icon: "schools", label: "All schools" },
+  { href: "/boxes", icon: "boxes", label: "Boxes" },
   { href: "/settings/words", icon: "words", label: "Monitored words" },
   { href: "/settings", icon: "settings", label: "Detection settings" },
   { href: "/activity", icon: "activity", label: "Platform activity" },

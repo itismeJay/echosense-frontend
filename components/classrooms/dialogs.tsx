@@ -94,8 +94,8 @@ export function AddDeviceDialog({
   const [error, setError] = useState("");
   return (
     <AccessibleDialog
-      title={`Add a device to ${classroom.name}`}
-      description="After you add it, EchoSense shows a key once. Enter that key on the device."
+      title={`Add a device with a key (Advanced)`}
+      description={`For a box set up by hand, in ${classroom.name}. EchoSense shows a key once; enter it on the device.`}
       onClose={onCancel}
       closeDisabled={pending}
     >

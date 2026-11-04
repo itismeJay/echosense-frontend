@@ -14,6 +14,7 @@ import { formatWhen } from "@/lib/format";
 import { useSchoolScope } from "@/lib/school-scope";
 import { useClassroomData } from "@/lib/useClassroomData";
 import type { EdgeDevice } from "@/lib/types";
+import { lifecycleOf } from "@/lib/device-setup";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -146,7 +147,11 @@ export default function ClassroomsPage() {
                       const status = statuses.get(device.id);
                       return (
                         <div key={device.id}>
-                          <DeviceStatus lastSeenAt={device.last_seen_at} online={status?.online} disabled={!device.is_active} />
+                          {lifecycleOf(device) === "claimed" ? (
+                            <span className="text-body text-muted">Waiting for the box to connect</span>
+                          ) : (
+                            <DeviceStatus lastSeenAt={device.last_seen_at} online={status?.online} disabled={!device.is_active} />
+                          )}
                           <p className="num mt-0.5 text-small text-muted">
                             {device.display_name}. Last check-in{" "}
                             {device.last_seen_at ? formatWhen(device.last_seen_at) : "never"}

@@ -30,7 +30,7 @@ const ADMIN_PAGES = [
   "/settings",
   "/settings/words",
 ];
-const SUPER_ADMIN_PAGES = [...ADMIN_PAGES, "/schools"];
+const SUPER_ADMIN_PAGES = [...ADMIN_PAGES, "/schools", "/boxes"];
 const ALL_PAGES = SUPER_ADMIN_PAGES;
 
 // The sidebar: staff 2 items, counselor 3, admin 7.
@@ -80,12 +80,13 @@ for (const [role, hrefs] of Object.entries(NAV)) {
   });
 }
 
-test("super admin sidebar: the admin's 7 pages inside a school, 4 platform pages outside", () => {
+test("super admin sidebar: the admin's 7 pages inside a school, 5 platform pages outside", () => {
   assert.deepEqual(navItemsFor("super_admin", "school").map((item) => item.href), NAV.admin);
   assert.deepEqual(
     navItemsFor("super_admin", "platform").map((item) => [item.href, item.label]),
     [
       ["/schools", "All schools"],
+      ["/boxes", "Boxes"],
       ["/settings/words", "Monitored words"],
       ["/settings", "Detection settings"],
       ["/activity", "Platform activity"],
