@@ -196,6 +196,7 @@ export type DeviceAssignmentState = "assigned" | "unassigned";
 /** QR setup lifecycle. unclaimed: ready to add; claimed: in a room, waiting for the box;
  * active: the box holds its key; disabled: turned off; removed: needs a super-admin reset. */
 export type DeviceLifecycleStatus = "unclaimed" | "claimed" | "active" | "disabled" | "removed";
+export type WifiConnectionStatus = "connected" | "disconnected";
 
 export interface EdgeDevice {
   id: string;
@@ -216,6 +217,10 @@ export interface EdgeDevice {
   status?: DeviceLifecycleStatus;
   claimed_at?: string | null;
   activated_at?: string | null;
+  /** Non-secret status reported by the device heartbeat. */
+  wifi_status?: WifiConnectionStatus | null;
+  wifi_ssid?: string | null;
+  wifi_local_url?: string | null;
 }
 
 /** A box from POST /devices/provision or a reset: the codes are shown only once. */

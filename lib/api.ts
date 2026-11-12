@@ -78,6 +78,7 @@ import { clearSessionCookies, handleForbiddenResponse } from "./session";
 import { parseSchool, parseSchoolList } from "./schools-contract";
 import { getSchoolScope, withSchoolScope } from "./school-scope";
 import type { NewUserPayload } from "./user-admin";
+import type { DeviceWifi, WifiCommand } from "./wifi-settings";
 import {
   PASSWORD_CHANGE_MESSAGE,
   SCHOOL_INACTIVE_MESSAGE,
@@ -777,4 +778,51 @@ export async function updateSchool(
     }),
     endpoint
   );
+}
+
+// --- Device Wi-Fi ---
+
+function wifiPath(deviceId: string, rest = ""): string {
+  return `/devices/${encodeURIComponent(deviceId)}/wifi${rest}`;
+}
+
+export async function getDeviceWifi(deviceId: string): Promise<DeviceWifi> {
+  const endpoint = wifiPath(deviceId);
+  const value = await apiFetch<unknown>(endpoint);
+  if (!isRecord(value) || !isRecord(value.current) || !Array.isArray(value.networks)) {
+    throw new ApiContractError(endpoint, "does not match the Wi-Fi schema");
+  }
+  return value as unknown as DeviceWifi;
+}
+
+function wifiCommand(endpoint: string, method: string, body?: unknown): Promise<WifiCommand> {
+  return apiFetch<WifiCommand>(endpoint, {
+    method,
+    ...(body === undefined
+      ? {}
+      : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+  });
+}
+
+export function addWifiNetwork(
+  deviceId: string,
+  body: { ssid: string; password?: string; priority?: number }
+): Promise<WifiCommand> {
+  return wifiCommand(wifiPath(deviceId, "/networks"), "POST", body);
+}
+
+export function updateWifiNetwork(
+  deviceId: string,
+  ssid: string,
+  body: { password?: string | null; priority?: number }
+): Promise<WifiCommand> {
+  return wifiCommand(wifiPath(deviceId, `/networks/${encodeURIComponent(ssid)}`), "PATCH", body);
+}
+
+export function removeWifiNetwork(deviceId: string, ssid: string): Promise<WifiCommand> {
+  return wifiCommand(wifiPath(deviceId, `/networks/${encodeURIComponent(ssid)}`), "DELETE");
+}
+
+export function connectWifiNetwork(deviceId: string, ssid: string): Promise<WifiCommand> {
+  return wifiCommand(wifiPath(deviceId, "/connect"), "POST", { ssid });
 }

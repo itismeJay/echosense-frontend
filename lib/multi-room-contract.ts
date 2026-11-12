@@ -5,6 +5,7 @@ import type {
   DeviceLifecycleStatus,
   DeviceRegistrationResult,
   EdgeDevice,
+  WifiConnectionStatus,
 } from "./types";
 
 export class MultiRoomContractError extends Error {
@@ -46,6 +47,10 @@ function nullableString(value: unknown): value is string | null {
 
 function nullableTimestamp(value: unknown): value is string | null {
   return value === null || isTimestamp(value);
+}
+
+function nullableWifiStatus(value: unknown): value is WifiConnectionStatus | null {
+  return value === null || value === "connected" || value === "disconnected";
 }
 
 const LIFECYCLE_STATUSES: readonly DeviceLifecycleStatus[] = [
@@ -167,7 +172,10 @@ export function parseEdgeDeviceResponse(
     !nullableTimestamp(value.key_rotated_at) ||
     (value.status !== undefined && !isLifecycleStatus(value.status)) ||
     (value.claimed_at !== undefined && !nullableTimestamp(value.claimed_at)) ||
-    (value.activated_at !== undefined && !nullableTimestamp(value.activated_at))
+    (value.activated_at !== undefined && !nullableTimestamp(value.activated_at)) ||
+    (value.wifi_status !== undefined && !nullableWifiStatus(value.wifi_status)) ||
+    (value.wifi_ssid !== undefined && !nullableString(value.wifi_ssid)) ||
+    (value.wifi_local_url !== undefined && !nullableString(value.wifi_local_url))
   ) {
     throw new MultiRoomContractError(
       endpoint,
@@ -202,6 +210,9 @@ export function parseEdgeDeviceResponse(
     ...(value.status !== undefined ? { status: value.status } : {}),
     ...(value.claimed_at !== undefined ? { claimed_at: value.claimed_at } : {}),
     ...(value.activated_at !== undefined ? { activated_at: value.activated_at } : {}),
+    ...(value.wifi_status !== undefined ? { wifi_status: value.wifi_status } : {}),
+    ...(value.wifi_ssid !== undefined ? { wifi_ssid: value.wifi_ssid } : {}),
+    ...(value.wifi_local_url !== undefined ? { wifi_local_url: value.wifi_local_url } : {}),
   };
 }
 

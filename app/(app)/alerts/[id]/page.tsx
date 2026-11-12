@@ -5,17 +5,22 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Check, CheckCheck, FlaskConical, RotateCcw } from "lucide-react";
 import AlertEvidence from "@/components/AlertEvidence";
+import LanguageBadge from "@/components/LanguageBadge";
+import TranscriptQuote from "@/components/TranscriptQuote";
 import { Button, Detail, ErrorState, LoadingRows, Note, Page } from "@/components/ui";
 import { OutsideHoursTag, ReviewState, SeverityTag } from "@/components/ui/status";
 import {
-  REQUIRED_REVIEW_NOTICE,
+  SHORT_REVIEW_NOTICE,
+  WHAT_TO_DO,
+  alertReason,
+  alertTerms,
   classroomLabel,
   deliveryStatusLabel,
   isTestAlert,
   noWordsReason,
   pushStatusLabel,
   schoolLabel,
-  severitySummary,
+  storedTranscript,
   triggerTypeLabel,
   wordsHeard,
 } from "@/lib/alert-presentation";
@@ -143,6 +148,8 @@ export default function AlertDetailPage() {
   }
 
   const words = wordsHeard(alert, 12);
+  const transcript = storedTranscript(alert)?.trim();
+  const language = alert.language && alert.language !== "unknown" ? alert.language : alertTerms(alert)[0]?.language;
   const pending = pendingId === alert.id;
 
   return (
@@ -160,44 +167,90 @@ export default function AlertDetailPage() {
       )}
 
       <header className="mt-4 border-b border-line pb-5">
-        <div className="flex flex-wrap items-center gap-3">
+        <section aria-labelledby="said-title">
+          <h1 id="said-title" className="text-title font-semibold text-ink">
+            What was said
+          </h1>
+          {transcript ? (
+            <p className="mt-2 select-text whitespace-pre-wrap text-body-lg text-ink">
+              <TranscriptQuote text={transcript} terms={words} />
+            </p>
+          ) : (
+            <>
+              <p className="mt-2 text-body-lg text-muted">Transcript not available</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {words.length > 0 ? (
+                  words.map((word) => (
+                    <span key={word} className="rounded-tag bg-surface px-2 py-1 text-body-lg font-semibold text-ink">
+                      “{word}”
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-body text-muted">{noWordsReason(alert)}</span>
+                )}
+              </div>
+            </>
+          )}
+          {language && (
+            <p className="mt-2 flex items-center gap-2 text-body text-muted">
+              Language <LanguageBadge language={language} size="md" />
+            </p>
+          )}
+        </section>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <SeverityTag severity={alert.severity} />
+          <p className="text-body-lg text-ink">{alertReason(alert)}</p>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
           <ReviewState status={alert.status} />
           {alert.outside_school_hours && <OutsideHoursTag />}
         </div>
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-display font-semibold text-ink">{classroomLabel(alert)}</h1>
-            <p className="num mt-1 text-body-lg text-muted">
-              {formatTimestamp(alert.trigger_timestamp ?? alert.event_start_timestamp ?? alert.created_at)}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {alert.status === "active" || alert.status === "unknown" ? (
-              <>
-                <Button variant="primary" icon={Check} pending={pending} onClick={() => void changeStatus("reviewed")}>
-                  Mark reviewed
-                </Button>
-                <Button icon={CheckCheck} disabled={pending} onClick={() => void changeStatus("resolved")}>
+
+        <p className="mt-3 text-body-lg text-ink">
+          <span className="font-semibold">{classroomLabel(alert)}</span>
+          <span className="num text-muted">
+            {" · "}
+            {formatTimestamp(alert.trigger_timestamp ?? alert.event_start_timestamp ?? alert.created_at)}
+          </span>
+        </p>
+
+        <section aria-labelledby="todo-title" className="mt-4">
+          <h2 id="todo-title" className="text-body-lg font-semibold text-ink">
+            What to do
+          </h2>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-body text-ink">
+            {WHAT_TO_DO.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ul>
+        </section>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {alert.status === "active" || alert.status === "unknown" ? (
+            <>
+              <Button variant="primary" icon={Check} pending={pending} onClick={() => void changeStatus("reviewed")}>
+                Mark reviewed
+              </Button>
+              <Button icon={CheckCheck} disabled={pending} onClick={() => void changeStatus("resolved")}>
+                Mark resolved
+              </Button>
+            </>
+          ) : (
+            <>
+              {alert.status === "reviewed" && (
+                <Button variant="primary" icon={CheckCheck} pending={pending} onClick={() => void changeStatus("resolved")}>
                   Mark resolved
                 </Button>
-              </>
-            ) : (
-              <>
-                {alert.status === "reviewed" && (
-                  <Button variant="primary" icon={CheckCheck} pending={pending} onClick={() => void changeStatus("resolved")}>
-                    Mark resolved
-                  </Button>
-                )}
-                <Button icon={RotateCcw} disabled={pending} onClick={() => void changeStatus("active")}>
-                  Move back to Needs review
-                </Button>
-              </>
-            )}
-          </div>
+              )}
+              <Button icon={RotateCcw} disabled={pending} onClick={() => void changeStatus("active")}>
+                Move back to Needs review
+              </Button>
+            </>
+          )}
         </div>
         <div className="mt-4">
-          <Note>{alert.review_message || REQUIRED_REVIEW_NOTICE}</Note>
+          <Note>{SHORT_REVIEW_NOTICE}</Note>
         </div>
       </header>
 
@@ -207,28 +260,6 @@ export default function AlertDetailPage() {
         </p>
       )}
 
-      <section aria-labelledby="heard-title" className="mt-6">
-        <h2 id="heard-title" className="text-title font-semibold text-ink">
-          What was heard
-        </h2>
-        <p className="mt-1 text-body text-muted">{severitySummary(alert.severity)}</p>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {words.length > 0 ? (
-            words.map((word) => (
-              <span key={word} className="rounded-tag bg-surface px-2 py-1 text-body-lg text-ink">
-                “{word}”
-              </span>
-            ))
-          ) : (
-            <span className="text-body-lg text-muted">{noWordsReason(alert)}</span>
-          )}
-        </div>
-      </section>
-
-      <section className="mt-6" aria-label="Alert information">
-        <AlertEvidence alert={alert} defaultExpanded hideToggle part="summary" />
-      </section>
-
       <details className="group mt-6 rounded-panel border border-line">
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 text-body-lg font-medium text-ink sm:px-5">
           Technical details
@@ -237,7 +268,8 @@ export default function AlertDetailPage() {
           </span>
         </summary>
         <div className="border-t border-line px-4 py-4 sm:px-5">
-          <dl className="grid gap-4 sm:grid-cols-2">
+          <AlertEvidence alert={alert} defaultExpanded hideToggle part="summary" hideTranscript />
+          <dl className="mt-6 grid gap-4 sm:grid-cols-2">
             <Detail label="Alert ID">
               <span className="num">{alert.id}</span>
             </Detail>

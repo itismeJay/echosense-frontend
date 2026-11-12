@@ -8,6 +8,7 @@ import { ArrowLeft, BellRing, Cpu, GraduationCap, KeyRound, LoaderCircle, MapPin
 import AlertInbox from "@/components/AlertInbox";
 import { AddDeviceDialog, ClassroomNameDialog, MoveDeviceDialog, RenameDeviceDialog } from "@/components/classrooms/dialogs";
 import AddDeviceFlow from "@/components/devices/AddDeviceFlow";
+import WifiSettings from "@/components/devices/WifiSettings";
 import ConfirmDialog from "@/components/multi-room/ConfirmDialog";
 import DeviceSecretDialog from "@/components/multi-room/DeviceSecretDialog";
 import { Button, ButtonLink, Detail, EmptyState, ErrorState, LoadingRows, Page, Panel } from "@/components/ui";
@@ -27,6 +28,7 @@ import {
 import { SETUP_PHASE_TEXT, lifecycleOf } from "@/lib/device-setup";
 import { formatTimestamp, formatWhen } from "@/lib/format";
 import { useClassroomData } from "@/lib/useClassroomData";
+import { isDeviceOnline } from "@/lib/device-status";
 import type { DeviceRegistrationResult, EdgeDevice } from "@/lib/types";
 
 type Confirmation =
@@ -260,6 +262,13 @@ export default function ClassroomDetailPage() {
                       <span className="num">{device.assigned_at ? formatWhen(device.assigned_at) : "Not recorded"}</span>
                     </Detail>
                   </dl>
+                  <WifiSettings
+                    device={device}
+                    online={
+                      statuses.get(device.id)?.online ??
+                      (device.is_active && isDeviceOnline(device.last_seen_at))
+                    }
+                  />
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button size="sm" icon={MoveRight} onClick={() => setDialog({ kind: "move-device", device })}>
                       Move

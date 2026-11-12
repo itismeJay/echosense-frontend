@@ -1,7 +1,7 @@
 "use client";
 
 // The alert inbox: the one loud element in the product. A calm, dense, scannable list —
-// severity word + stripe, classroom, words heard, time, and one-click review.
+// severity word + stripe, classroom, what was said, time, and one-click review.
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -12,8 +12,10 @@ import {
   isTestAlert,
   needsReview,
   noWordsReason,
+  transcriptSnippet,
   wordsHeard,
 } from "@/lib/alert-presentation";
+import TranscriptQuote from "@/components/TranscriptQuote";
 import { formatWhen } from "@/lib/format";
 import { useReviewAlert } from "@/lib/useReviewAlert";
 import { OutsideHoursTag, ReviewState, SeverityStripe, SeverityTag } from "@/components/ui/status";
@@ -47,6 +49,7 @@ function AlertRow({
   showSchool: boolean;
 }) {
   const words = wordsHeard(alert);
+  const snippet = transcriptSnippet(alert);
   const testAlert = isTestAlert(alert);
   const classroom = classroomLabel(alert);
   const device = alert.device_display_name?.trim() || alert.device_code?.trim();
@@ -90,7 +93,12 @@ function AlertRow({
             </span>
           )}
           {alert.outside_school_hours && <OutsideHoursTag />}
-          {words.length > 0 ? (
+          {snippet ? (
+            <>
+              <span className="sr-only">What was said:</span>
+              <TranscriptQuote text={snippet} terms={wordsHeard(alert, 12)} className="min-w-0 text-body text-ink" />
+            </>
+          ) : words.length > 0 ? (
             <>
               <span className="sr-only">Words heard:</span>
               {words.map((word) => (

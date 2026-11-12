@@ -8,6 +8,9 @@ import type {
 export const REQUIRED_REVIEW_NOTICE =
   "Unverified possible-aggression alert. Human review required.";
 
+/** The short disclaimer shown on the alert detail page. */
+export const SHORT_REVIEW_NOTICE = "Automated alert, needs human review.";
+
 export const HUMAN_REVIEW_NOTE =
   "This transcript and acoustic evidence are automated indicators. Staff must review the surrounding context before taking action.";
 
@@ -327,3 +330,97 @@ export function noWordsReason(alert: Alert): string {
   if (alert.trigger_type === "ACOUSTIC") return "Raised voices or a loud sound";
   return "No words recorded";
 }
+
+/** A transcript piece; `match` marks a monitored term to highlight. */
+export interface TranscriptPart {
+  text: string;
+  match: boolean;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Splits text into plain and matched parts (case-insensitive, longest term first). */
+export function highlightTerms(text: string, terms: string[]): TranscriptPart[] {
+  const unique = [...new Set(terms.map((term) => term.trim()).filter(Boolean))].sort(
+    (a, b) => b.length - a.length
+  );
+  if (!text || unique.length === 0) return text ? [{ text, match: false }] : [];
+  const pattern = new RegExp(`(${unique.map(escapeRegExp).join("|")})`, "giu");
+  return text
+    .split(pattern)
+    .filter((part) => part !== "")
+    .map((part) => ({
+      text: part,
+      match: unique.some((term) => term.toLocaleLowerCase() === part.toLocaleLowerCase()),
+    }));
+}
+
+/**
+ * A short quote of the transcript for the list: up to `maxLength` characters, shifted so the
+ * first matched term is visible, with an ellipsis where text was cut. Null without a transcript.
+ */
+export function transcriptSnippet(alert: Alert, maxLength = 80): string | null {
+  const transcript = storedTranscript(alert)?.replace(/\s+/g, " ").trim();
+  if (!transcript) return null;
+  if (transcript.length <= maxLength) return transcript;
+  const lower = transcript.toLocaleLowerCase();
+  const firstMatch = wordsHeard(alert, 12)
+    .map((term) => lower.indexOf(term.toLocaleLowerCase()))
+    .filter((index) => index >= 0)
+    .sort((a, b) => a - b)[0];
+  let start = firstMatch !== undefined && firstMatch > maxLength - 30 ? firstMatch - 20 : 0;
+  start = Math.max(0, Math.min(start, transcript.length - maxLength));
+  const end = start + maxLength;
+  return `${start > 0 ? "…" : ""}${transcript.slice(start, end).trim()}${end < transcript.length ? "…" : ""}`;
+}
+
+const REASON_CATEGORIES: Array<[RegExp, string]> = [
+  [/self[_-]?harm/, "Words telling someone to hurt themselves"],
+  [/threat|violen/, "Possible threat"],
+  [/body|appearance/, "Comment about someone's looks"],
+  [/academic/, "Put-down about someone's schoolwork"],
+  [/taunt|insult|slur|curse|profan|shaming/, "Insult"],
+];
+
+function evidenceFlag(evidence: Alert["direct_address_evidence"]): boolean {
+  if (!evidence) return false;
+  return ["detected", "present", "is_direct", "direct"].some((key) => evidence[key] === true);
+}
+
+/** One plain-language line on why the alert was raised, built from the alert's own fields. */
+export function alertReason(alert: Alert): string {
+  if (isTestAlert(alert)) return "Test alert sent to check the system";
+  const keys = [
+    ...(alert.categories ?? []),
+    ...Object.keys(alert.severity_evidence?.term_categories ?? {}),
+    ...alert.severity_reasons,
+    ...(alert.severity_evidence?.reasons ?? []),
+  ].map((key) => key.toLowerCase());
+  const what =
+    REASON_CATEGORIES.find(([pattern]) => keys.some((key) => pattern.test(key)))?.[1] ??
+    (alert.trigger_type === "ACOUSTIC"
+      ? "Raised voices or a loud sound"
+      : wordsHeard(alert).length > 0
+        ? "Hurtful or worrying words"
+        : "Possible classroom concern");
+
+  const details: string[] = [];
+  if (evidenceFlag(alert.direct_address_evidence)) details.push("aimed at someone");
+  const tone = (alert.emotion ?? "").toLowerCase();
+  if (/angry|anger|aggress|hostile/.test(tone)) details.push("said in an angry tone");
+  else if (alert.trigger_type === "KEYWORD" && alert.acoustic_trigger_evidence) details.push("said in a loud tone");
+  const repeats = alert.repetition_evidence?.count;
+  if (typeof repeats === "number" && repeats > 1) details.push(`repeated ${repeats} times`);
+
+  if (details.length === 0) return what;
+  const [first, ...rest] = details;
+  return `${what} ${first}${rest.length ? `, ${rest.join(", ")}` : ""}`;
+}
+
+export const WHAT_TO_DO = [
+  "Check on the students involved.",
+  "Talk to them privately.",
+  "Refer to the counselor if it repeats or is a threat.",
+] as const;

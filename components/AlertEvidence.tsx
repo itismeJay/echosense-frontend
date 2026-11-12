@@ -47,6 +47,8 @@ interface AlertEvidenceProps {
   hideToggle?: boolean;
   /** "summary": why it was flagged and the transcript; "technical": terms, sound evidence and models. */
   part?: "all" | "summary" | "technical";
+  /** Leaves out the transcript (when the page already shows it); keeps the transcription status. */
+  hideTranscript?: boolean;
 }
 
 function MetricBar({
@@ -84,6 +86,7 @@ export default function AlertEvidence({
   defaultExpanded = false,
   hideToggle = false,
   part = "all",
+  hideTranscript = false,
 }: AlertEvidenceProps) {
   const showSummary = part !== "technical";
   const showTechnical = part !== "summary";
@@ -236,6 +239,12 @@ export default function AlertEvidence({
             )}
           </section>
 
+          {hideTranscript ? (
+            <p className="text-sm text-ink">
+              <span className="font-medium">Transcription status:</span>{" "}
+              {alert.transcription_status ?? "Not recorded"}
+            </p>
+          ) : (
           <section aria-labelledby={`phrase-${alert.id}`}>
             <h2 id={`phrase-${alert.id}`} className="text-base font-semibold text-ink">
               Detected transcript
@@ -260,6 +269,7 @@ export default function AlertEvidence({
               {alert.transcription_status ?? "Not recorded"}
             </p>
           </section>
+          )}
 
           </>)}
           {showTechnical && (<>

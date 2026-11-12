@@ -41,7 +41,8 @@ test("inbox rows show severity, classroom, words and time, link to detail, and r
   assert.match(source, /Test alert, not a real incident/);
   assert.match(source, /Mark reviewed/);
   assert.match(source, /setStatus\(alert, "reviewed"\)/);
-  // Rows stay short: no transcript in the list.
+  // Rows quote a short transcript snippet (with matched terms), never the full transcript.
+  assert.match(source, /transcriptSnippet\(alert\)/);
   assert.doesNotMatch(source, /storedTranscript|transcribed_text|exactTranscript/);
 });
 
@@ -63,7 +64,9 @@ test("alert detail includes review actions, exact transcript and evidence metada
   assert.match(page, /Mark reviewed/);
   assert.match(page, /Mark resolved/);
   assert.match(page, /Move back to Needs review/);
-  assert.match(page, /What was heard/);
+  assert.match(page, /What was said/);
+  assert.match(page, /What to do/);
+  assert.match(page, /Transcript not available/);
   assert.match(page, /Alert ID/);
   assert.match(page, /Event ID/);
   assert.match(page, /Event timeline/);
@@ -72,7 +75,7 @@ test("alert detail includes review actions, exact transcript and evidence metada
   assert.match(page, /event_end_timestamp/);
   assert.match(page, /label="Device"/);
   assert.match(page, /Delivery and phone notifications/);
-  assert.match(page, /REQUIRED_REVIEW_NOTICE/);
+  assert.match(page, /SHORT_REVIEW_NOTICE/);
   assert.match(evidence, /Detected transcript/);
   assert.match(evidence, /\{exactTranscript\(alert\)\}/);
   assert.match(evidence, /whitespace-pre-wrap break-words/);

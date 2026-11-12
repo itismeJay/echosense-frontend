@@ -220,7 +220,7 @@ test("alerts filter by severity, date and classroom; the entered school scopes t
   assert.match(view, /\{ href: "\/alerts", label: "Needs review", count: waitingCount \}/);
   assert.match(view, /\{ href: "\/alerts\/all", label: "All alerts" \}/);
   assert.match(api, /qs\.set\("status", params\.status\)/);
-  assert.match(detail, /REQUIRED_REVIEW_NOTICE/);
+  assert.match(detail, /SHORT_REVIEW_NOTICE/);
 });
 
 test("management routes remain admin-only and API errors distinguish permission and conflict", async () => {
