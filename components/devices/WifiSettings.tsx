@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
-import { Pencil, Plus, Trash2, Wifi } from "lucide-react";
+import { Lock, Pencil, Plus, RefreshCw, Trash2, Wifi } from "lucide-react";
 
 import ConfirmDialog from "@/components/multi-room/ConfirmDialog";
 import { Button, Field, FormError, hintClass, inputClass } from "@/components/ui";
@@ -11,21 +11,29 @@ import {
   connectWifiNetwork,
   getDeviceWifi,
   removeWifiNetwork,
+  scanWifiNetworks,
   updateWifiNetwork,
 } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { formatWhen } from "@/lib/format";
 import type { EdgeDevice } from "@/lib/types";
 import {
   buildAddPayload,
   buildUpdatePayload,
   canManageWifi,
   CONNECT_ROLLBACK_NOTE,
+  isScanPending,
+  isSavedNetwork,
+  isSecuredNetwork,
+  SCANNING_TEXT,
   MAX_WIFI_PRIORITY,
   SETUP_PORTAL_URL,
+  signalBars,
   signalLabel,
   wifiResultText,
   wifiStatusLabel,
   type DeviceWifi,
+  type WifiScanNetwork,
   type WifiNetwork,
 } from "@/lib/wifi-settings";
 
@@ -37,16 +45,76 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong. Try again.";
 }
 
+function SignalBars({ signal }: { signal: number }) {
+  const bars = signalBars(signal);
+  return (
+    <span className="inline-flex items-end gap-0.5" role="img" aria-label={`Signal ${signalLabel(signal)}`}>
+      {[1, 2, 3, 4].map((bar) => (
+        <span
+          key={bar}
+          aria-hidden="true"
+          className={`w-1 rounded-sm ${bar <= bars ? "bg-ink" : "bg-line-strong"}`}
+          style={{ height: `${bar * 3 + 2}px` }}
+        />
+      ))}
+    </span>
+  );
+}
+
+function NearbyNetworks({
+  networks,
+  saved,
+  onPick,
+}: {
+  networks: WifiScanNetwork[];
+  saved: DeviceWifi["networks"];
+  onPick: (ssid: string) => void;
+}) {
+  if (networks.length === 0) {
+    return <p className="mt-1 text-body text-muted">No networks found. Move closer or scan again, or add one by name.</p>;
+  }
+  return (
+    <ul className="mt-2 divide-y divide-line" aria-label="Nearby networks">
+      {networks.map((network) => {
+        const secured = isSecuredNetwork(network.security);
+        return (
+          <li key={network.ssid}>
+            <button
+              type="button"
+              onClick={() => onPick(network.ssid)}
+              aria-label={`Use ${network.ssid}${secured ? ", password protected" : ", open"}`}
+              className="flex min-h-11 w-full items-center gap-3 px-1 text-left text-body text-ink hover:bg-bg"
+            >
+              <SignalBars signal={network.signal} />
+              <span className="min-w-0 flex-1 break-words">{network.ssid}</span>
+              {isSavedNetwork(network, saved) && (
+                <span className="rounded-tag border border-line-strong px-1.5 py-0.5 text-small text-muted">Saved</span>
+              )}
+              {secured ? (
+                <Lock className="h-4 w-4 text-muted" aria-hidden="true" />
+              ) : (
+                <span className="text-small text-muted">Open</span>
+              )}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function AddNetworkForm({
   deviceId,
+  initialSsid = "",
   onDone,
   onCancel,
 }: {
   deviceId: string;
+  initialSsid?: string;
   onDone: () => void;
   onCancel: () => void;
 }) {
-  const [ssid, setSsid] = useState("");
+  const [ssid, setSsid] = useState(initialSsid);
   const [password, setPassword] = useState("");
   const [priority, setPriority] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +147,7 @@ function AddNetworkForm({
           value={ssid}
           onChange={(e) => setSsid(e.target.value)}
           autoComplete="off"
+          autoFocus={!initialSsid}
           required
         />
       </Field>
@@ -207,6 +276,8 @@ export default function WifiSettings({ device, online }: { device: EdgeDevice; o
   const [wifi, setWifi] = useState<DeviceWifi | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [prefill, setPrefill] = useState("");
+  const [scanStarting, setScanStarting] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [confirmPending, setConfirmPending] = useState(false);
@@ -225,7 +296,7 @@ export default function WifiSettings({ device, online }: { device: EdgeDevice; o
   }, [load]);
 
   const hasPending =
-    !!wifi && (wifi.pending_commands.length > 0 || wifi.networks.some((n) => n.last_status === "pending"));
+    scanStarting || (!!wifi && (wifi.pending_commands.length > 0 || wifi.networks.some((n) => n.last_status === "pending")));
   useEffect(() => {
     if (!hasPending) return;
     const timer = window.setInterval(() => void load(), PENDING_POLL_MS);
@@ -236,6 +307,25 @@ export default function WifiSettings({ device, online }: { device: EdgeDevice; o
   const isOnline = wifi?.current.online ?? online;
   const status = wifiStatusLabel(isOnline, wifi?.current.wifi_status ?? device.wifi_status);
   const ssid = wifi?.current.ssid ?? device.wifi_ssid;
+  const scanning = scanStarting || isScanPending(wifi);
+
+  async function startScan() {
+    setScanStarting(true);
+    try {
+      await scanWifiNetworks(device.id);
+      await load();
+    } catch (err) {
+      toast.error(errorText(err));
+    } finally {
+      setScanStarting(false);
+    }
+  }
+
+  function pickNetwork(name: string) {
+    setPrefill(name);
+    setEditing(null);
+    setAdding(true);
+  }
 
   async function runConfirm() {
     if (!confirm) return;
@@ -267,10 +357,19 @@ export default function WifiSettings({ device, online }: { device: EdgeDevice; o
           <Wifi className="h-4 w-4" aria-hidden="true" />
           Wi-Fi
         </h3>
-        {manage && !adding && (
-          <Button size="sm" icon={Plus} onClick={() => setAdding(true)}>
-            Add network
-          </Button>
+        {manage && (
+          <div className="flex flex-wrap gap-2">
+            {wifi?.remote_scan_supported && (
+              <Button size="sm" icon={RefreshCw} pending={scanning} onClick={() => void startScan()}>
+                Scan nearby Wi-Fi
+              </Button>
+            )}
+            {!adding && (
+              <Button size="sm" icon={Plus} onClick={() => pickNetwork("")}>
+                Add network
+              </Button>
+            )}
+          </div>
         )}
       </div>
 
@@ -298,9 +397,32 @@ export default function WifiSettings({ device, online }: { device: EdgeDevice; o
         </div>
       )}
 
+      {manage && wifi?.remote_scan_supported && (scanning || wifi.last_scan) && (
+        <div className="mt-3 border-t border-line pt-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h4 className="text-body font-medium text-ink">Nearby networks</h4>
+            {wifi.last_scan && (
+              <p className={hintClass}>Scanned {formatWhen(wifi.last_scan.scanned_at)}</p>
+            )}
+          </div>
+          {scanning && (
+            <p role="status" className="mt-1 text-body text-muted">
+              {SCANNING_TEXT}
+              {!isOnline && ". The box is offline, so it scans when it checks in again."}
+            </p>
+          )}
+          {wifi.last_scan && (
+            <NearbyNetworks networks={wifi.last_scan.networks} saved={wifi.networks} onPick={pickNetwork} />
+          )}
+          <p className="mt-2 text-small text-muted">Hidden network? Use Add network and type its name.</p>
+        </div>
+      )}
+
       {manage && adding && (
         <AddNetworkForm
+          key={prefill}
           deviceId={device.id}
+          initialSsid={prefill}
           onCancel={() => setAdding(false)}
           onDone={() => {
             setAdding(false);

@@ -70,7 +70,7 @@ export interface WifiNetwork {
 
 export interface WifiCommand {
   id: string;
-  action: "add" | "update" | "remove" | "set_priority" | "connect_now";
+  action: "add" | "update" | "remove" | "set_priority" | "connect_now" | "scan";
   ssid: string;
   priority: number | null;
   status: "pending" | "applied" | "failed";
@@ -91,6 +91,24 @@ export interface DeviceWifi {
   };
   networks: WifiNetwork[];
   pending_commands: WifiCommand[];
+  /** False when the box's software can't scan remotely (older edge). */
+  remote_scan_supported?: boolean;
+  /** Admins only; null until the box has reported a scan. */
+  last_scan?: WifiScan | null;
+}
+
+export interface WifiScanNetwork {
+  ssid: string;
+  /** 0-100 quality. */
+  signal: number;
+  security: string;
+  /** The box already has this network saved. */
+  known: boolean;
+}
+
+export interface WifiScan {
+  scanned_at: string;
+  networks: WifiScanNetwork[];
 }
 
 /** Only admins (school admin, or super admin) may change Wi-Fi; the backend says the same via can_manage. */
@@ -193,4 +211,27 @@ export function buildUpdatePayload(
   }
   if (Object.keys(body).length === 0) return { ok: false, error: "Nothing to change." };
   return { ok: true, body };
+}
+
+// --- Nearby network scan (POST /devices/{id}/wifi/scan) ---
+
+export const SCANNING_TEXT = "Scanning… usually within a minute";
+
+export function isScanPending(wifi: Pick<DeviceWifi, "pending_commands"> | null | undefined): boolean {
+  return !!wifi?.pending_commands.some((command) => command.action === "scan" && command.status === "pending");
+}
+
+/** 0-4 bars from a 0-100 quality. */
+export function signalBars(signal: number): number {
+  if (!Number.isFinite(signal) || signal <= 0) return 0;
+  return Math.min(4, Math.ceil(signal / 25));
+}
+
+export function isSecuredNetwork(security: string): boolean {
+  return !["", "open", "none", "--"].includes(security.trim().toLowerCase());
+}
+
+/** Saved on the box (scan says so) or in the dashboard's saved list. */
+export function isSavedNetwork(network: WifiScanNetwork, saved: readonly Pick<WifiNetwork, "ssid">[]): boolean {
+  return network.known || saved.some((item) => item.ssid === network.ssid);
 }

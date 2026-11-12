@@ -49,7 +49,7 @@ test("inbox rows show severity, classroom, words and time, link to detail, and r
 test("review actions call the review endpoint and offer Undo", async () => {
   const [hook, api] = await Promise.all([readSource("lib/useReviewAlert.tsx"), readSource("lib/api.ts")]);
   assert.match(api, /`\/alerts\/\$\{alertId\}\/review`/);
-  assert.match(api, /JSON\.stringify\(\{ status \}\)/);
+  assert.match(api, /JSON\.stringify\(\{ status, /);
   assert.match(hook, /reviewAlert\(alert\.id, previous\)/);
   assert.match(hook, /Undo/);
   assert.match(hook, /The alert was not changed/);

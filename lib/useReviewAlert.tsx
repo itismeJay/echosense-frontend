@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { reviewAlert } from "./api";
 import { useAlerts } from "./AlertsProvider";
 import type { Alert } from "./types";
+import type { ReviewOutcome } from "./review-outcome";
 
 type ReviewStatus = "active" | "reviewed" | "resolved";
 
@@ -20,11 +21,15 @@ export function useReviewAlert() {
   const [pendingId, setPendingId] = useState<number | null>(null);
 
   const setStatus = useCallback(
-    async (alert: Alert, status: ReviewStatus, options: { undo?: boolean } = { undo: true }) => {
+    async (
+      alert: Alert,
+      status: ReviewStatus,
+      options: { undo?: boolean; outcome?: ReviewOutcome; note?: string } = { undo: true }
+    ) => {
       const previous = alert.status === "unknown" ? "active" : alert.status;
       setPendingId(alert.id);
       try {
-        const updated = await reviewAlert(alert.id, status);
+        const updated = await reviewAlert(alert.id, status, { outcome: options.outcome, note: options.note });
         updateAlert(updated);
         toast.custom(
           (shown) => (

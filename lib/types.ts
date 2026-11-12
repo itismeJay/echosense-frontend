@@ -1,3 +1,4 @@
+import type { ReviewOutcome } from "./review-outcome";
 export type Severity = "high" | "medium" | "low";
 export type AlertSeverity = Severity | "unknown";
 export type CanonicalSeverity = "LOW" | "MEDIUM" | "HIGH";
@@ -113,6 +114,8 @@ export interface Alert {
   device_identifier?: string | null;
   device_source?: EvidenceObject | null;
   status: AlertStatus;
+  review_outcome?: ReviewOutcome | null;
+  review_note?: string | null;
   created_at: string;
   event_start_timestamp?: string | null;
   event_end_timestamp?: string | null;
@@ -414,6 +417,7 @@ export interface Report {
   date_from?: string;
   date_to?: string;
   generated_by_email?: string | null;
+  outcome_counts?: Record<string, number> | null;
 }
 
 export interface PiLog {

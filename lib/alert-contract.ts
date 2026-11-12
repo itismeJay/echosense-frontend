@@ -14,6 +14,7 @@ import type {
   SeverityEvidence,
   UnlistedTerm,
 } from "./types";
+import { parseReviewOutcome } from "./review-outcome.ts";
 
 const REVIEW_MESSAGE =
   "Unverified possible-aggression alert. Human review required.";
@@ -390,6 +391,8 @@ function parseAlert(value: unknown, index: number, endpoint: string): Alert {
     device_identifier: nullableString(value.device_identifier),
     device_source: evidenceObject(value.device_source),
     status: normalizeAlertStatus(value.status),
+    review_outcome: parseReviewOutcome(value.review_outcome),
+    review_note: nullableString(value.review_note),
     created_at: createdAt,
     event_start_timestamp: validOptionalTimestamp(value.event_start_timestamp),
     event_end_timestamp: validOptionalTimestamp(value.event_end_timestamp),

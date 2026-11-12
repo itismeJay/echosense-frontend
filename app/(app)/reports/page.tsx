@@ -16,6 +16,7 @@ import { useAlerts } from "@/lib/AlertsProvider";
 import { generateReport, getCategoryStats, getReports } from "@/lib/api";
 import { formatDate, formatTimestamp } from "@/lib/format";
 import type { CategoryStats, Report } from "@/lib/types";
+import { falseAlertRate } from "@/lib/review-outcome";
 
 function isoDay(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -184,6 +185,7 @@ export default function ReportsPage() {
                   <tr>
                     <th scope="col" className="px-4 py-2.5 font-normal">Date range</th>
                     <th scope="col" className="px-4 py-2.5 text-right font-normal">Alerts</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-normal">False alerts</th>
                     <th scope="col" className="hidden px-4 py-2.5 font-normal sm:table-cell">Created by</th>
                     <th scope="col" className="px-4 py-2.5 font-normal">Created</th>
                   </tr>
@@ -197,6 +199,9 @@ export default function ReportsPage() {
                           : "Date range not recorded"}
                       </td>
                       <td className="num px-4 py-3 text-right text-ink">{report.total_incidents}</td>
+                      <td className="num px-4 py-3 text-right text-ink">
+                        <FalseAlertRate counts={report.outcome_counts} />
+                      </td>
                       <td className="hidden px-4 py-3 text-muted sm:table-cell">{report.generated_by_email ?? "—"}</td>
                       <td className="num px-4 py-3 text-muted">{formatTimestamp(report.generated_at)}</td>
                     </tr>
@@ -208,5 +213,15 @@ export default function ReportsPage() {
         </Panel>
       </section>
     </Page>
+  );
+}
+
+function FalseAlertRate({ counts }: { counts: Report["outcome_counts"] }) {
+  const rate = falseAlertRate(counts);
+  if (!rate) return <span className="text-muted">No outcomes yet</span>;
+  return (
+    <span title={`${rate.falseAlerts} of ${rate.withOutcome} alerts with an outcome were false alerts`}>
+      {rate.percent}%<span className="text-small text-muted">{` (${rate.falseAlerts} of ${rate.withOutcome})`}</span>
+    </span>
   );
 }

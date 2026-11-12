@@ -150,7 +150,31 @@ test("Wi-Fi UI: masked, never-prefilled passwords; confirms; read-only without c
   assert.match(CONNECT_ROLLBACK_NOTE, /returns to the previous network if it fails within 2 min/);
   assert.match(source, /kind: "remove"/);
   // Every action button sits behind the manage check.
-  assert.match(source, /manage && !adding/);
+  assert.match(source, /\{manage && \(\s*<div[\s\S]*?\{!adding && \(/);
   assert.match(source, /manage && wifi &&/);
   assert.match(source, /Only school admins can change Wi-Fi/);
+});
+
+test("nearby scan helpers: bars, lock, saved, pending", async () => {
+  const { signalBars, isSecuredNetwork, isSavedNetwork, isScanPending, SCANNING_TEXT } = await import("../lib/wifi-settings.ts");
+  assert.deepEqual([0, 10, 25, 26, 60, 100].map(signalBars), [0, 1, 1, 2, 3, 4]);
+  assert.equal(isSecuredNetwork("wpa"), true);
+  assert.equal(isSecuredNetwork("open"), false);
+  const net = { ssid: "Lab", signal: 80, security: "wpa", known: false };
+  assert.equal(isSavedNetwork(net, []), false);
+  assert.equal(isSavedNetwork(net, [{ ssid: "Lab" }]), true);
+  assert.equal(isSavedNetwork({ ...net, known: true }, []), true);
+  assert.equal(isScanPending({ pending_commands: [{ action: "scan", status: "pending" }] }), true);
+  assert.equal(isScanPending({ pending_commands: [{ action: "add", status: "pending" }] }), false);
+  assert.equal(SCANNING_TEXT, "Scanning… usually within a minute");
+});
+
+test("Wi-Fi section scans, lists nearby networks and pre-fills Add", async () => {
+  const src = await readFile(new URL("../components/devices/WifiSettings.tsx", import.meta.url), "utf8");
+  assert.match(src, /Scan nearby Wi-Fi/);
+  assert.match(src, /remote_scan_supported/);
+  assert.match(src, /initialSsid=\{prefill\}/);
+  assert.match(src, /Hidden network\?/);
+  const api = await readFile(new URL("../lib/api.ts", import.meta.url), "utf8");
+  assert.match(api, /wifiPath\(deviceId, "\/scan"\), "POST"/);
 });

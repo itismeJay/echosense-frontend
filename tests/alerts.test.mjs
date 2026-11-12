@@ -499,3 +499,10 @@ test("authenticated API headers use the bearer token without rendering it", () =
   assert.equal(headers.get("Accept"), "application/json");
   assert.doesNotMatch(REQUIRED_REVIEW_NOTICE, new RegExp(syntheticToken));
 });
+
+test("alert parser keeps a known review outcome and note", () => {
+  const alert = parseAlertResponse({ ...BASE_ALERT, status: "reviewed", review_outcome: "false_alert", review_note: "ok" });
+  assert.equal(alert.review_outcome, "false_alert");
+  assert.equal(alert.review_note, "ok");
+  assert.equal(parseAlertResponse({ ...BASE_ALERT, review_outcome: "bogus" }).review_outcome, null);
+});

@@ -10,6 +10,7 @@ import {
 } from "./alert-contract";
 import type { AlertListParseResult } from "./alert-contract";
 import { API_URL } from "./config";
+import type { ReviewOutcome } from "./review-outcome";
 import { buildApiHeaders } from "./api-headers";
 import {
   dictionaryQueryParams,
@@ -488,14 +489,16 @@ export async function getAlert(alertId: number): Promise<Alert> {
 /** Mark an alert reviewed or resolved, or set it back to needing review. */
 export async function reviewAlert(
   alertId: number,
-  status: "active" | "reviewed" | "resolved"
+  status: "active" | "reviewed" | "resolved",
+  review: { outcome?: ReviewOutcome; note?: string } = {}
 ): Promise<Alert> {
   const endpoint = `/alerts/${alertId}/review`;
+  const note = review.note?.trim();
   return parseAlertResponse(
     await apiFetch<unknown>(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, ...(review.outcome ? { outcome: review.outcome } : {}), ...(note ? { note } : {}) }),
     }),
     endpoint
   );
@@ -821,6 +824,10 @@ export function updateWifiNetwork(
 
 export function removeWifiNetwork(deviceId: string, ssid: string): Promise<WifiCommand> {
   return wifiCommand(wifiPath(deviceId, `/networks/${encodeURIComponent(ssid)}`), "DELETE");
+}
+
+export function scanWifiNetworks(deviceId: string): Promise<WifiCommand> {
+  return wifiCommand(wifiPath(deviceId, "/scan"), "POST");
 }
 
 export function connectWifiNetwork(deviceId: string, ssid: string): Promise<WifiCommand> {

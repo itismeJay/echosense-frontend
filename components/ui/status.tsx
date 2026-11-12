@@ -1,4 +1,5 @@
 "use client";
+import { reviewOutcomeLabel, type ReviewOutcome } from "@/lib/review-outcome";
 
 import type { AlertSeverity, AlertStatus } from "@/lib/types";
 import { severityLabel } from "@/lib/alert-presentation";
@@ -27,11 +28,15 @@ export function SeverityStripe({ severity }: { severity: AlertSeverity }) {
   return <span aria-hidden="true" className={`w-1 shrink-0 self-stretch rounded-full ${SEVERITY_STRIPE[severity]}`} />;
 }
 
-export function ReviewState({ status }: { status: AlertStatus }) {
+export function ReviewState({ status, outcome }: { status: AlertStatus; outcome?: ReviewOutcome | null }) {
   const label =
     status === "active" ? "Needs review" : status === "reviewed" ? "Reviewed" : status === "resolved" ? "Resolved" : "Status unavailable";
+  const outcomeLabel = status === "active" ? null : reviewOutcomeLabel(outcome);
   return (
-    <span className={`text-small ${status === "active" ? "font-medium text-ink" : "text-muted"}`}>{label}</span>
+    <span className={`text-small ${status === "active" ? "font-medium text-ink" : "text-muted"}`}>
+      {label}
+      {outcomeLabel && <span className="font-medium text-ink">{` · ${outcomeLabel}`}</span>}
+    </span>
   );
 }
 

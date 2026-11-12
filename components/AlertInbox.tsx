@@ -127,7 +127,7 @@ function AlertRow({
               {pending ? "Saving…" : "Mark reviewed"}
             </button>
           ) : mode === "all" ? (
-            <ReviewState status={alert.status} />
+            <ReviewState status={alert.status} outcome={alert.review_outcome} />
           ) : null}
         </div>
       </div>

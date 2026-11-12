@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Check, CheckCheck, FlaskConical, RotateCcw } from "lucide-react";
 import AlertEvidence from "@/components/AlertEvidence";
+import ReviewOutcomeDialog from "@/components/ReviewOutcomeDialog";
 import LanguageBadge from "@/components/LanguageBadge";
 import TranscriptQuote from "@/components/TranscriptQuote";
 import { Button, Detail, ErrorState, LoadingRows, Note, Page } from "@/components/ui";
@@ -29,6 +30,7 @@ import { useAlerts } from "@/lib/AlertsProvider";
 import { formatTimestamp } from "@/lib/format";
 import { useReviewAlert } from "@/lib/useReviewAlert";
 import type { Alert } from "@/lib/types";
+import type { ReviewOutcome } from "@/lib/review-outcome";
 
 function BackLink() {
   return (
@@ -86,10 +88,18 @@ export default function AlertDetailPage() {
     };
   }, [loadAlert]);
 
-  const changeStatus = async (status: "active" | "reviewed" | "resolved") => {
+  const [asking, setAsking] = useState<"reviewed" | "resolved" | null>(null);
+
+  const changeStatus = async (
+    status: "active" | "reviewed" | "resolved",
+    review: { outcome?: ReviewOutcome; note?: string } = {}
+  ) => {
     if (!alert) return;
-    const updated = await setStatus(alert, status);
-    if (updated) setAlert(updated);
+    const updated = await setStatus(alert, status, { undo: true, ...review });
+    if (updated) {
+      setAlert(updated);
+      setAsking(null);
+    }
   };
 
   if (loading && !alert) {
@@ -203,7 +213,7 @@ export default function AlertDetailPage() {
           <p className="text-body-lg text-ink">{alertReason(alert)}</p>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <ReviewState status={alert.status} />
+          <ReviewState status={alert.status} outcome={alert.review_outcome} />
           {alert.outside_school_hours && <OutsideHoursTag />}
         </div>
 
@@ -229,17 +239,17 @@ export default function AlertDetailPage() {
         <div className="mt-4 flex flex-wrap gap-2">
           {alert.status === "active" || alert.status === "unknown" ? (
             <>
-              <Button variant="primary" icon={Check} pending={pending} onClick={() => void changeStatus("reviewed")}>
+              <Button variant="primary" icon={Check} pending={pending} onClick={() => setAsking("reviewed")}>
                 Mark reviewed
               </Button>
-              <Button icon={CheckCheck} disabled={pending} onClick={() => void changeStatus("resolved")}>
+              <Button icon={CheckCheck} disabled={pending} onClick={() => setAsking("resolved")}>
                 Mark resolved
               </Button>
             </>
           ) : (
             <>
               {alert.status === "reviewed" && (
-                <Button variant="primary" icon={CheckCheck} pending={pending} onClick={() => void changeStatus("resolved")}>
+                <Button variant="primary" icon={CheckCheck} pending={pending} onClick={() => setAsking("resolved")}>
                   Mark resolved
                 </Button>
               )}
@@ -249,6 +259,21 @@ export default function AlertDetailPage() {
             </>
           )}
         </div>
+        {alert.status !== "active" && alert.review_note && (
+          <p className="mt-3 text-body text-ink">
+            <span className="text-muted">Review note: </span>
+            {alert.review_note}
+          </p>
+        )}
+        {asking && (
+          <ReviewOutcomeDialog
+            action={asking}
+            initialOutcome={alert.review_outcome}
+            pending={pending}
+            onCancel={() => setAsking(null)}
+            onSubmit={(outcome, note) => void changeStatus(asking, { outcome, note })}
+          />
+        )}
         <div className="mt-4">
           <Note>{SHORT_REVIEW_NOTICE}</Note>
         </div>
